@@ -22,64 +22,84 @@ export const getReferenceTypeFields = (type) => {
     'japanese-book': [
       { key: 'authorLastName', label: '著者姓', required: true, type: 'text' },
       { key: 'authorFirstName', label: '著者名', required: true, type: 'text' },
+      { key: 'authorReading', label: '著者読み仮名', required: false, type: 'text', placeholder: 'やまだ' },
       { key: 'title', label: '書名', required: true, type: 'text' },
       { key: 'publisher', label: '出版社', required: true, type: 'text' },
       { key: 'year', label: '出版年', required: true, type: 'number' },
       { key: 'editors', label: '編者名', required: false, type: 'text' },
-      { key: 'translators', label: '訳者名', required: false, type: 'text' }
+      { key: 'translators', label: '訳者名', required: false, type: 'text' },
+      { key: 'isbn', label: 'ISBN', required: false, type: 'text' },
+      { key: 'doi', label: 'DOI', required: false, type: 'text', placeholder: '10.1234/example' },
+      { key: 'url', label: 'URL', required: false, type: 'url' }
     ],
     
     'japanese-journal': [
       { key: 'authorLastName', label: '執筆者姓', required: true, type: 'text' },
       { key: 'authorFirstName', label: '執筆者名', required: true, type: 'text' },
+      { key: 'authorReading', label: '著者読み仮名', required: false, type: 'text', placeholder: 'やまだ' },
       { key: 'title', label: '論文名', required: true, type: 'text' },
       { key: 'journalName', label: '雑誌名', required: true, type: 'text' },
       { key: 'volume', label: '巻', required: false, type: 'text' },
       { key: 'issue', label: '号', required: false, type: 'text' },
       { key: 'year', label: '出版年', required: true, type: 'number' },
-      { key: 'pages', label: '掲載ページ', required: true, type: 'text' }
+      { key: 'pages', label: '掲載ページ', required: true, type: 'text' },
+      { key: 'doi', label: 'DOI', required: false, type: 'text', placeholder: '10.1234/example' },
+      { key: 'url', label: 'URL', required: false, type: 'url' }
     ],
     
     'japanese-chapter': [
       { key: 'authorLastName', label: '執筆者姓', required: true, type: 'text' },
       { key: 'authorFirstName', label: '執筆者名', required: true, type: 'text' },
+      { key: 'authorReading', label: '著者読み仮名', required: false, type: 'text', placeholder: 'やまだ' },
       { key: 'title', label: '論文名', required: true, type: 'text' },
       { key: 'editors', label: '編者名', required: true, type: 'text' },
       { key: 'bookTitle', label: '書名', required: true, type: 'text' },
       { key: 'publisher', label: '出版社', required: true, type: 'text' },
       { key: 'year', label: '出版年', required: true, type: 'number' },
-      { key: 'pages', label: '掲載ページ', required: true, type: 'text' }
+      { key: 'pages', label: '掲載ページ', required: true, type: 'text' },
+      { key: 'doi', label: 'DOI', required: false, type: 'text', placeholder: '10.1234/example' },
+      { key: 'url', label: 'URL', required: false, type: 'url' }
     ],
     
     'english-book': [
       { key: 'authorLastName', label: 'Author Last Name', required: true, type: 'text' },
       { key: 'authorFirstName', label: 'Author First Name', required: true, type: 'text' },
+      { key: 'authorReading', label: '著者読み仮名', required: false, type: 'text', placeholder: 'Smith' },
       { key: 'title', label: 'Book Title', required: true, type: 'text' },
       { key: 'publisherLocation', label: 'Publisher Location', required: true, type: 'text' },
       { key: 'publisher', label: 'Publisher', required: true, type: 'text' },
-      { key: 'year', label: 'Publication Year', required: true, type: 'number' }
+      { key: 'year', label: 'Publication Year', required: true, type: 'number' },
+      { key: 'isbn', label: 'ISBN', required: false, type: 'text' },
+      { key: 'doi', label: 'DOI', required: false, type: 'text', placeholder: '10.1234/example' },
+      { key: 'url', label: 'URL', required: false, type: 'url' }
     ],
     
     'english-journal': [
       { key: 'authorLastName', label: 'Author Last Name', required: true, type: 'text' },
       { key: 'authorFirstName', label: 'Author First Name', required: true, type: 'text' },
+      { key: 'authorReading', label: '著者読み仮名', required: false, type: 'text', placeholder: 'Smith' },
       { key: 'title', label: 'Article Title', required: true, type: 'text' },
       { key: 'journalName', label: 'Journal Name', required: true, type: 'text' },
       { key: 'volume', label: 'Volume', required: false, type: 'text' },
       { key: 'issue', label: 'Issue', required: false, type: 'text' },
       { key: 'year', label: 'Publication Year', required: true, type: 'number' },
-      { key: 'pages', label: 'Pages', required: true, type: 'text' }
+      { key: 'pages', label: 'Pages', required: true, type: 'text' },
+      { key: 'doi', label: 'DOI', required: false, type: 'text', placeholder: '10.1234/example' },
+      { key: 'url', label: 'URL', required: false, type: 'url' }
     ],
     
     'english-chapter': [
       { key: 'authorLastName', label: 'Author Last Name', required: true, type: 'text' },
       { key: 'authorFirstName', label: 'Author First Name', required: true, type: 'text' },
+      { key: 'authorReading', label: '著者読み仮名', required: false, type: 'text', placeholder: 'Smith' },
       { key: 'title', label: 'Chapter Title', required: true, type: 'text' },
       { key: 'bookTitle', label: 'Book Title', required: true, type: 'text' },
       { key: 'publisherLocation', label: 'Publisher Location', required: true, type: 'text' },
       { key: 'publisher', label: 'Publisher', required: true, type: 'text' },
       { key: 'year', label: 'Publication Year', required: true, type: 'number' },
-      { key: 'pages', label: 'Pages', required: true, type: 'text' }
+      { key: 'pages', label: 'Pages', required: true, type: 'text' },
+      { key: 'doi', label: 'DOI', required: false, type: 'text', placeholder: '10.1234/example' },
+      { key: 'url', label: 'URL', required: false, type: 'url' }
     ],
     
     'translation': [

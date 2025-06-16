@@ -79,6 +79,7 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
             value={value}
             onChange={(e) => handleChange(key, e.target.value)}
             className={error ? 'error' : ''}
+            placeholder={field.placeholder || ''}
           />
         )}
         {error && <div className="error-message">{error}</div>}

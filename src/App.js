@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import ReferenceForm from './components/ReferenceForm';
-import ReferenceList from './components/ReferenceList';
+import ReferenceTable from './components/ReferenceTable';
 import PreviewSection from './components/PreviewSection';
 import FileControls from './components/FileControls';
 import ThemeToggle from './components/ThemeToggle';
+import FormatGuideModal from './components/FormatGuideModal';
 import { formatCitation, formatReference, getReferenceTypeFields } from './utils/formatters';
 
 const STORAGE_KEY = 'reference-app-data';
@@ -14,6 +15,7 @@ function App() {
   const [selectedReference, setSelectedReference] = useState(null);
   const [alert, setAlert] = useState(null);
   const [copyFeedback, setCopyFeedback] = useState('');
+  const [showFormatGuide, setShowFormatGuide] = useState(false);
 
   // ローカルストレージから自動読み込み
   useEffect(() => {
@@ -131,6 +133,13 @@ function App() {
             <p>学術論文の参考文献と引用を正しい形式で管理・生成</p>
           </div>
           <div className="header-controls">
+            <button 
+              className="btn btn-guide"
+              onClick={() => setShowFormatGuide(true)}
+              title="参考文献の書き方を見る"
+            >
+              📖 書き方ガイド
+            </button>
             <ThemeToggle />
           </div>
         </div>
@@ -177,11 +186,16 @@ function App() {
         </div>
       </div>
 
-      <ReferenceList
+      <ReferenceTable
         references={references}
         onEdit={setSelectedReference}
         onDelete={deleteReference}
         onCopy={copyToClipboard}
+      />
+
+      <FormatGuideModal 
+        isOpen={showFormatGuide}
+        onClose={() => setShowFormatGuide(false)}
       />
     </div>
   );
