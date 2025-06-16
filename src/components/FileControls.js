@@ -1,6 +1,6 @@
 import React from 'react';
 
-const FileControls = ({ onExport, onImport, referenceCount }) => {
+const FileControls = ({ onExport, onImport, onCleanup, referenceCount }) => {
   return (
     <div className="file-controls">
       <h2 className="section-title">ファイル操作</h2>
@@ -24,6 +24,15 @@ const FileControls = ({ onExport, onImport, referenceCount }) => {
             className="file-input"
           />
         </label>
+
+        <button 
+          className="btn btn-warning"
+          onClick={onCleanup}
+          disabled={referenceCount === 0}
+          title={referenceCount === 0 ? '参考文献がありません' : '重複データを除去して整理'}
+        >
+          🧹 データクリーンアップ
+        </button>
       </div>
       
       <div style={{ 
@@ -39,7 +48,8 @@ const FileControls = ({ onExport, onImport, referenceCount }) => {
         <ul style={{ margin: 0, paddingLeft: '20px' }}>
           <li><strong>自動保存:</strong> 入力した内容は自動的にブラウザに保存されます</li>
           <li><strong>エクスポート:</strong> データをJSONファイルとしてバックアップできます</li>
-          <li><strong>インポート:</strong> JSONファイルから文献データを追加で読み込めます（上書きではなく追加）</li>
+          <li><strong>インポート:</strong> JSONファイルから文献データを追加で読み込めます（重複は自動除去）</li>
+          <li><strong>クリーンアップ:</strong> 重複データや不正なデータを自動で除去・整理します</li>
           <li><strong>コピー機能:</strong> 各文献の「引用」「参考文献」ボタンでクリップボードにコピーできます</li>
         </ul>
       </div>

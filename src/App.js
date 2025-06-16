@@ -7,6 +7,7 @@ import FileControls from './components/FileControls';
 import ThemeToggle from './components/ThemeToggle';
 import FormatGuideModal from './components/FormatGuideModal';
 import { formatCitation, formatReference, getReferenceTypeFields } from './utils/formatters';
+import { loadFromStorage, saveToStorage, isDuplicate, validateAndCleanData } from './utils/dataUtils';
 
 const STORAGE_KEY = 'reference-app-data';
 
@@ -17,23 +18,16 @@ function App() {
   const [copyFeedback, setCopyFeedback] = useState('');
   const [showFormatGuide, setShowFormatGuide] = useState(false);
 
-  // ローカルストレージから自動読み込み
+  // ローカルストレージから自動読み込み（重複除去付き）
   useEffect(() => {
-    const savedData = localStorage.getItem(STORAGE_KEY);
-    if (savedData) {
-      try {
-        const parsedData = JSON.parse(savedData);
-        setReferences(parsedData);
-      } catch (error) {
-        console.error('ローカルストレージからの読み込みエラー:', error);
-      }
-    }
+    const cleanedData = loadFromStorage(STORAGE_KEY);
+    setReferences(cleanedData);
   }, []);
 
-  // 自動保存（ローカルストレージ）
+  // 自動保存（ローカルストレージ）- 重複除去付き
   useEffect(() => {
     if (references.length > 0) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(references));
+      saveToStorage(STORAGE_KEY, references);
     }
   }, [references]);
 
@@ -44,16 +38,30 @@ function App() {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
+
+    // 重複チェック（内容ベース）
+    if (isDuplicate(references, newReference)) {
+      showAlert('同じ内容の参考文献が既に存在します', 'error');
+      return;
+    }
+
     setReferences(prev => [...prev, newReference]);
     showAlert('参考文献を追加しました', 'success');
   };
 
   const updateReference = (id, referenceData) => {
-    setReferences(prev => prev.map(ref => 
-      ref.id === id 
-        ? { ...ref, ...referenceData, updatedAt: new Date().toISOString() }
-        : ref
-    ));
+    setReferences(prev => {
+      const updated = prev.map(ref => 
+        ref.id === id 
+          ? { ...ref, ...referenceData, updatedAt: new Date().toISOString() }
+          : ref
+      );
+      
+      // 更新後に重複チェックと除去
+      const { cleaned } = validateAndCleanData(updated);
+      return cleaned;
+    });
+    
     setSelectedReference(null);
     showAlert('参考文献を更新しました', 'success');
   };
@@ -69,7 +77,9 @@ function App() {
   };
 
   const exportToJSON = () => {
-    const dataStr = JSON.stringify(references, null, 2);
+    // エクスポート前にデータをクリーンアップ
+    const { cleaned } = validateAndCleanData(references);
+    const dataStr = JSON.stringify(cleaned, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
@@ -91,19 +101,53 @@ function App() {
       try {
         const importedData = JSON.parse(e.target.result);
         if (Array.isArray(importedData)) {
-          // 既存のIDと重複しないように新しいIDを生成
-          const newReferences = importedData.map(ref => ({
-            ...ref,
-            id: uuidv4(),
-            importedAt: new Date().toISOString()
-          }));
-          setReferences(prev => [...prev, ...newReferences]);
-          showAlert(`${newReferences.length}件の参考文献をインポートしました`, 'success');
+          // インポートデータをクリーンアップ
+          const { cleaned: cleanImportedData, stats } = validateAndCleanData(importedData);
+          
+          if (stats.duplicatesRemoved > 0 || stats.invalidDataRemoved > 0) {
+            showAlert(
+              `インポートデータをクリーンアップしました: 重複${stats.duplicatesRemoved}件、無効データ${stats.invalidDataRemoved}件を除去`, 
+              'success'
+            );
+          }
+          
+          // 既存データとの重複をチェックして除外
+          const newReferences = [];
+          let duplicateCount = 0;
+          
+          cleanImportedData.forEach(ref => {
+            if (!isDuplicate(references, ref)) {
+              // 新しいIDを生成（既存IDとの衝突を避けるため）
+              newReferences.push({
+                ...ref,
+                id: uuidv4(),
+                importedAt: new Date().toISOString()
+              });
+            } else {
+              duplicateCount++;
+            }
+          });
+          
+          if (newReferences.length > 0) {
+            setReferences(prev => {
+              const combined = [...prev, ...newReferences];
+              const { cleaned } = validateAndCleanData(combined);
+              return cleaned;
+            });
+            
+            const message = duplicateCount > 0 
+              ? `${newReferences.length}件の参考文献をインポートしました（重複${duplicateCount}件をスキップ）`
+              : `${newReferences.length}件の参考文献をインポートしました`;
+            showAlert(message, 'success');
+          } else {
+            showAlert('インポート可能な新しい参考文献がありませんでした', 'warning');
+          }
         } else {
           showAlert('無効なJSONファイルです', 'error');
         }
       } catch (error) {
         showAlert('JSONファイルの読み込みに失敗しました', 'error');
+        console.error('Import error:', error);
       }
     };
     reader.readAsText(file);
@@ -122,6 +166,20 @@ function App() {
     }).catch(() => {
       showAlert('コピーに失敗しました', 'error');
     });
+  };
+
+  const cleanupData = () => {
+    const { cleaned, stats } = validateAndCleanData(references);
+    
+    if (stats.duplicatesRemoved > 0 || stats.invalidDataRemoved > 0) {
+      setReferences(cleaned);
+      showAlert(
+        `データをクリーンアップしました: 重複${stats.duplicatesRemoved}件、無効データ${stats.invalidDataRemoved}件を除去`, 
+        'success'
+      );
+    } else {
+      showAlert('クリーンアップが必要なデータはありませんでした', 'info');
+    }
   };
 
   return (
@@ -161,6 +219,7 @@ function App() {
         onExport={exportToJSON}
         onImport={importFromJSON}
         referenceCount={references.length}
+        onCleanup={cleanupData}
       />
 
       <div className="main-content">
