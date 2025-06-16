@@ -4,6 +4,7 @@ import ReferenceForm from './components/ReferenceForm';
 import ReferenceList from './components/ReferenceList';
 import PreviewSection from './components/PreviewSection';
 import FileControls from './components/FileControls';
+import ThemeToggle from './components/ThemeToggle';
 import { formatCitation, formatReference, getReferenceTypeFields } from './utils/formatters';
 
 const STORAGE_KEY = 'reference-app-data';
@@ -124,8 +125,15 @@ function App() {
   return (
     <div className="app">
       <header className="header">
-        <h1>📚 参考文献管理アプリ</h1>
-        <p>学術論文の参考文献と引用を正しい形式で管理・生成</p>
+        <div className="header-content">
+          <div className="header-main">
+            <h1>📚 参考文献管理アプリ</h1>
+            <p>学術論文の参考文献と引用を正しい形式で管理・生成</p>
+          </div>
+          <div className="header-controls">
+            <ThemeToggle />
+          </div>
+        </div>
       </header>
 
       {alert && (

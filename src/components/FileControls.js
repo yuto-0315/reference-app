@@ -28,14 +28,14 @@ const FileControls = ({ onExport, onImport, referenceCount }) => {
       
       <div style={{ 
         fontSize: '14px', 
-        color: '#666', 
+        color: '#898AC4', 
         marginTop: '15px',
         padding: '15px',
-        backgroundColor: '#f8f9fa',
+        backgroundColor: '#FFF2E0',
         borderRadius: '6px',
-        border: '1px solid #e9ecef'
+        border: '1px solid #C0C9EE'
       }}>
-        <h4 style={{ margin: '0 0 10px 0', color: '#495057' }}>💡 使い方のヒント</h4>
+        <h4 style={{ margin: '0 0 10px 0', color: '#898AC4' }}>💡 使い方のヒント</h4>
         <ul style={{ margin: 0, paddingLeft: '20px' }}>
           <li><strong>自動保存:</strong> 入力した内容は自動的にブラウザに保存されます</li>
           <li><strong>エクスポート:</strong> データをJSONファイルとしてバックアップできます</li>

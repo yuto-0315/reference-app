@@ -11,7 +11,7 @@
         "test": "echo \"Error: no test specified\" && exit 1",
         "rm": "rm -rf docs",
         "mv": "mv build docs",
-        "git": "git add . && git commit && git push origin master",
+        "git": "git add . && git commit -m \"Deploy: Update reference app\" && git push origin master",
         "deploy": "npm run rm && npm run build && npm run mv && npm run git"
     },
     "dependencies": {
