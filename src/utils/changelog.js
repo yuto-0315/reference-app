@@ -7,6 +7,10 @@ export const CHANGELOG = [
       {
         type: 'fix',
         description: '引用形式の修正：著者の姓と発行年の間に全角スペースを使用するように変更'
+      }, 
+      {
+        type: 'fix',
+        description: '引用形式の修正：年とページの間のコロン後の半角スペースを削除'
       },
       {
         type: 'feature',
@@ -20,7 +24,7 @@ export const CHANGELOG = [
   },
   {
     version: '1.0.0',
-    date: '2025-06-01',
+    date: '2025-06-16',
     changes: [
       {
         type: 'feature',
