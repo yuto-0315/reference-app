@@ -17,6 +17,16 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
     if (hasAuthorsField && (!baseData.authors || baseData.authors.length === 0)) {
       baseData.authors = [{ lastName: '', firstName: '', reading: '' }];
     }
+
+    // 翻訳書の場合は原著者と訳者フィールドを初期化
+    if (baseData.type === 'translation') {
+      if (!baseData.originalAuthors || baseData.originalAuthors.length === 0) {
+        baseData.originalAuthors = [{ lastName: '', firstName: '', reading: '' }];
+      }
+      if (!baseData.translators || baseData.translators.length === 0) {
+        baseData.translators = [{ lastName: '', firstName: '', reading: '' }];
+      }
+    }
     
     return baseData;
   };
@@ -57,6 +67,12 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
     if (hasAuthorsField) {
       newFormData.authors = [{ lastName: '', firstName: '', reading: '' }];
     }
+
+    // 翻訳書の場合は原著者と訳者フィールドを初期化
+    if (newType === 'translation') {
+      newFormData.originalAuthors = [{ lastName: '', firstName: '', reading: '' }];
+      newFormData.translators = [{ lastName: '', firstName: '', reading: '' }];
+    }
     
     setFormData(prev => ({ ...newFormData }));
     setErrors({});
@@ -73,6 +89,18 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
     }
   };
 
+  // 汎用的な著者フィールド変更処理
+  const handleAuthorFieldChange = (fieldName, index, field, value) => {
+    const updatedAuthors = [...(formData[fieldName] || [])];
+    updatedAuthors[index] = { ...updatedAuthors[index], [field]: value };
+    setFormData(prev => ({ ...prev, [fieldName]: updatedAuthors }));
+    
+    // エラーをクリア
+    if (errors[`${fieldName}.${index}.${field}`]) {
+      setErrors(prev => ({ ...prev, [`${fieldName}.${index}.${field}`]: null }));
+    }
+  };
+
   const addAuthor = () => {
     setFormData(prev => ({
       ...prev,
@@ -80,10 +108,25 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
     }));
   };
 
+  const addAuthorField = (fieldName) => {
+    setFormData(prev => ({
+      ...prev,
+      [fieldName]: [...(prev[fieldName] || []), { lastName: '', firstName: '', reading: '' }]
+    }));
+  };
+
   const removeAuthor = (index) => {
     if (formData.authors.length > 1) {
       const updatedAuthors = formData.authors.filter((_, i) => i !== index);
       setFormData(prev => ({ ...prev, authors: updatedAuthors }));
+    }
+  };
+
+  const removeAuthorField = (fieldName, index) => {
+    const currentAuthors = formData[fieldName] || [];
+    if (currentAuthors.length > 1) {
+      const updatedAuthors = currentAuthors.filter((_, i) => i !== index);
+      setFormData(prev => ({ ...prev, [fieldName]: updatedAuthors }));
     }
   };
 
@@ -101,6 +144,33 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
           newErrors[`authors.${index}.firstName`] = '名は必須項目です';
         }
       });
+    }
+
+    // 翻訳書の場合は原著者と訳者の検証を行う
+    if (formData.type === 'translation') {
+      // 原著者の検証
+      if (formData.originalAuthors) {
+        formData.originalAuthors.forEach((author, index) => {
+          if (!author.lastName) {
+            newErrors[`originalAuthors.${index}.lastName`] = '原著者の姓は必須項目です';
+          }
+          if (!author.firstName) {
+            newErrors[`originalAuthors.${index}.firstName`] = '原著者の名は必須項目です';
+          }
+        });
+      }
+
+      // 訳者の検証
+      if (formData.translators) {
+        formData.translators.forEach((translator, index) => {
+          if (!translator.lastName) {
+            newErrors[`translators.${index}.lastName`] = '訳者の姓は必須項目です';
+          }
+          if (!translator.firstName) {
+            newErrors[`translators.${index}.firstName`] = '訳者の名は必須項目です';
+          }
+        });
+      }
     }
     
     // その他のフィールドの検証
@@ -139,6 +209,15 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
     
     if (key === 'authors') {
       return renderAuthorsField();
+    }
+
+    // 翻訳書の特別なフィールド処理
+    if (key === 'originalAuthors') {
+      return renderTranslationAuthorsField('originalAuthors', '原著者');
+    }
+
+    if (key === 'translators') {
+      return renderTranslationAuthorsField('translators', '訳者');
     }
     
     const value = formData[key] || '';
@@ -241,6 +320,75 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
     );
   };
 
+  // 翻訳書用の著者フィールドレンダリング関数
+  const renderTranslationAuthorsField = (fieldName, label) => {
+    const authors = formData[fieldName] || [];
+    return (
+      <div key={fieldName} className="form-group">
+        <label>
+          {label} <span style={{ color: 'red' }}>*</span>
+        </label>
+        {authors.map((author, index) => (
+          <div key={index} className="author-input-group">
+            <div className="author-fields">
+              <div className="author-field">
+                <label>姓 *</label>
+                <input
+                  type="text"
+                  value={author.lastName}
+                  onChange={(e) => handleAuthorFieldChange(fieldName, index, 'lastName', e.target.value)}
+                  className={errors[`${fieldName}.${index}.lastName`] ? 'error' : ''}
+                  placeholder="山田"
+                />
+                {errors[`${fieldName}.${index}.lastName`] && (
+                  <div className="error-message">{errors[`${fieldName}.${index}.lastName`]}</div>
+                )}
+              </div>
+              <div className="author-field">
+                <label>名 *</label>
+                <input
+                  type="text"
+                  value={author.firstName}
+                  onChange={(e) => handleAuthorFieldChange(fieldName, index, 'firstName', e.target.value)}
+                  className={errors[`${fieldName}.${index}.firstName`] ? 'error' : ''}
+                  placeholder="太郎"
+                />
+                {errors[`${fieldName}.${index}.firstName`] && (
+                  <div className="error-message">{errors[`${fieldName}.${index}.firstName`]}</div>
+                )}
+              </div>
+              <div className="author-field">
+                <label>読み仮名</label>
+                <input
+                  type="text"
+                  value={author.reading}
+                  onChange={(e) => handleAuthorFieldChange(fieldName, index, 'reading', e.target.value)}
+                  placeholder="やまだ たろう"
+                />
+              </div>
+              {authors.length > 1 && (
+                <button
+                  type="button"
+                  className="btn btn-danger btn-small"
+                  onClick={() => removeAuthorField(fieldName, index)}
+                >
+                  削除
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={() => addAuthorField(fieldName)}
+        >
+          {label}を追加
+        </button>
+      </div>
+    );
+  };
+
   return (
     <form onSubmit={handleSubmit}>
       <div className="form-group">
@@ -264,6 +412,14 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
       </div>
 
       {fields.map(renderField)}
+
+      {/* 翻訳書の場合は原著者と訳者のフィールドを表示 */}
+      {formData.type === 'translation' && (
+        <>
+          {renderTranslationAuthorsField('originalAuthors', '原著者')}
+          {renderTranslationAuthorsField('translators', '訳者')}
+        </>
+      )}
 
       <div className="button-group">
         <button type="submit" className="btn btn-primary">

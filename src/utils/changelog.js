@@ -1,6 +1,32 @@
 // アプリケーションの変更履歴
 export const CHANGELOG = [
-    {
+  {
+    version: '1.3.0',
+    date: '2025-06-17',
+    changes: [
+      {
+        type: 'feature',
+        description: '翻訳書で複数の原著者を設定できる機能を追加'
+      },
+      {
+        type: 'feature',
+        description: '翻訳書で複数の訳者を設定できる機能を追加'
+      },
+      {
+        type: 'improvement',
+        description: '翻訳書の著者・訳者フィールドを他の文献種別と同様の複数人対応形式に統一'
+      },
+      {
+        type: 'improvement',
+        description: '翻訳書の参考文献一覧表示で複数著者・訳者の適切な表記に対応'
+      },
+      {
+        type: 'improvement',
+        description: '既存の翻訳書データを新形式に自動変換する後方互換性機能を追加'
+      }
+    ]
+  },
+  {
     version: '1.2.2',
     date: '2025-06-17',
     changes: [

@@ -204,16 +204,49 @@ export const getReferenceTypeFields = (type) => {
     ],
 
     'translation': [
-      { key: 'originalAuthorLastName', label: '原著者姓', required: true, type: 'text' },
-      { key: 'originalAuthorFirstName', label: '原著者名', required: true, type: 'text' },
-      { key: 'translators', label: '訳者名', required: true, type: 'text' },
-      { key: 'title', label: '翻訳書名', required: true, type: 'text' },
-      { key: 'publisher', label: '出版社', required: true, type: 'text' },
-      { key: 'year', label: '翻訳書出版年', required: true, type: 'number' },
-      { key: 'originalTitle', label: '原書名', required: true, type: 'text' },
-      { key: 'originalPublisherLocation', label: '原書出版地', required: true, type: 'text' },
-      { key: 'originalPublisher', label: '原書出版社', required: true, type: 'text' },
-      { key: 'originalYear', label: '原書出版年', required: true, type: 'number' }
+      {
+        key: 'originalAuthors', label: '原著者', required: true, type: 'authors',
+        description: '原書の著者名を入力してください。複数いる場合は奥付どおりの順に設定してください。'
+      },
+      {
+        key: 'translators', label: '訳者', required: true, type: 'authors',
+        description: '翻訳者名を入力してください。複数いる場合は奥付どおりの順に設定してください。'
+      },
+      {
+        key: 'title', label: '翻訳書名', required: true, type: 'text',
+        description: '翻訳書の正式なタイトルを入力してください。',
+        example: '西洋音楽史(上)'
+      },
+      {
+        key: 'publisher', label: '出版社', required: true, type: 'text',
+        description: '翻訳書を出版した出版社名を入力してください。',
+        example: '音楽之友社'
+      },
+      {
+        key: 'year', label: '翻訳書出版年', required: true, type: 'number',
+        description: '翻訳書が出版された年を西暦で入力してください。',
+        example: '1969'
+      },
+      {
+        key: 'originalTitle', label: '原書名', required: true, type: 'text',
+        description: '原書の正式なタイトルを入力してください。',
+        example: 'A History of Western Music'
+      },
+      {
+        key: 'originalPublisherLocation', label: '原書出版地', required: true, type: 'text',
+        description: '原書の出版地を入力してください。',
+        example: 'New York'
+      },
+      {
+        key: 'originalPublisher', label: '原書出版社', required: true, type: 'text',
+        description: '原書の出版社名を入力してください。',
+        example: 'W. W. Norton & Company'
+      },
+      {
+        key: 'originalYear', label: '原書出版年', required: true, type: 'number',
+        description: '原書が出版された年を西暦で入力してください。',
+        example: '1960'
+      }
     ],
 
     'dictionary': [
@@ -314,8 +347,13 @@ export const formatCitation = (reference, page = '') => {
   // 著者名の取得
   let authorName = '';
   if (type === 'translation') {
-    // 翻訳書の場合は原著者をカタカナで
-    authorName = reference.originalAuthorLastName || '';
+    // 翻訳書の場合は筆頭原著者をカタカナで
+    if (reference.originalAuthors && reference.originalAuthors.length > 0) {
+      authorName = reference.originalAuthors[0].lastName || '';
+    } else {
+      // 後方互換性：古い形式のデータをサポート
+      authorName = reference.originalAuthorLastName || '';
+    }
     const originalYear = reference.originalYear;
     return `(${authorName}　${year}(${originalYear})${pageText})`;
   } else if (type === 'organization-book') {
@@ -429,8 +467,18 @@ const formatEnglishChapter = (ref) => {
 };
 
 const formatTranslation = (ref) => {
-  const { originalAuthorLastName, originalAuthorFirstName, translators, title, publisher, year, originalTitle, originalPublisherLocation, originalPublisher, originalYear } = ref;
-  return `${originalAuthorLastName}${originalAuthorFirstName}、${translators}訳『${title}』、${publisher}、${year}年。(${originalAuthorLastName}, ${originalAuthorFirstName}. *${originalTitle}*. ${originalPublisherLocation}: ${originalPublisher}, ${originalYear}.)`;
+  const { originalAuthors, translators, title, publisher, year, originalTitle, originalPublisherLocation, originalPublisher, originalYear } = ref;
+  
+  // 原著者を日本語形式でフォーマット
+  const originalAuthorText = formatAuthors(originalAuthors, true, false);
+  
+  // 訳者を日本語形式でフォーマット（最後に「訳」を付加）
+  const translatorText = formatAuthors(translators, true, false) + '訳';
+  
+  // 原書の著者を英語形式でフォーマット
+  const originalAuthorEnglish = formatAuthors(originalAuthors, false, false);
+  
+  return `${originalAuthorText}、${translatorText}『${title}』、${publisher}、${year}年。(${originalAuthorEnglish}. *${originalTitle}*. ${originalPublisherLocation}: ${originalPublisher}, ${originalYear}.)`;
 };
 
 const formatDictionary = (ref) => {
@@ -523,26 +571,63 @@ export const formatVolumeIssue = (volume, issue) => {
 
 // 既存データのマイグレーション関数（後方互換性のため）
 export const migrateReferenceData = (reference) => {
+  let migratedRef = { ...reference };
+
   // 既存の単一著者データを複数著者形式に変換
-  if (!reference.authors && (reference.authorLastName || reference.authorFirstName)) {
-    return {
-      ...reference,
-      authors: [{
-        lastName: reference.authorLastName || '',
-        firstName: reference.authorFirstName || '',
-        reading: reference.authorReading || ''
-      }]
-    };
+  if (!migratedRef.authors && (migratedRef.authorLastName || migratedRef.authorFirstName)) {
+    migratedRef.authors = [{
+      lastName: migratedRef.authorLastName || '',
+      firstName: migratedRef.authorFirstName || '',
+      reading: migratedRef.authorReading || ''
+    }];
   }
 
-  // 既に複数著者形式の場合はそのまま
-  if (reference.authors && Array.isArray(reference.authors)) {
-    return reference;
+  // 翻訳書の古い形式を新しい形式に変換
+  if (migratedRef.type === 'translation') {
+    // 原著者の変換
+    if (!migratedRef.originalAuthors && (migratedRef.originalAuthorLastName || migratedRef.originalAuthorFirstName)) {
+      migratedRef.originalAuthors = [{
+        lastName: migratedRef.originalAuthorLastName || '',
+        firstName: migratedRef.originalAuthorFirstName || '',
+        reading: ''
+      }];
+    }
+
+    // 訳者の変換（古い形式では文字列だった場合）
+    if (!migratedRef.translators || typeof migratedRef.translators === 'string') {
+      const translatorNames = migratedRef.translators || '';
+      // 「・」で区切られた複数の訳者名を分割
+      const translatorList = translatorNames.split('・').map(name => {
+        const trimmedName = name.trim();
+        // 日本語名を姓・名に分割（完全ではないが、一般的なパターンを処理）
+        const lastChar = trimmedName.slice(-1);
+        if (trimmedName.length >= 2) {
+          return {
+            lastName: trimmedName.slice(0, -1),
+            firstName: lastChar,
+            reading: ''
+          };
+        } else {
+          return {
+            lastName: trimmedName,
+            firstName: '',
+            reading: ''
+          };
+        }
+      }).filter(translator => translator.lastName);
+      
+      migratedRef.translators = translatorList.length > 0 ? translatorList : [{
+        lastName: translatorNames || '',
+        firstName: '',
+        reading: ''
+      }];
+    }
   }
 
   // authorsが存在しない場合はデフォルトで空の配列を設定
-  return {
-    ...reference,
-    authors: reference.authors || []
-  };
+  if (!migratedRef.authors || !Array.isArray(migratedRef.authors)) {
+    migratedRef.authors = [];
+  }
+
+  return migratedRef;
 };
