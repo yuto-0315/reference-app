@@ -806,6 +806,25 @@ body {
   min-width: 120px;
 }
 
+.author-entry {
+  margin-bottom: 8px;
+}
+
+.author-entry:last-child {
+  margin-bottom: 0;
+}
+
+.author-name-text {
+  font-weight: 500;
+  color: var(--color-text-onSurface);
+}
+
+.author-reading {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
 .publisher-cell {
   max-width: 150px;
   color: var(--color-text-secondary);
