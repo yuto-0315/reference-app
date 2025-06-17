@@ -1,6 +1,28 @@
 // アプリケーションの変更履歴
 export const CHANGELOG = [
   {
+    version: '1.2.0',
+    date: '2025-06-17',
+    changes: [
+      {
+        type: 'feature',
+        description: '団体出版本（教科書・指導要領など）の文献種別を追加'
+      },
+      {
+        type: 'feature',
+        description: '団体出版本の書式：「執筆団体『書籍名』、出版年。」に対応'
+      },
+      {
+        type: 'improvement',
+        description: '団体出版本の引用形式で団体名を著者名として使用'
+      },
+      {
+        type: 'improvement',
+        description: '参考文献書方.mdに団体出版本の書き方を追記'
+      }
+    ]
+  },
+  {
     version: '1.1.0',
     date: '2025-06-17',
     changes: [
