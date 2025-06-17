@@ -13,14 +13,9 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
       return migratedRef.originalAuthorLastName || '';
     }
     if (migratedRef.authors && migratedRef.authors.length > 0) {
-      const firstAuthor = migratedRef.authors[0];
-      const displayName = `${firstAuthor.lastName}${firstAuthor.firstName}`;
-      
-      if (migratedRef.authors.length > 1) {
-        const otherCount = migratedRef.authors.length - 1;
-        return `${displayName}ほか${otherCount}`;
-      }
-      return displayName;
+      return migratedRef.authors
+        .map(author => `${author.lastName}${author.firstName}`)
+        .join('・');
     }
     return migratedRef.composer || migratedRef.organization || '';
   };
@@ -52,11 +47,6 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
         break;
       case 'year':
         compareValue = (a.year || 0) - (b.year || 0);
-        break;
-      case 'title':
-        const titleA = a.title || '';
-        const titleB = b.title || '';
-        compareValue = titleA.localeCompare(titleB, 'ja');
         break;
       default:
         compareValue = 0;
@@ -190,12 +180,6 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
               onClick={() => handleSort('year')}
             >
               発行年 {getSortIcon('year')}
-            </button>
-            <button 
-              className={`sort-btn ${sortBy === 'title' ? 'active' : ''}`}
-              onClick={() => handleSort('title')}
-            >
-              タイトル {getSortIcon('title')}
             </button>
           </div>
         )}
