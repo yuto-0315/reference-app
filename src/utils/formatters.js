@@ -34,6 +34,7 @@ export const getReferenceTypeFields = (type) => {
     'japanese-journal': [
       { key: 'authors', label: '執筆者', required: true, type: 'authors' },
       { key: 'title', label: '論文名', required: true, type: 'text' },
+      { key: 'editorialOrganization', label: '雑誌編集団体', required: false, type: 'text', placeholder: '音楽教育史学会' },
       { key: 'journalName', label: '雑誌名', required: true, type: 'text' },
       { key: 'volume', label: '巻', required: false, type: 'text' },
       { key: 'issue', label: '号', required: false, type: 'text' },
@@ -195,7 +196,8 @@ export const formatAuthors = (authors, isJapanese = true, forCitation = false) =
 export const formatCitation = (reference, page = '') => {
   const type = reference.type;
   const year = reference.year;
-  const pageText = page ? `: ${page}` : '';
+  const formattedPage = page ? formatCitationPageRange(page) : '';
+  const pageText = formattedPage ? `: ${formattedPage}` : '';
   
   // 著者名の取得
   let authorName = '';
@@ -257,24 +259,24 @@ const formatJapaneseBook = (ref) => {
 };
 
 const formatJapaneseJournal = (ref) => {
-  const { authors, title, journalName, volume, issue, year, pages } = ref;
+  const { authors, title, editorialOrganization, journalName, volume, issue, year, pages } = ref;
   const authorText = formatAuthors(authors, true, false);
-  let volumeIssue = '';
-  if (volume && issue) {
-    volumeIssue = `第${volume}-${issue}号`;
-  } else if (volume) {
-    volumeIssue = `第${volume}巻`;
-  } else if (issue) {
-    volumeIssue = `第${issue}号`;
-  }
+  const volumeIssue = formatVolumeIssue(volume, issue);
+  const formattedPages = formatPageRange(pages);
   
-  return `${authorText}「${title}」『${journalName}』${volumeIssue}、${year}年、${pages}頁。`;
+  // 編集団体がある場合とない場合で形式を変える
+  if (editorialOrganization) {
+    return `${authorText}「${title}」${editorialOrganization}編『${journalName}』${volumeIssue}、${year}年、${formattedPages}頁。`;
+  } else {
+    return `${authorText}「${title}」『${journalName}』${volumeIssue}、${year}年、${formattedPages}頁。`;
+  }
 };
 
 const formatJapaneseChapter = (ref) => {
   const { authors, title, editors, bookTitle, publisher, year, pages } = ref;
   const authorText = formatAuthors(authors, true, false);
-  return `${authorText}「${title}」、${editors}編『${bookTitle}』${publisher}、${year}年、${pages}頁。`;
+  const formattedPages = formatPageRange(pages);
+  return `${authorText}「${title}」、${editors}編『${bookTitle}』${publisher}、${year}年、${formattedPages}頁。`;
 };
 
 const formatEnglishBook = (ref) => {
@@ -293,13 +295,15 @@ const formatEnglishJournal = (ref) => {
     volumeIssue = ` ${volume}`;
   }
   
-  return `${authorText}, "${title}", *${journalName}*${volumeIssue}. (${year}) pp. ${pages}.`;
+  const formattedPages = pages ? formatPageRange(pages) : '';
+  return `${authorText}, "${title}", *${journalName}*${volumeIssue}. (${year}) pp. ${formattedPages}.`;
 };
 
 const formatEnglishChapter = (ref) => {
   const { authors, title, bookTitle, publisherLocation, publisher, year, pages } = ref;
   const authorText = formatAuthors(authors, false, false);
-  return `${authorText}, "${title}", *${bookTitle}*. (${publisherLocation}: ${publisher}, ${year}) pp. ${pages}.`;
+  const formattedPages = pages ? formatPageRange(pages) : '';
+  return `${authorText}, "${title}", *${bookTitle}*. (${publisherLocation}: ${publisher}, ${year}) pp. ${formattedPages}.`;
 };
 
 const formatTranslation = (ref) => {
@@ -310,8 +314,9 @@ const formatTranslation = (ref) => {
 const formatDictionary = (ref) => {
   const { authors, title, dictionaryTitle, volume, publisher, year, pages } = ref;
   const authorText = formatAuthors(authors, true, false);
-  const volumeText = volume ? `第${volume}巻、` : '';
-  return `${authorText}「${title}」『${dictionaryTitle}』${volumeText}${publisher}、${year}年、${pages}頁。`;
+  const volumeText = volume ? `第${formatNumber(volume)}巻、` : '';
+  const formattedPages = formatPageRange(pages);
+  return `${authorText}「${title}」『${dictionaryTitle}』${volumeText}${publisher}、${year}年、${formattedPages}頁。`;
 };
 
 const formatScoreDomestic = (ref) => {
@@ -340,9 +345,58 @@ const formatWebsite = (ref) => {
 
 const formatAudiovisual = (ref) => {
   const { composer, title, performers, label, mediaType, catalogNumber, trackNumber, recordingYear, releaseYear } = ref;
-  const track = trackNumber ? `、トラック${trackNumber}` : '';
+  const track = trackNumber ? `、トラック${formatNumber(trackNumber)}` : '';
   const recording = recordingYear ? `、${recordingYear}年録音` : '';
   return `${composer}作曲《${title}》 ${performers}演奏、${label}: ${catalogNumber}(${mediaType})${track}${recording}・${releaseYear}年発売。`;
+};
+
+// 数字フォーマット用のユーティリティ関数
+export const formatNumber = (num) => {
+  if (!num) return '';
+  const numStr = num.toString();
+  
+  // 1桁の場合は全角、2桁以上の場合は半角
+  if (numStr.length === 1) {
+    const zenkakuMap = {
+      '0': '０', '1': '１', '2': '２', '3': '３', '4': '４',
+      '5': '５', '6': '６', '7': '７', '8': '８', '9': '９'
+    };
+    return zenkakuMap[numStr] || numStr;
+  } else {
+    return numStr; // 2桁以上は半角のまま
+  }
+};
+
+// ページ範囲をフォーマットする関数（波線使用）
+export const formatPageRange = (pages) => {
+  if (!pages) return '';
+  
+  // ハイフンを波線に変換し、数字を適切にフォーマット
+  return pages
+    .replace(/-/g, '〜') // ハイフンを波線に変換
+    .replace(/\b(\d+)\b/g, (match) => formatNumber(match)); // 数字をフォーマット
+};
+
+// 引用でのページ範囲をフォーマットする関数（ハイフン使用）
+export const formatCitationPageRange = (pages) => {
+  if (!pages) return '';
+  
+  // 引用ではハイフンのまま、数字を適切にフォーマット
+  return pages
+    .replace(/\b(\d+)\b/g, (match) => formatNumber(match)); // 数字をフォーマット
+};
+
+// 巻号をフォーマットする関数
+export const formatVolumeIssue = (volume, issue) => {
+  let result = '';
+  if (volume && issue) {
+    result = `第${formatNumber(volume)}-${formatNumber(issue)}号`;
+  } else if (volume) {
+    result = `第${formatNumber(volume)}巻`;
+  } else if (issue) {
+    result = `第${formatNumber(issue)}号`;
+  }
+  return result;
 };
 
 // 既存データのマイグレーション関数（後方互換性のため）
