@@ -3,13 +3,23 @@ import React, { useState } from 'react';
 const InfoTooltip = ({ description, example, className = '' }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // デバッグ用ログ
+  console.log('InfoTooltip props:', { description, example });
+
   // 説明文も例もない場合は何も表示しない
   if (!description && !example) {
+    console.log('InfoTooltip: No description or example, returning null');
     return null;
   }
 
-  const openModal = () => setIsModalOpen(true);
-  const closeModal = () => setIsModalOpen(false);
+  const openModal = () => {
+    console.log('InfoTooltip: Opening modal');
+    setIsModalOpen(true);
+  };
+  const closeModal = () => {
+    console.log('InfoTooltip: Closing modal');
+    setIsModalOpen(false);
+  };
 
   return (
     <>
