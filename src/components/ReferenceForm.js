@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { REFERENCE_TYPES, getReferenceTypeFields } from '../utils/formatters';
+import { REFERENCE_TYPES, REFERENCE_TYPE_HINTS, getReferenceTypeFields } from '../utils/formatters';
 import InfoTooltip from './InfoTooltip';
 
 const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
@@ -227,6 +227,12 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
             </option>
           ))}
         </select>
+        {REFERENCE_TYPE_HINTS[formData.type] && (
+          <div className="field-hint">
+            <span className="hint-icon">💡</span>
+            {REFERENCE_TYPE_HINTS[formData.type]}
+          </div>
+        )}
       </div>
 
       {fields.map(renderField)}
