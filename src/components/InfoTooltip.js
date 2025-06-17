@@ -3,22 +3,27 @@ import React, { useState } from 'react';
 const InfoTooltip = ({ description, example, className = '' }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // デバッグ用ログ
-  console.log('InfoTooltip props:', { description, example });
-
   // 説明文も例もない場合は何も表示しない
   if (!description && !example) {
-    console.log('InfoTooltip: No description or example, returning null');
     return null;
   }
 
-  const openModal = () => {
-    console.log('InfoTooltip: Opening modal');
+  const openModal = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     setIsModalOpen(true);
   };
-  const closeModal = () => {
-    console.log('InfoTooltip: Closing modal');
+  
+  const closeModal = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     setIsModalOpen(false);
+  };
+
+  const handleOverlayClick = (e) => {
+    if (e.target === e.currentTarget) {
+      closeModal(e);
+    }
   };
 
   return (
@@ -34,7 +39,7 @@ const InfoTooltip = ({ description, example, className = '' }) => {
       </div>
       
       {isModalOpen && (
-        <div className="info-modal-overlay" onClick={closeModal}>
+        <div className="info-modal-overlay" onClick={handleOverlayClick}>
           <div className="info-modal" onClick={(e) => e.stopPropagation()}>
             <div className="info-modal-header">
               <h3 className="info-modal-title">入力ガイド</h3>
