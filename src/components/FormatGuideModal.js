@@ -3,36 +3,84 @@ import React from 'react';
 const FormatGuideModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
-  const examples = {
-    book: {
-      title: '図書',
-      format: '著者名（発行年）『書名』出版社名.',
-      example: '田中太郎（2023）『学術論文の書き方』学術出版社.'
+  const citationExamples = {
+    basic: {
+      title: '基本的な書式',
+      format: '（著者の姓 発行年: 引用ページ数）',
+      example: '(高橋　1996: 129)'
     },
-    journal: {
-      title: '学術雑誌論文',
-      format: '著者名（発行年）「論文タイトル」『雑誌名』巻号, pp.ページ数.',
-      example: '佐藤花子（2023）「研究方法論の新展開」『学術研究』12(3), pp.45-60.'
+    multiPage: {
+      title: '複数ページの引用',
+      format: '（著者の姓 発行年: 開始ページ-終了ページ）',
+      example: '(伊藤　2002: 121-122)'
+    },
+    sameName: {
+      title: '同姓の著者がいる場合',
+      format: '（著者の姓名 発行年: 引用ページ数）',
+      example: '(高橋美都　1996: 129)'
+    },
+    sameYear: {
+      title: '同一著者・同年の複数文献',
+      format: '（著者の姓 発行年a/b/c: 引用ページ数）',
+      example: '(佐藤　2006b: 56)'
+    },
+    translation: {
+      title: '翻訳書',
+      format: '（原著者の片仮名姓 翻訳書の出版年(原書の出版年): 翻訳書の引用頁）',
+      example: '(グラウト　1969(1960): 14)'
+    },
+    foreign: {
+      title: '洋書の原文引用',
+      format: '（著者名の原綴り 発行年: 引用ページ数）',
+      example: '(Reimer　1978: 31)'
+    }
+  };
+
+  const referenceExamples = {
+    japaneseBook: {
+      title: '日本語の単行本',
+      format: '著者姓名『書名』発行所、出版年。',
+      example: '橋本毅彦『「ものづくり」の科学史: 世界を変えた《標準革命》』講談社学術文庫、2013年。'
+    },
+    japaneseJournal: {
+      title: '日本語の雑誌論文',
+      format: '執筆者「論文名」[編集団体編]『雑誌名』巻(号)、出版年、掲載頁。',
+      example: '今川恭子「音楽的発達をめぐる実験的研究と観察的研究の意義と課題」『音楽教育学』第27-3号、1997年、1〜14頁。'
+    },
+    japaneseChapter: {
+      title: '日本語の単行本所収論文',
+      format: '執筆者「論文名」、編者『書名』出版社、出版年、掲載頁。',
+      example: '石井明「人民中国の光と影」、尾形勇・岸本美緒編『中国史』世界の歴史3、山川出版社、1998年、420〜479頁。'
+    },
+    organization: {
+      title: '団体が出版している本',
+      format: '執筆団体『書籍名』、出版年。',
+      example: '文部科学省『小学校学習指導要領音楽解説編』、2017年。'
+    },
+    foreignBook: {
+      title: '洋書の単行本',
+      format: 'Familyname, Firstname. *Title*. Place: Publisher, Year.',
+      example: 'Grout, Donald J. *A History of Western Music*. New York: W. W. Norton & Company, 1960.'
+    },
+    translation: {
+      title: '翻訳書',
+      format: '原著者の姓名、訳者名訳『書名』発行所、翻訳書の出版年。(原書の書誌情報)',
+      example: 'グラウト、ドナルドJ.、服部幸三・戸口幸策訳『西洋音楽史(上)』、音楽之友社、1969年。(Grout, Donald J. A History of Western Music. New York: W. W. Norton & Company, 1960.)'
+    },
+    dictionary: {
+      title: '辞事典の項目',
+      format: '項目の執筆者名「項目名」『辞事典名』巻号、発行社、出版年、頁。',
+      example: '渡辺護「オペラ」『音楽大事典』第1巻、平凡社、1981年、315~340頁。'
     },
     website: {
-      title: 'ウェブサイト',
-      format: '著者名（発行年）「ページタイトル」サイト名, URL（アクセス日）.',
-      example: '山田次郎（2023）「オンライン研究の動向」研究情報サイト, https://example.com/research（2023年6月17日アクセス）.'
+      title: 'インターネット上の資料',
+      format: '著者もしくは団体名「ページの名称」URL (閲覧年月日)',
+      example: '文部科学省ウェブサイト「学習指導要領『生きる力』」https://www.mext.go.jp/a_menu/shotou/new-cs/index.htm (2020年2月11日閲覧)'
     },
-    thesis: {
-      title: '学位論文',
-      format: '著者名（発行年）『論文タイトル』学位種別論文, 大学名.',
-      example: '鈴木一郎（2022）『現代社会における情報技術の影響』博士論文, 東京大学.'
-    },
-    report: {
-      title: '報告書',
-      format: '機関名（発行年）『報告書タイトル』.',
-      example: '文部科学省（2023）『教育統計調査報告』.'
-    },
-    conference: {
-      title: '学会発表',
-      format: '著者名（発行年）「発表タイトル」学会名, 開催地.',
-      example: '高橋三郎（2023）「AI技術の教育応用」情報処理学会全国大会, 東京.'
+    audiovisual: {
+      title: '視聴覚資料',
+      format: '作曲者、曲名、演奏者、レーベル名、資料種別、番号、録音年、発売年',
+      example: '武満徹作曲《ノヴェンバー・ステップス》小澤征爾指揮、サイトウ・キネン・オーケストラ演奏、フイリップス: PHCP-160(CD)、トラック1、1989年録音・1991年発売。'
     }
   };
 
@@ -40,39 +88,69 @@ const FormatGuideModal = ({ isOpen, onClose }) => {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content format-guide-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>📖 参考文献の書き方ガイド</h2>
+          <h2>📖 引用・参考文献の書き方ガイド</h2>
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
         
         <div className="modal-body">
           <div className="guide-intro">
-            <p>各文献種別の正しい記載形式と例文をご紹介します。</p>
+            <p>学術論文における正しい引用形式と参考文献の記載方法をご紹介します。</p>
           </div>
 
-          <div className="format-examples">
-            {Object.entries(examples).map(([key, item]) => (
-              <div key={key} className="format-item">
-                <h3 className="format-title">{item.title}</h3>
-                <div className="format-pattern">
-                  <strong>形式：</strong> {item.format}
+          <section className="citation-section">
+            <h3>📝 1. 本文中の引用（割注）</h3>
+            <div className="format-examples">
+              {Object.entries(citationExamples).map(([key, item]) => (
+                <div key={key} className="format-item">
+                  <h4 className="format-title">{item.title}</h4>
+                  <div className="format-pattern">
+                    <strong>形式：</strong> {item.format}
+                  </div>
+                  <div className="format-example">
+                    <strong>例：</strong> {item.example}
+                  </div>
                 </div>
-                <div className="format-example">
-                  <strong>例：</strong> {item.example}
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            
+            <div className="citation-notes">
+              <h4>📌 引用時のルール</h4>
+              <ul>
+                <li>著者の姓と発行年の間には全角スペースを入れる</li>
+                <li>発行年と引用ページ数の間はコロン「:」を使用</li>
+                <li>本文中の引用では範囲をハイフン「-」で表記</li>
+                <li>数字表記：1桁は全角（１、２、３）、2桁以上は半角（12、123）</li>
+              </ul>
+            </div>
+          </section>
 
-          <div className="guide-notes">
-            <h3>📝 注意事項</h3>
-            <ul>
-              <li>著者名は姓のみを記載し、複数著者の場合は「・」で区切ります</li>
-              <li>発行年は西暦で記載します</li>
-              <li>書名・雑誌名は『』、論文タイトル・ページタイトルは「」で囲みます</li>
-              <li>ウェブサイトの場合は、アクセス日を必ず記載してください</li>
-              <li>DOIやURLがある場合は、追加情報として記載することを推奨します</li>
-            </ul>
-          </div>
+          <section className="reference-section">
+            <h3>📚 2. 参考文献一覧</h3>
+            <div className="format-examples">
+              {Object.entries(referenceExamples).map(([key, item]) => (
+                <div key={key} className="format-item">
+                  <h4 className="format-title">{item.title}</h4>
+                  <div className="format-pattern">
+                    <strong>形式：</strong> {item.format}
+                  </div>
+                  <div className="format-example">
+                    <strong>例：</strong> {item.example}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="reference-notes">
+              <h4>📌 参考文献一覧のルール</h4>
+              <ul>
+                <li>著者の姓のアルファベット順または五十音順で配列</li>
+                <li>2行目以降は1マス字下げ（インデント）</li>
+                <li>複数著者：3名まで全員記載、4名以上は筆頭著者＋「ほか」</li>
+                <li>参考文献一覧ではページ範囲を波線「~」で表記</li>
+                <li>著者名は「姓、名」の順で記載</li>
+              </ul>
+            </div>
+          </section>
         </div>
 
         <div className="modal-footer">

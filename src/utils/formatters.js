@@ -3,6 +3,7 @@ export const REFERENCE_TYPES = {
   'japanese-book': '日本語書籍',
   'japanese-journal': '日本語雑誌論文',
   'japanese-chapter': '日本語書籍所収論文',
+  'organization-book': '団体出版本',
   'english-book': '英語書籍',
   'english-journal': '英語雑誌論文',
   'english-chapter': '英語書籍所収論文',
@@ -105,6 +106,30 @@ export const getReferenceTypeFields = (type) => {
         key: 'pages', label: '掲載ページ', required: true, type: 'text',
         description: '論文が掲載されているページ範囲を入力してください。',
         example: '45-58'
+      },
+      {
+        key: 'doi', label: 'DOI', required: false, type: 'text', placeholder: '10.1234/example',
+        description: 'デジタルオブジェクト識別子（DOI）がある場合は入力してください。',
+        example: '10.1234/example.doi'
+      },
+      { key: 'url', label: 'URL', required: false, type: 'url' }
+    ],
+
+    'organization-book': [
+      {
+        key: 'organization', label: '執筆団体', required: true, type: 'text',
+        description: '書籍を執筆・発行した団体名を入力してください。',
+        example: '文部科学省'
+      },
+      {
+        key: 'title', label: '書名', required: true, type: 'text',
+        description: '書籍の正式なタイトルを入力してください。',
+        example: '小学校学習指導要領音楽解説編'
+      },
+      {
+        key: 'year', label: '出版年', required: true, type: 'number',
+        description: '書籍が出版された年を西暦で入力してください。',
+        example: '2017'
       },
       {
         key: 'doi', label: 'DOI', required: false, type: 'text', placeholder: '10.1234/example',
@@ -276,6 +301,9 @@ export const formatCitation = (reference, page = '') => {
     authorName = reference.originalAuthorLastName || '';
     const originalYear = reference.originalYear;
     return `(${authorName}　${year}(${originalYear})${pageText})`;
+  } else if (type === 'organization-book') {
+    // 団体出版本の場合は団体名を使用
+    authorName = reference.organization || '';
   } else {
     // 引用形式では筆頭著者の姓のみ使用
     if (reference.authors && reference.authors.length > 0) {
@@ -297,6 +325,8 @@ export const formatReference = (reference) => {
       return formatJapaneseJournal(reference);
     case 'japanese-chapter':
       return formatJapaneseChapter(reference);
+    case 'organization-book':
+      return formatOrganizationBook(reference);
     case 'english-book':
       return formatEnglishBook(reference);
     case 'english-journal':
@@ -347,6 +377,11 @@ const formatJapaneseChapter = (ref) => {
   const authorText = formatAuthors(authors, true, false);
   const formattedPages = formatPageRange(pages);
   return `${authorText}「${title}」、${editors}編『${bookTitle}』${publisher}、${year}年、${formattedPages}頁。`;
+};
+
+const formatOrganizationBook = (ref) => {
+  const { organization, title, year } = ref;
+  return `${organization}『${title}』、${year}年。`;
 };
 
 const formatEnglishBook = (ref) => {
