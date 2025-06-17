@@ -267,7 +267,7 @@ export const formatCitation = (reference, page = '') => {
   const type = reference.type;
   const year = reference.year;
   const formattedPage = page ? formatCitationPageRange(page) : '';
-  const pageText = formattedPage ? `: ${formattedPage}` : '';
+  const pageText = formattedPage ? `:${formattedPage}` : '';
 
   // 著者名の取得
   let authorName = '';
@@ -275,7 +275,7 @@ export const formatCitation = (reference, page = '') => {
     // 翻訳書の場合は原著者をカタカナで
     authorName = reference.originalAuthorLastName || '';
     const originalYear = reference.originalYear;
-    return `(${authorName} ${year}(${originalYear})${pageText})`;
+    return `(${authorName}　${year}(${originalYear})${pageText})`;
   } else {
     // 引用形式では筆頭著者の姓のみ使用
     if (reference.authors && reference.authors.length > 0) {
@@ -283,7 +283,7 @@ export const formatCitation = (reference, page = '') => {
     }
   }
 
-  return `(${authorName} ${year}${pageText})`;
+  return `(${authorName}　${year}${pageText})`;
 };
 
 // 参考文献一覧の形式を生成

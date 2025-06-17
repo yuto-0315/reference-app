@@ -1,6 +1,6 @@
 {
     "name": "reference-app",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "学術論文の参考文献管理アプリケーション",
     "main": "index.js",
     "homepage": "https://yuto-0315.github.io/reference-app/",

@@ -7,6 +7,7 @@ import FileControls from './components/FileControls';
 import ThemeToggle from './components/ThemeToggle';
 import FormatGuideModal from './components/FormatGuideModal';
 import Toast from './components/Toast';
+import VersionInfo from './components/VersionInfo';
 import { formatCitation, formatReference, getReferenceTypeFields } from './utils/formatters';
 import { loadFromStorage, saveToStorage, isDuplicate, validateAndCleanData } from './utils/dataUtils';
 
@@ -220,6 +221,7 @@ function App() {
           <div className="header-main">
             <h1>📚 参考文献管理アプリ</h1>
             <p>学術論文の参考文献と引用を正しい形式で管理・生成</p>
+            <VersionInfo />
           </div>
           <div className="header-controls">
             <button 
