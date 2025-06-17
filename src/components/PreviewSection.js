@@ -65,7 +65,11 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
     const ref = references.find(r => r.id === selectedRef);
     if (!ref) return '';
     const migratedRef = migrateReferenceData(ref);
-    return formatCitation(migratedRef, citationPage);
+    
+    // 引用ページが設定されていない場合は掲載ページを使用
+    const pageToUse = citationPage || migratedRef.pages || '';
+    
+    return formatCitation(migratedRef, pageToUse);
   };
 
   const handleSort = (field) => {
@@ -118,7 +122,16 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
             type="text"
             value={citationPage}
             onChange={(e) => setCitationPage(e.target.value)}
-            placeholder="例: 123, 123-125"
+            placeholder={(() => {
+              if (selectedRef) {
+                const ref = references.find(r => r.id === selectedRef);
+                const migratedRef = ref ? migrateReferenceData(ref) : null;
+                if (migratedRef?.pages) {
+                  return `未入力時は掲載ページ「${migratedRef.pages}」を使用`;
+                }
+              }
+              return "例: 123, 123-125";
+            })()}
           />
         </div>
         
