@@ -812,36 +812,22 @@ body {
   background: var(--color-surfaceHover);
 }
 
-.author-cell {
-  min-width: 120px;
+.author-entry {
+  margin-bottom: 4px;
 }
 
-.author-name {
-  font-weight: 500;
-  color: var(--color-text-primary);
+.author-entry:last-child {
+  margin-bottom: 0;
 }
 
 .author-reading {
   font-size: 12px;
-  color: var(--color-text-secondary);
+  color: var(--color-text-muted);
   margin-top: 2px;
 }
 
-.title-cell {
-  max-width: 200px;
-}
-
-.title-text {
-  color: var(--color-text-primary);
-  line-height: 1.4;
-  word-break: break-word;
-}
-
-.year-cell {
-  min-width: 60px;
-  text-align: center;
-  color: var(--color-text-primary);
-  font-weight: 500;
+.author-cell {
+  min-width: 120px;
 }
 
 .publisher-cell {
@@ -948,7 +934,63 @@ body {
   font-style: italic;
 }
 
-/* レスポンシブ対応 */
+/* 著者入力フィールドのスタイル */
+.author-input-group {
+  margin-bottom: 15px;
+  padding: 15px;
+  border: 1px solid var(--color-border-primary);
+  border-radius: 6px;
+  background-color: var(--color-surface);
+}
+
+.author-fields {
+  display: flex;
+  gap: 15px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.author-field {
+  flex: 1;
+  min-width: 150px;
+}
+
+.author-field label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 5px;
+  color: var(--color-text-primary);
+  font-size: 13px;
+}
+
+.author-field input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border-primary);
+  border-radius: 4px;
+  font-size: 14px;
+  background-color: var(--color-surface);
+  color: var(--color-text-onSurface);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.author-field input:focus {
+  outline: none;
+  border-color: var(--color-border-secondary);
+  box-shadow: 0 0 0 3px var(--color-shadowLight);
+}
+
+.author-field input.error {
+  border-color: var(--color-danger);
+}
+
+.btn-small {
+  padding: 6px 12px;
+  font-size: 12px;
+  margin-left: 10px;
+  flex-shrink: 0;
+}
+
 @media (max-width: 768px) {
   .header-content {
     flex-direction: column;
@@ -993,5 +1035,13 @@ body {
   .modal-body,
   .modal-footer {
     padding: 16px;
+  }
+  
+  .author-fields {
+    flex-direction: column;
+  }
+  
+  .author-field {
+    min-width: 100%;
   }
 }

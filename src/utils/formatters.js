@@ -20,9 +20,7 @@ export const getReferenceTypeFields = (type) => {
   
   const fieldConfigs = {
     'japanese-book': [
-      { key: 'authorLastName', label: '著者姓', required: true, type: 'text' },
-      { key: 'authorFirstName', label: '著者名', required: true, type: 'text' },
-      { key: 'authorReading', label: '著者読み仮名', required: false, type: 'text', placeholder: 'やまだ' },
+      { key: 'authors', label: '著者', required: true, type: 'authors' },
       { key: 'title', label: '書名', required: true, type: 'text' },
       { key: 'publisher', label: '出版社', required: true, type: 'text' },
       { key: 'year', label: '出版年', required: true, type: 'number' },
@@ -34,9 +32,7 @@ export const getReferenceTypeFields = (type) => {
     ],
     
     'japanese-journal': [
-      { key: 'authorLastName', label: '執筆者姓', required: true, type: 'text' },
-      { key: 'authorFirstName', label: '執筆者名', required: true, type: 'text' },
-      { key: 'authorReading', label: '著者読み仮名', required: false, type: 'text', placeholder: 'やまだ' },
+      { key: 'authors', label: '執筆者', required: true, type: 'authors' },
       { key: 'title', label: '論文名', required: true, type: 'text' },
       { key: 'journalName', label: '雑誌名', required: true, type: 'text' },
       { key: 'volume', label: '巻', required: false, type: 'text' },
@@ -48,9 +44,7 @@ export const getReferenceTypeFields = (type) => {
     ],
     
     'japanese-chapter': [
-      { key: 'authorLastName', label: '執筆者姓', required: true, type: 'text' },
-      { key: 'authorFirstName', label: '執筆者名', required: true, type: 'text' },
-      { key: 'authorReading', label: '著者読み仮名', required: false, type: 'text', placeholder: 'やまだ' },
+      { key: 'authors', label: '執筆者', required: true, type: 'authors' },
       { key: 'title', label: '論文名', required: true, type: 'text' },
       { key: 'editors', label: '編者名', required: true, type: 'text' },
       { key: 'bookTitle', label: '書名', required: true, type: 'text' },
@@ -62,9 +56,7 @@ export const getReferenceTypeFields = (type) => {
     ],
     
     'english-book': [
-      { key: 'authorLastName', label: 'Author Last Name', required: true, type: 'text' },
-      { key: 'authorFirstName', label: 'Author First Name', required: true, type: 'text' },
-      { key: 'authorReading', label: '著者読み仮名', required: false, type: 'text', placeholder: 'Smith' },
+      { key: 'authors', label: 'Authors', required: true, type: 'authors' },
       { key: 'title', label: 'Book Title', required: true, type: 'text' },
       { key: 'publisherLocation', label: 'Publisher Location', required: true, type: 'text' },
       { key: 'publisher', label: 'Publisher', required: true, type: 'text' },
@@ -75,9 +67,7 @@ export const getReferenceTypeFields = (type) => {
     ],
     
     'english-journal': [
-      { key: 'authorLastName', label: 'Author Last Name', required: true, type: 'text' },
-      { key: 'authorFirstName', label: 'Author First Name', required: true, type: 'text' },
-      { key: 'authorReading', label: '著者読み仮名', required: false, type: 'text', placeholder: 'Smith' },
+      { key: 'authors', label: 'Authors', required: true, type: 'authors' },
       { key: 'title', label: 'Article Title', required: true, type: 'text' },
       { key: 'journalName', label: 'Journal Name', required: true, type: 'text' },
       { key: 'volume', label: 'Volume', required: false, type: 'text' },
@@ -89,9 +79,7 @@ export const getReferenceTypeFields = (type) => {
     ],
     
     'english-chapter': [
-      { key: 'authorLastName', label: 'Author Last Name', required: true, type: 'text' },
-      { key: 'authorFirstName', label: 'Author First Name', required: true, type: 'text' },
-      { key: 'authorReading', label: '著者読み仮名', required: false, type: 'text', placeholder: 'Smith' },
+      { key: 'authors', label: 'Authors', required: true, type: 'authors' },
       { key: 'title', label: 'Chapter Title', required: true, type: 'text' },
       { key: 'bookTitle', label: 'Book Title', required: true, type: 'text' },
       { key: 'publisherLocation', label: 'Publisher Location', required: true, type: 'text' },
@@ -116,8 +104,7 @@ export const getReferenceTypeFields = (type) => {
     ],
     
     'dictionary': [
-      { key: 'authorLastName', label: '項目執筆者姓', required: true, type: 'text' },
-      { key: 'authorFirstName', label: '項目執筆者名', required: true, type: 'text' },
+      { key: 'authors', label: '項目執筆者', required: true, type: 'authors' },
       { key: 'title', label: '項目名', required: true, type: 'text' },
       { key: 'dictionaryTitle', label: '辞事典名', required: true, type: 'text' },
       { key: 'volume', label: '巻号', required: false, type: 'text' },
@@ -170,6 +157,40 @@ export const getReferenceTypeFields = (type) => {
   return fieldConfigs[type] || fieldConfigs['japanese-book'];
 };
 
+// 著者名をフォーマットするユーティリティ関数
+export const formatAuthors = (authors, isJapanese = true, forCitation = false) => {
+  if (!authors || authors.length === 0) return '';
+  
+  if (forCitation) {
+    // 引用形式では筆頭著者の姓のみ
+    const firstAuthor = authors[0];
+    return firstAuthor.lastName || '';
+  }
+  
+  // 3名まで：全員を記載し、中黒でつなぐ
+  // 4名以上：筆頭著者のみ記載し、「ほか」を付加
+  if (authors.length <= 3) {
+    if (isJapanese) {
+      return authors.map(author => 
+        `${author.lastName}${author.firstName}`
+      ).join('・');
+    } else {
+      return authors.map((author, index) => 
+        index === 0 
+          ? `${author.lastName}, ${author.firstName}`
+          : `${author.firstName} ${author.lastName}`
+      ).join(', ');
+    }
+  } else {
+    const firstAuthor = authors[0];
+    if (isJapanese) {
+      return `${firstAuthor.lastName}${firstAuthor.firstName}ほか`;
+    } else {
+      return `${firstAuthor.lastName}, ${firstAuthor.firstName}, et al.`;
+    }
+  }
+};
+
 // 本文中の引用形式を生成
 export const formatCitation = (reference, page = '') => {
   const type = reference.type;
@@ -183,12 +204,11 @@ export const formatCitation = (reference, page = '') => {
     authorName = reference.originalAuthorLastName || '';
     const originalYear = reference.originalYear;
     return `(${authorName} ${year}(${originalYear})${pageText})`;
-  } else if (type.startsWith('english')) {
-    // 英語文献の場合
-    authorName = reference.authorLastName || '';
   } else {
-    // 日本語文献の場合、姓のみ使用
-    authorName = reference.authorLastName || '';
+    // 引用形式では筆頭著者の姓のみ使用
+    if (reference.authors && reference.authors.length > 0) {
+      authorName = reference.authors[0].lastName || '';
+    }
   }
   
   return `(${authorName} ${year}${pageText})`;
@@ -230,13 +250,15 @@ export const formatReference = (reference) => {
 
 // 個別のフォーマット関数
 const formatJapaneseBook = (ref) => {
-  const { authorLastName, authorFirstName, title, publisher, year, editors, translators } = ref;
-  let result = `${authorLastName}${authorFirstName}『${title}』${publisher}、${year}年。`;
+  const { authors, title, publisher, year, editors, translators } = ref;
+  const authorText = formatAuthors(authors, true, false);
+  let result = `${authorText}『${title}』${publisher}、${year}年。`;
   return result;
 };
 
 const formatJapaneseJournal = (ref) => {
-  const { authorLastName, authorFirstName, title, journalName, volume, issue, year, pages } = ref;
+  const { authors, title, journalName, volume, issue, year, pages } = ref;
+  const authorText = formatAuthors(authors, true, false);
   let volumeIssue = '';
   if (volume && issue) {
     volumeIssue = `第${volume}-${issue}号`;
@@ -246,21 +268,24 @@ const formatJapaneseJournal = (ref) => {
     volumeIssue = `第${issue}号`;
   }
   
-  return `${authorLastName}${authorFirstName}「${title}」『${journalName}』${volumeIssue}、${year}年、${pages}頁。`;
+  return `${authorText}「${title}」『${journalName}』${volumeIssue}、${year}年、${pages}頁。`;
 };
 
 const formatJapaneseChapter = (ref) => {
-  const { authorLastName, authorFirstName, title, editors, bookTitle, publisher, year, pages } = ref;
-  return `${authorLastName}${authorFirstName}「${title}」、${editors}編『${bookTitle}』${publisher}、${year}年、${pages}頁。`;
+  const { authors, title, editors, bookTitle, publisher, year, pages } = ref;
+  const authorText = formatAuthors(authors, true, false);
+  return `${authorText}「${title}」、${editors}編『${bookTitle}』${publisher}、${year}年、${pages}頁。`;
 };
 
 const formatEnglishBook = (ref) => {
-  const { authorLastName, authorFirstName, title, publisherLocation, publisher, year } = ref;
-  return `${authorLastName}, ${authorFirstName}. *${title}*. ${publisherLocation}: ${publisher}, ${year}.`;
+  const { authors, title, publisherLocation, publisher, year } = ref;
+  const authorText = formatAuthors(authors, false, false);
+  return `${authorText}. *${title}*. ${publisherLocation}: ${publisher}, ${year}.`;
 };
 
 const formatEnglishJournal = (ref) => {
-  const { authorLastName, authorFirstName, title, journalName, volume, issue, year, pages } = ref;
+  const { authors, title, journalName, volume, issue, year, pages } = ref;
+  const authorText = formatAuthors(authors, false, false);
   let volumeIssue = '';
   if (volume && issue) {
     volumeIssue = ` ${volume}(${issue})`;
@@ -268,12 +293,13 @@ const formatEnglishJournal = (ref) => {
     volumeIssue = ` ${volume}`;
   }
   
-  return `${authorLastName}, ${authorFirstName}, "${title}", *${journalName}*${volumeIssue}. (${year}) pp. ${pages}.`;
+  return `${authorText}, "${title}", *${journalName}*${volumeIssue}. (${year}) pp. ${pages}.`;
 };
 
 const formatEnglishChapter = (ref) => {
-  const { authorLastName, authorFirstName, title, bookTitle, publisherLocation, publisher, year, pages } = ref;
-  return `${authorLastName}, ${authorFirstName}, "${title}", *${bookTitle}*. (${publisherLocation}: ${publisher}, ${year}) pp. ${pages}.`;
+  const { authors, title, bookTitle, publisherLocation, publisher, year, pages } = ref;
+  const authorText = formatAuthors(authors, false, false);
+  return `${authorText}, "${title}", *${bookTitle}*. (${publisherLocation}: ${publisher}, ${year}) pp. ${pages}.`;
 };
 
 const formatTranslation = (ref) => {
@@ -282,9 +308,10 @@ const formatTranslation = (ref) => {
 };
 
 const formatDictionary = (ref) => {
-  const { authorLastName, authorFirstName, title, dictionaryTitle, volume, publisher, year, pages } = ref;
+  const { authors, title, dictionaryTitle, volume, publisher, year, pages } = ref;
+  const authorText = formatAuthors(authors, true, false);
   const volumeText = volume ? `第${volume}巻、` : '';
-  return `${authorLastName}${authorFirstName}「${title}」『${dictionaryTitle}』${volumeText}${publisher}、${year}年、${pages}頁。`;
+  return `${authorText}「${title}」『${dictionaryTitle}』${volumeText}${publisher}、${year}年、${pages}頁。`;
 };
 
 const formatScoreDomestic = (ref) => {
@@ -316,4 +343,30 @@ const formatAudiovisual = (ref) => {
   const track = trackNumber ? `、トラック${trackNumber}` : '';
   const recording = recordingYear ? `、${recordingYear}年録音` : '';
   return `${composer}作曲《${title}》 ${performers}演奏、${label}: ${catalogNumber}(${mediaType})${track}${recording}・${releaseYear}年発売。`;
+};
+
+// 既存データのマイグレーション関数（後方互換性のため）
+export const migrateReferenceData = (reference) => {
+  // 既存の単一著者データを複数著者形式に変換
+  if (!reference.authors && (reference.authorLastName || reference.authorFirstName)) {
+    return {
+      ...reference,
+      authors: [{
+        lastName: reference.authorLastName || '',
+        firstName: reference.authorFirstName || '',
+        reading: reference.authorReading || ''
+      }]
+    };
+  }
+  
+  // 既に複数著者形式の場合はそのまま
+  if (reference.authors && Array.isArray(reference.authors)) {
+    return reference;
+  }
+  
+  // authorsが存在しない場合はデフォルトで空の配列を設定
+  return {
+    ...reference,
+    authors: reference.authors || []
+  };
 };

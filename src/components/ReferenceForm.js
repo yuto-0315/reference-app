@@ -4,13 +4,19 @@ import { REFERENCE_TYPES, getReferenceTypeFields } from '../utils/formatters';
 const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
   const [formData, setFormData] = useState({
     type: 'japanese-book',
+    authors: [{ lastName: '', firstName: '', reading: '' }],
     ...initialData
   });
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (initialData) {
-      setFormData({ ...initialData });
+      setFormData({ 
+        ...initialData,
+        authors: initialData.authors && initialData.authors.length > 0 
+          ? initialData.authors 
+          : [{ lastName: '', firstName: '', reading: '' }]
+      });
     }
   }, [initialData]);
 
@@ -24,13 +30,55 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
   };
 
   const handleTypeChange = (newType) => {
-    setFormData(prev => ({ type: newType }));
+    setFormData(prev => ({ 
+      type: newType,
+      authors: [{ lastName: '', firstName: '', reading: '' }]
+    }));
     setErrors({});
+  };
+
+  const handleAuthorChange = (index, field, value) => {
+    const updatedAuthors = [...formData.authors];
+    updatedAuthors[index] = { ...updatedAuthors[index], [field]: value };
+    setFormData(prev => ({ ...prev, authors: updatedAuthors }));
+    
+    // エラーをクリア
+    if (errors[`authors.${index}.${field}`]) {
+      setErrors(prev => ({ ...prev, [`authors.${index}.${field}`]: null }));
+    }
+  };
+
+  const addAuthor = () => {
+    setFormData(prev => ({
+      ...prev,
+      authors: [...prev.authors, { lastName: '', firstName: '', reading: '' }]
+    }));
+  };
+
+  const removeAuthor = (index) => {
+    if (formData.authors.length > 1) {
+      const updatedAuthors = formData.authors.filter((_, i) => i !== index);
+      setFormData(prev => ({ ...prev, authors: updatedAuthors }));
+    }
   };
 
   const validateForm = () => {
     const newErrors = {};
+    
+    // 著者の検証
+    formData.authors.forEach((author, index) => {
+      if (!author.lastName) {
+        newErrors[`authors.${index}.lastName`] = '姓は必須項目です';
+      }
+      if (!author.firstName) {
+        newErrors[`authors.${index}.firstName`] = '名は必須項目です';
+      }
+    });
+    
+    // その他のフィールドの検証
     fields.forEach(field => {
+      if (field.key === 'authors') return; // 著者は上で処理済み
+      
       if (field.required && !formData[field.key]) {
         newErrors[field.key] = `${field.label}は必須項目です`;
       }
@@ -50,13 +98,21 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
       onSubmit(formData);
       if (!initialData) {
         // 新規追加の場合のみフォームをリセット
-        setFormData({ type: 'japanese-book' });
+        setFormData({ 
+          type: 'japanese-book',
+          authors: [{ lastName: '', firstName: '', reading: '' }]
+        });
       }
     }
   };
 
   const renderField = (field) => {
     const { key, label, required, type } = field;
+    
+    if (key === 'authors') {
+      return renderAuthorsField();
+    }
+    
     const value = formData[key] || '';
     const error = errors[key];
 
@@ -83,6 +139,73 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
           />
         )}
         {error && <div className="error-message">{error}</div>}
+      </div>
+    );
+  };
+
+  const renderAuthorsField = () => {
+    return (
+      <div key="authors" className="form-group">
+        <label>
+          著者 <span style={{ color: 'red' }}>*</span>
+        </label>
+        {formData.authors.map((author, index) => (
+          <div key={index} className="author-input-group">
+            <div className="author-fields">
+              <div className="author-field">
+                <label>姓 *</label>
+                <input
+                  type="text"
+                  value={author.lastName}
+                  onChange={(e) => handleAuthorChange(index, 'lastName', e.target.value)}
+                  className={errors[`authors.${index}.lastName`] ? 'error' : ''}
+                  placeholder="山田"
+                />
+                {errors[`authors.${index}.lastName`] && (
+                  <div className="error-message">{errors[`authors.${index}.lastName`]}</div>
+                )}
+              </div>
+              <div className="author-field">
+                <label>名 *</label>
+                <input
+                  type="text"
+                  value={author.firstName}
+                  onChange={(e) => handleAuthorChange(index, 'firstName', e.target.value)}
+                  className={errors[`authors.${index}.firstName`] ? 'error' : ''}
+                  placeholder="太郎"
+                />
+                {errors[`authors.${index}.firstName`] && (
+                  <div className="error-message">{errors[`authors.${index}.firstName`]}</div>
+                )}
+              </div>
+              <div className="author-field">
+                <label>読み仮名</label>
+                <input
+                  type="text"
+                  value={author.reading}
+                  onChange={(e) => handleAuthorChange(index, 'reading', e.target.value)}
+                  placeholder="やまだ たろう"
+                />
+              </div>
+              {formData.authors.length > 1 && (
+                <button
+                  type="button"
+                  className="btn btn-danger btn-small"
+                  onClick={() => removeAuthor(index)}
+                >
+                  削除
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={addAuthor}
+        >
+          著者を追加
+        </button>
       </div>
     );
   };
