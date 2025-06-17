@@ -65,7 +65,7 @@ const FormatGuideModal = ({ isOpen, onClose }) => {
     translation: {
       title: '翻訳書',
       format: '原著者の姓名、訳者名訳『書名』発行所、翻訳書の出版年。(原書の書誌情報)',
-      example: 'グラウト、ドナルドJ.、服部幸三・戸口幸策訳『西洋音楽史(上)』、音楽之友社、1969年。(Grout, Donald J. A History of Western Music. New York: W. W. Norton & Company, 1960.)'
+      example: 'グラウト、ドナルドJ.、服部幸三・戸口幸策訳『西洋音楽史(上)』、音楽之友社、1969年。(Grout, Donald J. *A History of Western Music*. New York: W. W. Norton & Company, 1960.)'
     },
     dictionary: {
       title: '辞事典の項目',

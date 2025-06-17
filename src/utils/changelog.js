@@ -1,6 +1,46 @@
 // アプリケーションの変更履歴
 export const CHANGELOG = [
   {
+    version: '1.3.2',
+    date: '2025-06-17',
+    changes: [
+      {
+        type: 'fix',
+        description: '翻訳書フォームで重複した入力欄が表示される問題を修正'
+      },
+      {
+        type: 'improvement',
+        description: '翻訳書の訳者入力を他の著者フィールドと同様に姓名・読み仮名で分離して入力する形式に変更'
+      },
+      {
+        type: 'improvement',
+        description: '翻訳書の訳者も複数人対応で、追加・削除ボタンによる管理が可能に'
+      }
+    ]
+  },
+  {
+    version: '1.3.1',
+    date: '2025-06-17',
+    changes: [
+      {
+        type: 'fix',
+        description: '翻訳書の原著者フィールドを日本語表記と原語表記に分離'
+      },
+      {
+        type: 'fix',
+        description: '翻訳書の訳者名を文字列形式に変更（複数訳者は「・」で区切り）'
+      },
+      {
+        type: 'improvement',
+        description: '翻訳書の参考文献表記で原著者を日本語と原語の両方で表示'
+      },
+      {
+        type: 'improvement',
+        description: '学術的な翻訳書の標準的な書式により準拠した形式に改善'
+      }
+    ]
+  },
+  {
     version: '1.3.0',
     date: '2025-06-17',
     changes: [

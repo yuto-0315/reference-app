@@ -10,7 +10,7 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
   // 複数著者の表示用ユーティリティ関数
   const getAuthorDisplayName = (migratedRef) => {
     if (migratedRef.type === 'translation') {
-      // 新しい形式の翻訳書
+      // 新しい形式の翻訳書（日本語表記の原著者を使用）
       if (migratedRef.originalAuthors && migratedRef.originalAuthors.length > 0) {
         return migratedRef.originalAuthors
           .map(author => `${author.lastName}${author.firstName}`)
@@ -41,7 +41,7 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
       case 'author':
         const getAuthorName = (ref) => {
           if (ref.type === 'translation') {
-            // 新しい形式の翻訳書
+            // 新しい形式の翻訳書（日本語表記の原著者を使用）
             if (ref.originalAuthors && ref.originalAuthors.length > 0) {
               return ref.originalAuthors[0].lastName || '';
             }

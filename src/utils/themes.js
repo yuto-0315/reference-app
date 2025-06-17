@@ -41,30 +41,30 @@ export const themes = {
   dark: {
     name: 'ダーク',
     colors: {
-      primary: '#6B73A8',
-      primaryHover: '#7A82B6',
-      secondary: '#4A5578',
-      secondaryHover: '#5A6588',
-      accent: '#8B8EC7',
-      accentHover: '#9B9ED7',
-      danger: '#C67878',
-      dangerHover: '#D68888',
+      primary: '#007ACC',
+      primaryHover: '#1177DD',
+      secondary: '#3C3C3C',
+      secondaryHover: '#4D4D4D',
+      accent: '#0E639C',
+      accentHover: '#1177DD',
+      danger: '#F44747',
+      dangerHover: '#FF5555',
 
-      background: '#1A1B2E',
-      surface: '#16213E',
-      surfaceHover: '#0F3460',
+      background: '#1E1E1E',
+      surface: '#252526',
+      surfaceHover: '#2D2D30',
 
       text: {
-        primary: '#E8EAFF',
-        secondary: '#C0C9EE',
-        muted: '#8B92C7',
+        primary: '#CCCCCC',
+        secondary: '#C6C6C6',
+        muted: '#858585',
         onSurface: '#FFFFFF'
       },
 
       border: {
-        primary: '#4A5578',
-        secondary: '#6B73A8',
-        accent: '#8B8EC7'
+        primary: '#3C3C3C',
+        secondary: '#007ACC',
+        accent: '#0E639C'
       },
 
       shadow: 'rgba(0, 0, 0, 0.4)',

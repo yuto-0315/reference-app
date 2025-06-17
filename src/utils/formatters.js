@@ -205,11 +205,15 @@ export const getReferenceTypeFields = (type) => {
 
     'translation': [
       {
-        key: 'originalAuthors', label: '原著者', required: true, type: 'authors',
-        description: '原書の著者名を入力してください。複数いる場合は奥付どおりの順に設定してください。'
+        key: 'originalAuthors', label: '原著者（日本語表記）', required: true, type: 'translation-authors',
+        description: '原書の著者名を日本語（カタカナ）で入力してください。複数いる場合は奥付どおりの順に設定してください。'
       },
       {
-        key: 'translators', label: '訳者', required: true, type: 'authors',
+        key: 'originalAuthorsEnglish', label: '原著者（原語表記）', required: true, type: 'translation-authors',
+        description: '原書の著者名を原語（英語など）で入力してください。複数いる場合は奥付どおりの順に設定してください。'
+      },
+      {
+        key: 'translators', label: '訳者', required: true, type: 'translation-authors',
         description: '翻訳者名を入力してください。複数いる場合は奥付どおりの順に設定してください。'
       },
       {
@@ -467,18 +471,18 @@ const formatEnglishChapter = (ref) => {
 };
 
 const formatTranslation = (ref) => {
-  const { originalAuthors, translators, title, publisher, year, originalTitle, originalPublisherLocation, originalPublisher, originalYear } = ref;
+  const { originalAuthors, originalAuthorsEnglish, translators, title, publisher, year, originalTitle, originalPublisherLocation, originalPublisher, originalYear } = ref;
   
   // 原著者を日本語形式でフォーマット
-  const originalAuthorText = formatAuthors(originalAuthors, true, false);
+  const originalAuthorTextJapanese = formatAuthors(originalAuthors, true, false);
   
   // 訳者を日本語形式でフォーマット（最後に「訳」を付加）
   const translatorText = formatAuthors(translators, true, false) + '訳';
   
   // 原書の著者を英語形式でフォーマット
-  const originalAuthorEnglish = formatAuthors(originalAuthors, false, false);
+  const originalAuthorEnglish = formatAuthors(originalAuthorsEnglish, false, false);
   
-  return `${originalAuthorText}、${translatorText}『${title}』、${publisher}、${year}年。(${originalAuthorEnglish}. *${originalTitle}*. ${originalPublisherLocation}: ${originalPublisher}, ${originalYear}.)`;
+  return `${originalAuthorTextJapanese}、${translatorText}『${title}』、${publisher}、${year}年。(${originalAuthorEnglish}. *${originalTitle}*. ${originalPublisherLocation}: ${originalPublisher}, ${originalYear}.)`;
 };
 
 const formatDictionary = (ref) => {
@@ -584,7 +588,7 @@ export const migrateReferenceData = (reference) => {
 
   // 翻訳書の古い形式を新しい形式に変換
   if (migratedRef.type === 'translation') {
-    // 原著者の変換
+    // 原著者の変換（日本語表記）
     if (!migratedRef.originalAuthors && (migratedRef.originalAuthorLastName || migratedRef.originalAuthorFirstName)) {
       migratedRef.originalAuthors = [{
         lastName: migratedRef.originalAuthorLastName || '',
@@ -593,11 +597,20 @@ export const migrateReferenceData = (reference) => {
       }];
     }
 
-    // 訳者の変換（古い形式では文字列だった場合）
-    if (!migratedRef.translators || typeof migratedRef.translators === 'string') {
-      const translatorNames = migratedRef.translators || '';
-      // 「・」で区切られた複数の訳者名を分割
-      const translatorList = translatorNames.split('・').map(name => {
+    // 原著者の英語表記がない場合は日本語表記から推測
+    if (!migratedRef.originalAuthorsEnglish && migratedRef.originalAuthors) {
+      migratedRef.originalAuthorsEnglish = migratedRef.originalAuthors.map(author => ({
+        lastName: author.lastName || '',
+        firstName: author.firstName || '',
+        reading: ''
+      }));
+    }
+
+    // 訳者の変換（複数著者形式に変更）
+    if (migratedRef.translatorNames && typeof migratedRef.translatorNames === 'string') {
+      // 文字列形式の訳者を配列に変換
+      const translatorNames = migratedRef.translatorNames.split('・');
+      migratedRef.translators = translatorNames.map(name => {
         const trimmedName = name.trim();
         // 日本語名を姓・名に分割（完全ではないが、一般的なパターンを処理）
         const lastChar = trimmedName.slice(-1);
@@ -615,12 +628,8 @@ export const migrateReferenceData = (reference) => {
           };
         }
       }).filter(translator => translator.lastName);
-      
-      migratedRef.translators = translatorList.length > 0 ? translatorList : [{
-        lastName: translatorNames || '',
-        firstName: '',
-        reading: ''
-      }];
+    } else if (!migratedRef.translators || !Array.isArray(migratedRef.translators)) {
+      migratedRef.translators = [{ lastName: '', firstName: '', reading: '' }];
     }
   }
 
