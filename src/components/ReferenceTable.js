@@ -87,10 +87,25 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
   };
 
   const copyFormatted = (ref, type) => {
-    const text = type === 'citation' 
-      ? formatCitation(ref) 
-      : formatReference(ref);
-    onCopy(text, `${type === 'citation' ? '引用' : '参考文献'}をコピーしました`);
+    if (type === 'citation') {
+      // 引用の場合はページ指定のプロンプトを表示
+      const pageInput = prompt(
+        'ページを指定してください（例：45、45-58、45-58, 62）\n' +
+        '空白にすると登録済みのページ情報を使用します：',
+        ref.pages || ''
+      );
+      
+      // ユーザーがキャンセルした場合は処理を中止
+      if (pageInput === null) return;
+      
+      // 入力されたページまたは登録済みのページを使用
+      const pageToUse = pageInput.trim() || ref.pages;
+      const text = formatCitation(ref, pageToUse);
+      onCopy(text, `引用をコピーしました${pageToUse ? ` (ページ: ${pageToUse})` : ''}`);
+    } else {
+      const text = formatReference(ref);
+      onCopy(text, '参考文献をコピーしました');
+    }
   };
 
   const getExternalLink = (ref) => {
