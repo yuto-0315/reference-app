@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { REFERENCE_TYPES, getReferenceTypeFields } from '../utils/formatters';
+import InfoTooltip from './InfoTooltip';
 
 const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
   const [formData, setFormData] = useState({
@@ -107,7 +108,7 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
   };
 
   const renderField = (field) => {
-    const { key, label, required, type } = field;
+    const { key, label, required, type, description, example } = field;
     
     if (key === 'authors') {
       return renderAuthorsField();
@@ -119,8 +120,11 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
     return (
       <div key={key} className="form-group">
         <label>
-          {label}
-          {required && <span style={{ color: 'red' }}> *</span>}
+          <span className="label-text">
+            {label}
+            {required && <span style={{ color: 'red' }}> *</span>}
+            <InfoTooltip description={description} example={example} />
+          </span>
         </label>
         {type === 'textarea' ? (
           <textarea
