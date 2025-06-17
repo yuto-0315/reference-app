@@ -1087,21 +1087,104 @@ body {
   color: var(--color-text-onSurface);
 }
 
+/* 参考文献一覧のチェックボックス機能 */
+.reference-list-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.reference-count {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.reference-checklist {
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border-primary);
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 15px;
+  background-color: var(--color-surface);
+}
+
+.reference-check-item {
+  margin-bottom: 8px;
+  padding: 0;
+}
+
+.reference-check-item:last-child {
+  margin-bottom: 0;
+}
+
+.reference-checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.reference-checkbox-label:hover {
+  background-color: var(--color-surfaceHover);
+}
+
+.reference-checkbox {
+  margin: 0;
+  transform: scale(1.2);
+  accent-color: var(--color-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.reference-info {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.reference-author {
+  font-weight: 600;
+  color: var(--color-text-onSurface);
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.reference-title {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.4;
+  margin-bottom: 2px;
+  word-break: break-word;
+}
+
+.reference-year {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
 /* モバイル対応 */
 @media (max-width: 768px) {
-  .toast {
-    top: 10px;
-    right: 10px;
-    left: 10px;
-    transform: translateY(-100%);
+  .reference-list-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
   }
   
-  .toast-show {
-    transform: translateY(0);
+  .reference-list-controls .btn {
+    width: 100%;
   }
   
-  .toast-content {
-    min-width: auto;
-    max-width: none;
+  .reference-count {
+    text-align: center;
+  }
+  
+  .reference-checklist {
+    max-height: 300px;
   }
 }

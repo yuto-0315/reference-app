@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { formatCitation, formatReference, migrateReferenceData } from '../utils/formatters';
 
-const ReferenceTable = ({ references, onEdit, onDelete, onCopy }) => {
+const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, checkedReferences }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('year'); // 'year', 'reading', 'title'
   const [sortOrder, setSortOrder] = useState('desc'); // 'asc', 'desc'
@@ -134,6 +134,28 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy }) => {
         <table className="reference-table">
           <thead>
             <tr>
+              <th style={{ width: '40px', textAlign: 'center' }}>
+                <input
+                  type="checkbox"
+                  checked={checkedReferences.size > 0 && checkedReferences.size === references.length}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      references.forEach(ref => {
+                        if (!checkedReferences.has(ref.id)) {
+                          onToggleCheck(ref.id);
+                        }
+                      });
+                    } else {
+                      references.forEach(ref => {
+                        if (checkedReferences.has(ref.id)) {
+                          onToggleCheck(ref.id);
+                        }
+                      });
+                    }
+                  }}
+                  title="全て選択/解除"
+                />
+              </th>
               <th>著者</th>
               <th>タイトル</th>
               <th>発行年</th>
@@ -147,6 +169,13 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy }) => {
               const migratedRef = migrateReferenceData(ref);
               return (
                 <tr key={ref.id}>
+                  <td style={{ textAlign: 'center' }}>
+                    <input
+                      type="checkbox"
+                      checked={checkedReferences.has(ref.id)}
+                      onChange={() => onToggleCheck(ref.id)}
+                    />
+                  </td>
                   <td className="author-cell">
                     <div className="author-name">
                       {migratedRef.authors?.map((author, index) => (

@@ -1,17 +1,26 @@
 import React, { useState } from 'react';
-import { formatReference, formatCitation } from '../utils/formatters';
+import { formatReference, formatCitation, migrateReferenceData } from '../utils/formatters';
 
-const PreviewSection = ({ references, onCopy }) => {
+const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, onToggleAll }) => {
   const [citationPage, setCitationPage] = useState('');
   const [selectedRef, setSelectedRef] = useState('');
 
-  // 著者名でソート（日本語文献は五十音順、英語文献はアルファベット順）
-  const sortedReferences = [...references].sort((a, b) => {
+  // チェックされた参考文献のみを取得し、著者名でソート
+  const getCheckedReferences = () => {
+    return references
+      .filter(ref => checkedReferences.has(ref.id))
+      .map(ref => migrateReferenceData(ref));
+  };
+
+  const sortedReferences = [...getCheckedReferences()].sort((a, b) => {
     const getAuthorName = (ref) => {
       if (ref.type === 'translation') {
         return ref.originalAuthorLastName || '';
       }
-      return ref.authorLastName || ref.composer || ref.organization || '';
+      if (ref.authors && ref.authors.length > 0) {
+        return ref.authors[0].lastName || '';
+      }
+      return ref.composer || ref.organization || '';
     };
 
     const authorA = getAuthorName(a);
@@ -29,7 +38,8 @@ const PreviewSection = ({ references, onCopy }) => {
   const generateCitation = () => {
     const ref = references.find(r => r.id === selectedRef);
     if (!ref) return '';
-    return formatCitation(ref, citationPage);
+    const migratedRef = migrateReferenceData(ref);
+    return formatCitation(migratedRef, citationPage);
   };
 
   return (
@@ -49,15 +59,18 @@ const PreviewSection = ({ references, onCopy }) => {
             onChange={(e) => setSelectedRef(e.target.value)}
           >
             <option value="">選択してください</option>
-            {references.map(ref => (
-              <option key={ref.id} value={ref.id}>
-                {(ref.authorLastName && ref.authorFirstName) ? 
-                  `${ref.authorLastName}${ref.authorFirstName}` : 
-                  (ref.originalAuthorLastName && ref.originalAuthorFirstName) ? 
-                    `${ref.originalAuthorLastName}${ref.originalAuthorFirstName}` :
-                    ref.composer || ref.organization || 'タイトルなし'} - {ref.title}
-              </option>
-            ))}
+            {references.map(ref => {
+              const migratedRef = migrateReferenceData(ref);
+              const authorName = migratedRef.authors && migratedRef.authors.length > 0 
+                ? `${migratedRef.authors[0].lastName}${migratedRef.authors[0].firstName}`
+                : migratedRef.composer || migratedRef.organization || 'タイトルなし';
+              
+              return (
+                <option key={ref.id} value={ref.id}>
+                  {authorName} - {ref.title}
+                </option>
+              );
+            })}
           </select>
         </div>
         
@@ -89,25 +102,83 @@ const PreviewSection = ({ references, onCopy }) => {
 
       {/* 参考文献一覧 */}
       <div>
-        <h3 style={{ fontSize: '1.2rem', marginBottom: '15px', color: '#333' }}>
-          📚 参考文献一覧
-        </h3>
-        
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px' }}>
+          <h3 style={{ fontSize: '1.2rem', margin: 0, color: '#333' }}>
+            📚 参考文献一覧
+          </h3>
+          <div className="reference-list-controls">
+            <button
+              className="btn btn-small btn-secondary"
+              onClick={() => onToggleAll(true)}
+              disabled={references.length === 0}
+            >
+              全て選択
+            </button>
+            <button
+              className="btn btn-small btn-secondary"
+              onClick={() => onToggleAll(false)}
+              disabled={checkedReferences.size === 0}
+            >
+              全て解除
+            </button>
+            <span className="reference-count">
+              {checkedReferences.size} / {references.length} 件選択
+            </span>
+          </div>
+        </div>
+
         {references.length === 0 ? (
           <div className="preview-area">
-            参考文献を追加すると、ここに一覧が表示されます。
+            参考文献を追加すると、ここに選択肢が表示されます。
           </div>
         ) : (
           <>
-            <div className="preview-area">
-              {generateReferenceList()}
+            {/* 参考文献リスト（チェックボックス付き） */}
+            <div className="reference-checklist">
+              {references.map(ref => {
+                const migratedRef = migrateReferenceData(ref);
+                const authorName = migratedRef.authors && migratedRef.authors.length > 0 
+                  ? `${migratedRef.authors[0].lastName}${migratedRef.authors[0].firstName}`
+                  : migratedRef.composer || migratedRef.organization || 'タイトルなし';
+                
+                return (
+                  <div key={ref.id} className="reference-check-item">
+                    <label className="reference-checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={checkedReferences.has(ref.id)}
+                        onChange={() => onToggleCheck(ref.id)}
+                        className="reference-checkbox"
+                      />
+                      <div className="reference-info">
+                        <div className="reference-author">{authorName}</div>
+                        <div className="reference-title">{ref.title}</div>
+                        <div className="reference-year">{ref.year}年</div>
+                      </div>
+                    </label>
+                  </div>
+                );
+              })}
             </div>
-            <button
-              className="btn btn-success"
-              onClick={() => onCopy(generateReferenceList(), '参考文献一覧をコピーしました')}
-            >
-              📋 参考文献一覧をコピー
-            </button>
+
+            {/* プレビュー */}
+            {checkedReferences.size > 0 ? (
+              <>
+                <div className="preview-area">
+                  {generateReferenceList()}
+                </div>
+                <button
+                  className="btn btn-success"
+                  onClick={() => onCopy(generateReferenceList(), '参考文献一覧をコピーしました')}
+                >
+                  📋 選択した参考文献一覧をコピー ({checkedReferences.size}件)
+                </button>
+              </>
+            ) : (
+              <div className="preview-area">
+                参考文献にチェックを入れると、ここに一覧が表示されます。
+              </div>
+            )}
           </>
         )}
       </div>
