@@ -12,14 +12,9 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
       return migratedRef.originalAuthorLastName || '';
     }
     if (migratedRef.authors && migratedRef.authors.length > 0) {
-      const firstAuthor = migratedRef.authors[0];
-      const displayName = `${firstAuthor.lastName}${firstAuthor.firstName}`;
-      
-      if (migratedRef.authors.length > 1) {
-        const otherCount = migratedRef.authors.length - 1;
-        return `${displayName}ほか${otherCount}`;
-      }
-      return displayName;
+      return migratedRef.authors
+        .map(author => `${author.lastName}${author.firstName}`)
+        .join('・');
     }
     return migratedRef.composer || migratedRef.organization || '';
   };
