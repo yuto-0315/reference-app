@@ -191,9 +191,22 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                   </td>
                   <td className="author-cell">
                     <div className="author-name">
-                      {getAuthorDisplayName(migratedRef)}
-                      {migratedRef.authors?.[0]?.reading && (
-                        <div className="author-reading">({migratedRef.authors[0].reading})</div>
+                      {migratedRef.authors?.map((author, index) => (
+                        <div key={index} className="author-entry">
+                          <div className="author-name-text">
+                            {author.lastName}{author.firstName}
+                          </div>
+                          {author.reading && (
+                            <div className="author-reading">({author.reading})</div>
+                          )}
+                        </div>
+                      ))}
+                      {!migratedRef.authors?.length && (
+                        <div className="author-entry">
+                          <div className="author-name-text">
+                            {migratedRef.composer || migratedRef.organization || '-'}
+                          </div>
+                        </div>
                       )}
                     </div>
                   </td>
