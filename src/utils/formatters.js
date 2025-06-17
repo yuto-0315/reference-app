@@ -17,45 +17,103 @@ export const REFERENCE_TYPES = {
 // 各文献種別に必要なフィールド
 export const getReferenceTypeFields = (type) => {
   const commonFields = ['authors', 'title', 'year', 'publisher'];
-  
+
   const fieldConfigs = {
     'japanese-book': [
-      { key: 'authors', label: '著者', required: true, type: 'authors' },
-      { key: 'title', label: '書名', required: true, type: 'text' },
-      { key: 'publisher', label: '出版社', required: true, type: 'text' },
-      { key: 'year', label: '出版年', required: true, type: 'number' },
+      {
+        key: 'authors', label: '著者', required: true, type: 'authors',
+        description: '書籍の著者名を入力してください。複数いる場合は奥付どおりの順に設定してください。',
+      },
+      {
+        key: 'title', label: '書名', required: true, type: 'text',
+        description: '書籍の正式なタイトルを入力してください。',
+        example: 'はじめての世界音楽―諸民族の伝統音楽からポップスまで'
+      },
+      {
+        key: 'publisher', label: '出版社', required: true, type: 'text',
+        description: '書籍を出版した出版社名を入力してください。',
+        example: '音楽之友社'
+      },
+      {
+        key: 'year', label: '出版年', required: true, type: 'number',
+        description: '書籍が出版された年を西暦で入力してください。',
+        example: '2023'
+      },
       { key: 'editors', label: '編者名', required: false, type: 'text' },
       { key: 'translators', label: '訳者名', required: false, type: 'text' },
       { key: 'isbn', label: 'ISBN', required: false, type: 'text' },
-      { key: 'doi', label: 'DOI', required: false, type: 'text', placeholder: '10.1234/example' },
+      {
+        key: 'doi', label: 'DOI', required: false, type: 'text', placeholder: '10.1234/example',
+        description: 'デジタルオブジェクト識別子（DOI）がある場合は入力してください。',
+        example: '10.1234/example.doi'
+      },
       { key: 'url', label: 'URL', required: false, type: 'url' }
     ],
-    
+
     'japanese-journal': [
       { key: 'authors', label: '執筆者', required: true, type: 'authors' },
-      { key: 'title', label: '論文名', required: true, type: 'text' },
-      { key: 'editorialOrganization', label: '雑誌編集団体', required: false, type: 'text', placeholder: '音楽教育史学会' },
-      { key: 'journalName', label: '雑誌名', required: true, type: 'text' },
+      {
+        key: 'title', label: '論文名', required: true, type: 'text',
+        description: '論文の正式なタイトルを入力してください。',
+        example: '昭和初期の東京市三河台尋常小学校における音楽教育の実践'
+      },
+      {
+        key: 'editorialOrganization', label: '雑誌編集団体', required: false, type: 'text', placeholder: '音楽教育史学会',
+        description: '雑誌を編集・発行している学会や団体名を入力してください。',
+        example: '音楽教育史学会'
+      },
+      {
+        key: 'journalName', label: '雑誌名', required: true, type: 'text',
+        description: '論文が掲載された雑誌の正式名称を入力してください。',
+        example: '音楽教育史研究'
+      },
       { key: 'volume', label: '巻', required: false, type: 'text' },
       { key: 'issue', label: '号', required: false, type: 'text' },
       { key: 'year', label: '出版年', required: true, type: 'number' },
-      { key: 'pages', label: '掲載ページ', required: true, type: 'text' },
-      { key: 'doi', label: 'DOI', required: false, type: 'text', placeholder: '10.1234/example' },
+      {
+        key: 'pages', label: '掲載ページ', required: true, type: 'text',
+        description: '論文が掲載されているページ範囲を入力してください。',
+        example: '45-58'
+      },
+      {
+        key: 'doi', label: 'DOI', required: false, type: 'text', placeholder: '10.1234/example',
+        description: 'デジタルオブジェクト識別子（DOI）がある場合は入力してください。',
+        example: '10.1234/example.doi'
+      },
       { key: 'url', label: 'URL', required: false, type: 'url' }
     ],
-    
+
     'japanese-chapter': [
-      { key: 'authors', label: '執筆者', required: true, type: 'authors' },
-      { key: 'title', label: '論文名', required: true, type: 'text' },
+      {
+        key: 'authors', label: '執筆者', required: true, type: 'authors',
+        description: '書籍の章を執筆した著者名を入力してください。複数いる場合は奥付どおりの順に設定してください。'
+      },
+      {
+        key: 'title', label: '論文名', required: true, type: 'text',
+        description: '書籍の正式なタイトルを入力してください。',
+        example: '人民中国の光と影'
+      },
       { key: 'editors', label: '編者名', required: true, type: 'text' },
       { key: 'bookTitle', label: '書名', required: true, type: 'text' },
-      { key: 'publisher', label: '出版社', required: true, type: 'text' },
+      {
+        key: 'publisher', label: '出版社', required: true, type: 'text',
+        description: '出版社名を記載してください。',
+        example: '山川出版社'
+      },
       { key: 'year', label: '出版年', required: true, type: 'number' },
-      { key: 'pages', label: '掲載ページ', required: true, type: 'text' },
-      { key: 'doi', label: 'DOI', required: false, type: 'text', placeholder: '10.1234/example' },
+      {
+        key: 'pages', label: '掲載ページ', required: true, type: 'text',
+        description: '論文が掲載されているページ範囲を入力してください。',
+        example: '45-58'
+      },
+      {
+        key: 'doi', label: 'DOI', required: false, type: 'text', placeholder: '10.1234/example',
+        description: 'デジタルオブジェクト識別子（DOI）がある場合は入力してください。',
+        example: '10.1234/example.doi'
+      },
       { key: 'url', label: 'URL', required: false, type: 'url' }
     ],
-    
+
     'english-book': [
       { key: 'authors', label: 'Authors', required: true, type: 'authors' },
       { key: 'title', label: 'Book Title', required: true, type: 'text' },
@@ -63,10 +121,14 @@ export const getReferenceTypeFields = (type) => {
       { key: 'publisher', label: 'Publisher', required: true, type: 'text' },
       { key: 'year', label: 'Publication Year', required: true, type: 'number' },
       { key: 'isbn', label: 'ISBN', required: false, type: 'text' },
-      { key: 'doi', label: 'DOI', required: false, type: 'text', placeholder: '10.1234/example' },
+      {
+        key: 'doi', label: 'DOI', required: false, type: 'text', placeholder: '10.1234/example',
+        description: 'デジタルオブジェクト識別子（DOI）がある場合は入力してください。',
+        example: '10.1234/example.doi'
+      },
       { key: 'url', label: 'URL', required: false, type: 'url' }
     ],
-    
+
     'english-journal': [
       { key: 'authors', label: 'Authors', required: true, type: 'authors' },
       { key: 'title', label: 'Article Title', required: true, type: 'text' },
@@ -75,10 +137,14 @@ export const getReferenceTypeFields = (type) => {
       { key: 'issue', label: 'Issue', required: false, type: 'text' },
       { key: 'year', label: 'Publication Year', required: true, type: 'number' },
       { key: 'pages', label: 'Pages', required: true, type: 'text' },
-      { key: 'doi', label: 'DOI', required: false, type: 'text', placeholder: '10.1234/example' },
+      {
+        key: 'doi', label: 'DOI', required: false, type: 'text', placeholder: '10.1234/example',
+        description: 'デジタルオブジェクト識別子（DOI）がある場合は入力してください。',
+        example: '10.1234/example.doi'
+      },
       { key: 'url', label: 'URL', required: false, type: 'url' }
     ],
-    
+
     'english-chapter': [
       { key: 'authors', label: 'Authors', required: true, type: 'authors' },
       { key: 'title', label: 'Chapter Title', required: true, type: 'text' },
@@ -87,10 +153,14 @@ export const getReferenceTypeFields = (type) => {
       { key: 'publisher', label: 'Publisher', required: true, type: 'text' },
       { key: 'year', label: 'Publication Year', required: true, type: 'number' },
       { key: 'pages', label: 'Pages', required: true, type: 'text' },
-      { key: 'doi', label: 'DOI', required: false, type: 'text', placeholder: '10.1234/example' },
+      {
+        key: 'doi', label: 'DOI', required: false, type: 'text', placeholder: '10.1234/example',
+        description: 'デジタルオブジェクト識別子（DOI）がある場合は入力してください。',
+        example: '10.1234/example.doi'
+      },
       { key: 'url', label: 'URL', required: false, type: 'url' }
     ],
-    
+
     'translation': [
       { key: 'originalAuthorLastName', label: '原著者姓', required: true, type: 'text' },
       { key: 'originalAuthorFirstName', label: '原著者名', required: true, type: 'text' },
@@ -103,7 +173,7 @@ export const getReferenceTypeFields = (type) => {
       { key: 'originalPublisher', label: '原書出版社', required: true, type: 'text' },
       { key: 'originalYear', label: '原書出版年', required: true, type: 'number' }
     ],
-    
+
     'dictionary': [
       { key: 'authors', label: '項目執筆者', required: true, type: 'authors' },
       { key: 'title', label: '項目名', required: true, type: 'text' },
@@ -113,7 +183,7 @@ export const getReferenceTypeFields = (type) => {
       { key: 'year', label: '出版年', required: true, type: 'number' },
       { key: 'pages', label: '掲載ページ', required: true, type: 'text' }
     ],
-    
+
     'score-domestic': [
       { key: 'composer', label: '作曲者名', required: true, type: 'text' },
       { key: 'title', label: '曲名', required: true, type: 'text' },
@@ -123,7 +193,7 @@ export const getReferenceTypeFields = (type) => {
       { key: 'publisher', label: '出版社', required: true, type: 'text' },
       { key: 'year', label: '出版年', required: true, type: 'number' }
     ],
-    
+
     'score-foreign': [
       { key: 'composer', label: '作曲者名', required: true, type: 'text' },
       { key: 'title', label: '曲名', required: true, type: 'text' },
@@ -134,14 +204,14 @@ export const getReferenceTypeFields = (type) => {
       { key: 'publisher', label: '出版社', required: true, type: 'text' },
       { key: 'year', label: '出版年', required: true, type: 'number' }
     ],
-    
+
     'website': [
       { key: 'organization', label: 'ウェブサイト運営団体名', required: true, type: 'text' },
       { key: 'title', label: 'ページタイトル', required: true, type: 'text' },
       { key: 'url', label: 'URL', required: true, type: 'url' },
       { key: 'accessDate', label: '閲覧年月日', required: true, type: 'date' }
     ],
-    
+
     'audiovisual': [
       { key: 'composer', label: '作曲者名', required: true, type: 'text' },
       { key: 'title', label: '曲名', required: true, type: 'text' },
@@ -161,23 +231,23 @@ export const getReferenceTypeFields = (type) => {
 // 著者名をフォーマットするユーティリティ関数
 export const formatAuthors = (authors, isJapanese = true, forCitation = false) => {
   if (!authors || authors.length === 0) return '';
-  
+
   if (forCitation) {
     // 引用形式では筆頭著者の姓のみ
     const firstAuthor = authors[0];
     return firstAuthor.lastName || '';
   }
-  
+
   // 3名まで：全員を記載し、中黒でつなぐ
   // 4名以上：筆頭著者のみ記載し、「ほか」を付加
   if (authors.length <= 3) {
     if (isJapanese) {
-      return authors.map(author => 
+      return authors.map(author =>
         `${author.lastName}${author.firstName}`
       ).join('・');
     } else {
-      return authors.map((author, index) => 
-        index === 0 
+      return authors.map((author, index) =>
+        index === 0
           ? `${author.lastName}, ${author.firstName}`
           : `${author.firstName} ${author.lastName}`
       ).join(', ');
@@ -198,7 +268,7 @@ export const formatCitation = (reference, page = '') => {
   const year = reference.year;
   const formattedPage = page ? formatCitationPageRange(page) : '';
   const pageText = formattedPage ? `: ${formattedPage}` : '';
-  
+
   // 著者名の取得
   let authorName = '';
   if (type === 'translation') {
@@ -212,14 +282,14 @@ export const formatCitation = (reference, page = '') => {
       authorName = reference.authors[0].lastName || '';
     }
   }
-  
+
   return `(${authorName} ${year}${pageText})`;
 };
 
 // 参考文献一覧の形式を生成
 export const formatReference = (reference) => {
   const type = reference.type;
-  
+
   switch (type) {
     case 'japanese-book':
       return formatJapaneseBook(reference);
@@ -263,7 +333,7 @@ const formatJapaneseJournal = (ref) => {
   const authorText = formatAuthors(authors, true, false);
   const volumeIssue = formatVolumeIssue(volume, issue);
   const formattedPages = formatPageRange(pages);
-  
+
   // 編集団体がある場合とない場合で形式を変える
   if (editorialOrganization) {
     return `${authorText}「${title}」${editorialOrganization}編『${journalName}』${volumeIssue}、${year}年、${formattedPages}頁。`;
@@ -294,7 +364,7 @@ const formatEnglishJournal = (ref) => {
   } else if (volume) {
     volumeIssue = ` ${volume}`;
   }
-  
+
   const formattedPages = pages ? formatPageRange(pages) : '';
   return `${authorText}, "${title}", *${journalName}*${volumeIssue}. (${year}) pp. ${formattedPages}.`;
 };
@@ -354,7 +424,7 @@ const formatAudiovisual = (ref) => {
 export const formatNumber = (num) => {
   if (!num) return '';
   const numStr = num.toString();
-  
+
   // 1桁の場合は全角、2桁以上の場合は半角
   if (numStr.length === 1) {
     const zenkakuMap = {
@@ -370,7 +440,7 @@ export const formatNumber = (num) => {
 // ページ範囲をフォーマットする関数（波線使用）
 export const formatPageRange = (pages) => {
   if (!pages) return '';
-  
+
   // ハイフンを波線に変換し、数字を適切にフォーマット
   return pages
     .replace(/-/g, '〜') // ハイフンを波線に変換
@@ -380,7 +450,7 @@ export const formatPageRange = (pages) => {
 // 引用でのページ範囲をフォーマットする関数（ハイフン使用）
 export const formatCitationPageRange = (pages) => {
   if (!pages) return '';
-  
+
   // 引用ではハイフンのまま、数字を適切にフォーマット
   return pages
     .replace(/\b(\d+)\b/g, (match) => formatNumber(match)); // 数字をフォーマット
@@ -412,12 +482,12 @@ export const migrateReferenceData = (reference) => {
       }]
     };
   }
-  
+
   // 既に複数著者形式の場合はそのまま
   if (reference.authors && Array.isArray(reference.authors)) {
     return reference;
   }
-  
+
   // authorsが存在しない場合はデフォルトで空の配列を設定
   return {
     ...reference,
