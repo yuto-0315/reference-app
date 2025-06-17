@@ -9,6 +9,13 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
   // 複数著者の表示用ユーティリティ関数
   const getAuthorDisplayName = (migratedRef) => {
     if (migratedRef.type === 'translation') {
+      // 新しい形式の翻訳書
+      if (migratedRef.originalAuthors && migratedRef.originalAuthors.length > 0) {
+        return migratedRef.originalAuthors
+          .map(author => `${author.lastName}${author.firstName}`)
+          .join('・');
+      }
+      // 古い形式の翻訳書（後方互換性）
       return migratedRef.originalAuthorLastName || '';
     }
     if (migratedRef.authors && migratedRef.authors.length > 0) {
