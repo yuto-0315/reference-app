@@ -15,6 +15,23 @@ export const REFERENCE_TYPES = {
   'audiovisual': '視聴覚資料'
 };
 
+// 文献種別のヒント（該当する文献の例）
+export const REFERENCE_TYPE_HINTS = {
+  'japanese-book': '一般的な書籍・専門書・教材など',
+  'japanese-journal': '学会誌・研究紀要・専門雑誌の論文など',
+  'japanese-chapter': '論文集・編著書の章・記念論文集の論文など',
+  'organization-book': '教科書・指導要領・白書・報告書など',
+  'english-book': '洋書・海外の専門書・原書など',
+  'english-journal': '海外学術誌・国際誌の論文など',
+  'english-chapter': '海外の論文集・編著書の章など',
+  'translation': '翻訳された書籍・海外文献の日本語版など',
+  'dictionary': '辞書・事典・用語集の項目など',
+  'score-domestic': '国内出版の楽譜・曲集など',
+  'score-foreign': '海外出版の楽譜・原版楽譜など',
+  'website': 'ウェブサイト・オンライン資料・デジタルコンテンツなど',
+  'audiovisual': 'CD・DVD・録音資料・映像資料など'
+};
+
 // 各文献種別に必要なフィールド
 export const getReferenceTypeFields = (type) => {
   const commonFields = ['authors', 'title', 'year', 'publisher'];

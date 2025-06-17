@@ -195,6 +195,23 @@ body {
   min-height: 80px;
 }
 
+.field-hint {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background-color: var(--color-surfaceHover);
+  border: 1px solid var(--color-border-primary);
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.field-hint .hint-icon {
+  font-size: 14px;
+}
+
 .button-group {
   display: flex;
   gap: 10px;
