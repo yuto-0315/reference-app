@@ -23,6 +23,9 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
       if (!baseData.originalAuthors || baseData.originalAuthors.length === 0) {
         baseData.originalAuthors = [{ lastName: '', firstName: '', reading: '' }];
       }
+      if (!baseData.originalAuthorsEnglish || baseData.originalAuthorsEnglish.length === 0) {
+        baseData.originalAuthorsEnglish = [{ lastName: '', firstName: '', reading: '' }];
+      }
       if (!baseData.translators || baseData.translators.length === 0) {
         baseData.translators = [{ lastName: '', firstName: '', reading: '' }];
       }
@@ -71,6 +74,7 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
     // 翻訳書の場合は原著者と訳者フィールドを初期化
     if (newType === 'translation') {
       newFormData.originalAuthors = [{ lastName: '', firstName: '', reading: '' }];
+      newFormData.originalAuthorsEnglish = [{ lastName: '', firstName: '', reading: '' }];
       newFormData.translators = [{ lastName: '', firstName: '', reading: '' }];
     }
     
@@ -148,14 +152,26 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
 
     // 翻訳書の場合は原著者と訳者の検証を行う
     if (formData.type === 'translation') {
-      // 原著者の検証
+      // 原著者（日本語）の検証
       if (formData.originalAuthors) {
         formData.originalAuthors.forEach((author, index) => {
           if (!author.lastName) {
-            newErrors[`originalAuthors.${index}.lastName`] = '原著者の姓は必須項目です';
+            newErrors[`originalAuthors.${index}.lastName`] = '原著者（日本語）の姓は必須項目です';
           }
           if (!author.firstName) {
-            newErrors[`originalAuthors.${index}.firstName`] = '原著者の名は必須項目です';
+            newErrors[`originalAuthors.${index}.firstName`] = '原著者（日本語）の名は必須項目です';
+          }
+        });
+      }
+
+      // 原著者（英語）の検証
+      if (formData.originalAuthorsEnglish) {
+        formData.originalAuthorsEnglish.forEach((author, index) => {
+          if (!author.lastName) {
+            newErrors[`originalAuthorsEnglish.${index}.lastName`] = '原著者（原語）の姓は必須項目です';
+          }
+          if (!author.firstName) {
+            newErrors[`originalAuthorsEnglish.${index}.firstName`] = '原著者（原語）の名は必須項目です';
           }
         });
       }
@@ -212,12 +228,8 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
     }
 
     // 翻訳書の特別なフィールド処理
-    if (key === 'originalAuthors') {
-      return renderTranslationAuthorsField('originalAuthors', '原著者');
-    }
-
-    if (key === 'translators') {
-      return renderTranslationAuthorsField('translators', '訳者');
+    if (type === 'translation-authors') {
+      return renderTranslationAuthorsField(key, label);
     }
     
     const value = formData[key] || '';
@@ -412,14 +424,6 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
       </div>
 
       {fields.map(renderField)}
-
-      {/* 翻訳書の場合は原著者と訳者のフィールドを表示 */}
-      {formData.type === 'translation' && (
-        <>
-          {renderTranslationAuthorsField('originalAuthors', '原著者')}
-          {renderTranslationAuthorsField('translators', '訳者')}
-        </>
-      )}
 
       <div className="button-group">
         <button type="submit" className="btn btn-primary">
