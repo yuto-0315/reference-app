@@ -3,11 +3,25 @@ import { REFERENCE_TYPES, REFERENCE_TYPE_HINTS, getReferenceTypeFields } from '.
 import InfoTooltip from './InfoTooltip';
 
 const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
-  const [formData, setFormData] = useState({
-    type: 'japanese-book',
-    authors: [{ lastName: '', firstName: '', reading: '' }],
-    ...initialData
-  });
+  // 初期データの著者フィールド設定を調整
+  const getInitialFormData = () => {
+    const baseData = {
+      type: 'japanese-book',
+      ...initialData
+    };
+    
+    // 著者フィールドがある文献タイプの場合のみ著者を設定
+    const fields = getReferenceTypeFields(baseData.type);
+    const hasAuthorsField = fields.some(field => field.key === 'authors');
+    
+    if (hasAuthorsField && (!baseData.authors || baseData.authors.length === 0)) {
+      baseData.authors = [{ lastName: '', firstName: '', reading: '' }];
+    }
+    
+    return baseData;
+  };
+
+  const [formData, setFormData] = useState(getInitialFormData());
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -31,10 +45,20 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
   };
 
   const handleTypeChange = (newType) => {
-    setFormData(prev => ({ 
-      type: newType,
-      authors: [{ lastName: '', firstName: '', reading: '' }]
-    }));
+    // 新しいタイプに著者フィールドがあるかチェック
+    const newFields = getReferenceTypeFields(newType);
+    const hasAuthorsField = newFields.some(field => field.key === 'authors');
+    
+    const newFormData = { 
+      type: newType
+    };
+    
+    // 著者フィールドがある場合のみ著者を初期化
+    if (hasAuthorsField) {
+      newFormData.authors = [{ lastName: '', firstName: '', reading: '' }];
+    }
+    
+    setFormData(prev => ({ ...newFormData }));
     setErrors({});
   };
 
@@ -66,15 +90,18 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
   const validateForm = () => {
     const newErrors = {};
     
-    // 著者の検証
-    formData.authors.forEach((author, index) => {
-      if (!author.lastName) {
-        newErrors[`authors.${index}.lastName`] = '姓は必須項目です';
-      }
-      if (!author.firstName) {
-        newErrors[`authors.${index}.firstName`] = '名は必須項目です';
-      }
-    });
+    // 著者フィールドがある文献タイプの場合のみ著者の検証を行う
+    const hasAuthorsField = fields.some(field => field.key === 'authors');
+    if (hasAuthorsField) {
+      formData.authors.forEach((author, index) => {
+        if (!author.lastName) {
+          newErrors[`authors.${index}.lastName`] = '姓は必須項目です';
+        }
+        if (!author.firstName) {
+          newErrors[`authors.${index}.firstName`] = '名は必須項目です';
+        }
+      });
+    }
     
     // その他のフィールドの検証
     fields.forEach(field => {
@@ -98,10 +125,11 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
     if (validateForm()) {
       onSubmit(formData);
       // 新規追加・編集問わずフォームをリセット
-      setFormData({ 
-        type: 'japanese-book',
-        authors: [{ lastName: '', firstName: '', reading: '' }]
-      });
+      const resetData = { type: 'japanese-book' };
+      // 日本語書籍は著者フィールドがあるので著者を初期化
+      resetData.authors = [{ lastName: '', firstName: '', reading: '' }];
+      
+      setFormData(resetData);
       setErrors({});
     }
   };

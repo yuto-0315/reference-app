@@ -1,5 +1,15 @@
 // アプリケーションの変更履歴
 export const CHANGELOG = [
+    {
+    version: '1.2.1',
+    date: '2025-06-17',
+    changes: [
+      {
+        type: 'fix',
+        description: '団体出版本（教科書・指導要領など)を選択したときに、追加ボタンが押せなくなる問題を修正'
+      }
+    ]
+  },
   {
     version: '1.2.0',
     date: '2025-06-17',
