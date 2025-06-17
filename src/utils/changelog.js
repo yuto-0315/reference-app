@@ -66,7 +66,7 @@ export const CHANGE_TYPE_LABELS = {
 // 変更タイプのアイコン
 export const CHANGE_TYPE_ICONS = {
   feature: '✨',
-  fix: '🐛',
+  fix: '🔧',
   improvement: '⚡',
   security: '🔒',
   breaking: '💥'
