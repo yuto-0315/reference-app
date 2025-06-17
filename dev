@@ -1,1 +1,13 @@
 Script started on Tue Jun 17 11:53:52 2025
+[1m[7m%[27m[1m[0m                                                                                                                                                 [0m[27m[24m[Jnakataniyuutomo@nakataniyuutomonoMacBook-Pro reference-app % [K[?2004hscript dev[10D>....                                                                               
+権藤敦子「昭和初期の東京市三河台尋常小学校における音楽教育の実践」音楽教育史学会[K
+編『音楽教育史研究』第8号、2005年、13～25頁。[K
+[K
+との記載がありました。[K
+雑誌編集団体名を任意で設定できるようにしてください。(書籍情報に)[K
+[K
+formatters.jsに{ key: 'editorialOrganization', label: '雑誌編集団体名', required: false, type: 'text', placeholder: '音楽教育史学会' },[K
+を追加したので、他を反映してください。[K
+[K
+[K
+あと、参考文献の表にチェックボックスのようなものを作成して、ついているもののみコピペで📚 参考文献一覧から取得できるようにしてください。(一括オン[7m [27mオフ必要)[K[A[A[1B[A[1B[11A[61Cscript dev[1B[K[1B[K[1B[K[1B[K[1B[K[1B[K[1B[K[1B[K[1B[K[1B[K[1B[K[1B[K[12A[71C[10D          [10D
