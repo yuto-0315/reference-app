@@ -4,8 +4,28 @@ import { formatReference, formatCitation, migrateReferenceData } from '../utils/
 const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, onToggleAll }) => {
   const [citationPage, setCitationPage] = useState('');
   const [selectedRef, setSelectedRef] = useState('');
+  const [sortBy, setSortBy] = useState('author'); // 'author', 'year', 'title'
+  const [sortOrder, setSortOrder] = useState('asc'); // 'asc', 'desc'
 
-  // チェックされた参考文献のみを取得し、著者名でソート
+  // 複数著者の表示用ユーティリティ関数
+  const getAuthorDisplayName = (migratedRef) => {
+    if (migratedRef.type === 'translation') {
+      return migratedRef.originalAuthorLastName || '';
+    }
+    if (migratedRef.authors && migratedRef.authors.length > 0) {
+      const firstAuthor = migratedRef.authors[0];
+      const displayName = `${firstAuthor.lastName}${firstAuthor.firstName}`;
+      
+      if (migratedRef.authors.length > 1) {
+        const otherCount = migratedRef.authors.length - 1;
+        return `${displayName}ほか${otherCount}`;
+      }
+      return displayName;
+    }
+    return migratedRef.composer || migratedRef.organization || '';
+  };
+
+  // チェックされた参考文献のみを取得し、ソート
   const getCheckedReferences = () => {
     return references
       .filter(ref => checkedReferences.has(ref.id))
@@ -13,20 +33,36 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
   };
 
   const sortedReferences = [...getCheckedReferences()].sort((a, b) => {
-    const getAuthorName = (ref) => {
-      if (ref.type === 'translation') {
-        return ref.originalAuthorLastName || '';
-      }
-      if (ref.authors && ref.authors.length > 0) {
-        return ref.authors[0].lastName || '';
-      }
-      return ref.composer || ref.organization || '';
-    };
-
-    const authorA = getAuthorName(a);
-    const authorB = getAuthorName(b);
+    let compareValue = 0;
     
-    return authorA.localeCompare(authorB, 'ja');
+    switch (sortBy) {
+      case 'author':
+        const getAuthorName = (ref) => {
+          if (ref.type === 'translation') {
+            return ref.originalAuthorLastName || '';
+          }
+          if (ref.authors && ref.authors.length > 0) {
+            return ref.authors[0].lastName || '';
+          }
+          return ref.composer || ref.organization || '';
+        };
+        const authorA = getAuthorName(a);
+        const authorB = getAuthorName(b);
+        compareValue = authorA.localeCompare(authorB, 'ja');
+        break;
+      case 'year':
+        compareValue = (a.year || 0) - (b.year || 0);
+        break;
+      case 'title':
+        const titleA = a.title || '';
+        const titleB = b.title || '';
+        compareValue = titleA.localeCompare(titleB, 'ja');
+        break;
+      default:
+        compareValue = 0;
+    }
+    
+    return sortOrder === 'asc' ? compareValue : -compareValue;
   });
 
   const generateReferenceList = () => {
@@ -40,6 +76,20 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
     if (!ref) return '';
     const migratedRef = migrateReferenceData(ref);
     return formatCitation(migratedRef, citationPage);
+  };
+
+  const handleSort = (field) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+  };
+
+  const getSortIcon = (field) => {
+    if (sortBy !== field) return '↕️';
+    return sortOrder === 'asc' ? '↑' : '↓';
   };
 
   return (
@@ -61,9 +111,7 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
             <option value="">選択してください</option>
             {references.map(ref => {
               const migratedRef = migrateReferenceData(ref);
-              const authorName = migratedRef.authors && migratedRef.authors.length > 0 
-                ? `${migratedRef.authors[0].lastName}${migratedRef.authors[0].firstName}`
-                : migratedRef.composer || migratedRef.organization || 'タイトルなし';
+              const authorName = getAuthorDisplayName(migratedRef);
               
               return (
                 <option key={ref.id} value={ref.id}>
@@ -127,6 +175,31 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
           </div>
         </div>
 
+        {/* 並べ替えコントロール */}
+        {checkedReferences.size > 1 && (
+          <div className="sort-controls" style={{ marginBottom: '15px' }}>
+            <span className="sort-label">並べ替え:</span>
+            <button 
+              className={`sort-btn ${sortBy === 'author' ? 'active' : ''}`}
+              onClick={() => handleSort('author')}
+            >
+              著者名 {getSortIcon('author')}
+            </button>
+            <button 
+              className={`sort-btn ${sortBy === 'year' ? 'active' : ''}`}
+              onClick={() => handleSort('year')}
+            >
+              発行年 {getSortIcon('year')}
+            </button>
+            <button 
+              className={`sort-btn ${sortBy === 'title' ? 'active' : ''}`}
+              onClick={() => handleSort('title')}
+            >
+              タイトル {getSortIcon('title')}
+            </button>
+          </div>
+        )}
+
         {references.length === 0 ? (
           <div className="preview-area">
             参考文献を追加すると、ここに選択肢が表示されます。
@@ -137,9 +210,7 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
             <div className="reference-checklist">
               {references.map(ref => {
                 const migratedRef = migrateReferenceData(ref);
-                const authorName = migratedRef.authors && migratedRef.authors.length > 0 
-                  ? `${migratedRef.authors[0].lastName}${migratedRef.authors[0].firstName}`
-                  : migratedRef.composer || migratedRef.organization || 'タイトルなし';
+                const authorName = getAuthorDisplayName(migratedRef);
                 
                 return (
                   <div key={ref.id} className="reference-check-item">

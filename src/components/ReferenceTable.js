@@ -6,6 +6,24 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
   const [sortBy, setSortBy] = useState('year'); // 'year', 'reading', 'title'
   const [sortOrder, setSortOrder] = useState('desc'); // 'asc', 'desc'
 
+  // 複数著者の表示用ユーティリティ関数
+  const getAuthorDisplayName = (migratedRef) => {
+    if (migratedRef.type === 'translation') {
+      return migratedRef.originalAuthorLastName || '';
+    }
+    if (migratedRef.authors && migratedRef.authors.length > 0) {
+      const firstAuthor = migratedRef.authors[0];
+      const displayName = `${firstAuthor.lastName}${firstAuthor.firstName}`;
+      
+      if (migratedRef.authors.length > 1) {
+        const otherCount = migratedRef.authors.length - 1;
+        return `${displayName}ほか${otherCount}`;
+      }
+      return displayName;
+    }
+    return migratedRef.composer || migratedRef.organization || '';
+  };
+
   // 検索とソート機能
   const filteredAndSortedReferences = useMemo(() => {
     let filtered = references.filter(ref => {
@@ -178,14 +196,10 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                   </td>
                   <td className="author-cell">
                     <div className="author-name">
-                      {migratedRef.authors?.map((author, index) => (
-                        <div key={index} className="author-entry">
-                          {author.lastName} {author.firstName}
-                          {author.reading && (
-                            <div className="author-reading">({author.reading})</div>
-                          )}
-                        </div>
-                      ))}
+                      {getAuthorDisplayName(migratedRef)}
+                      {migratedRef.authors?.[0]?.reading && (
+                        <div className="author-reading">({migratedRef.authors[0].reading})</div>
+                      )}
                     </div>
                   </td>
                   <td className="title-cell">
