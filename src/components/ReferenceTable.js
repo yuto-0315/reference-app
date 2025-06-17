@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { formatCitation, formatReference } from '../utils/formatters';
+import { formatCitation, formatReference, migrateReferenceData } from '../utils/formatters';
 
 const ReferenceTable = ({ references, onEdit, onDelete, onCopy }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -9,10 +9,18 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy }) => {
   // 検索とソート機能
   const filteredAndSortedReferences = useMemo(() => {
     let filtered = references.filter(ref => {
+      const migratedRef = migrateReferenceData(ref);
       const searchLower = searchTerm.toLowerCase();
+      
+      // 複数著者に対応した検索
+      const authorMatches = migratedRef.authors?.some(author => 
+        author.lastName?.toLowerCase().includes(searchLower) ||
+        author.firstName?.toLowerCase().includes(searchLower) ||
+        author.reading?.toLowerCase().includes(searchLower)
+      ) || false;
+      
       return (
-        ref.authorLastName?.toLowerCase().includes(searchLower) ||
-        ref.authorFirstName?.toLowerCase().includes(searchLower) ||
+        authorMatches ||
         ref.title?.toLowerCase().includes(searchLower) ||
         ref.publisher?.toLowerCase().includes(searchLower) ||
         ref.journalName?.toLowerCase().includes(searchLower) ||
@@ -22,6 +30,8 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy }) => {
 
     // ソート処理
     filtered.sort((a, b) => {
+      const migratedA = migrateReferenceData(a);
+      const migratedB = migrateReferenceData(b);
       let compareValue = 0;
       
       switch (sortBy) {
@@ -29,8 +39,9 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy }) => {
           compareValue = (a.year || 0) - (b.year || 0);
           break;
         case 'reading':
-          const aReading = a.authorReading || a.authorLastName || '';
-          const bReading = b.authorReading || b.authorLastName || '';
+          // 筆頭著者の読み仮名または姓で比較
+          const aReading = migratedA.authors?.[0]?.reading || migratedA.authors?.[0]?.lastName || '';
+          const bReading = migratedB.authors?.[0]?.reading || migratedB.authors?.[0]?.lastName || '';
           compareValue = aReading.localeCompare(bReading, 'ja');
           break;
         case 'title':
@@ -132,76 +143,81 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy }) => {
             </tr>
           </thead>
           <tbody>
-            {filteredAndSortedReferences.map((ref) => (
-              <tr key={ref.id}>
-                <td className="author-cell">
-                  <div className="author-name">
-                    {ref.authorLastName} {ref.authorFirstName}
-                  </div>
-                  {ref.authorReading && (
-                    <div className="author-reading">
-                      ({ref.authorReading})
+            {filteredAndSortedReferences.map((ref) => {
+              const migratedRef = migrateReferenceData(ref);
+              return (
+                <tr key={ref.id}>
+                  <td className="author-cell">
+                    <div className="author-name">
+                      {migratedRef.authors?.map((author, index) => (
+                        <div key={index} className="author-entry">
+                          {author.lastName} {author.firstName}
+                          {author.reading && (
+                            <div className="author-reading">({author.reading})</div>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                  )}
-                </td>
-                <td className="title-cell">
-                  <div className="title-text">{ref.title}</div>
-                </td>
-                <td className="year-cell">
-                  {ref.year}
-                </td>
-                <td className="publisher-cell">
-                  {ref.publisher || ref.journalName || '-'}
-                </td>
-                <td className="link-cell">
-                  {getExternalLink(ref) ? (
-                    <a 
-                      href={getExternalLink(ref)} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="external-link"
-                      title={ref.doi ? `DOI: ${ref.doi}` : 'リンクを開く'}
-                    >
-                      🔗
-                    </a>
-                  ) : (
-                    <span className="no-link">-</span>
-                  )}
-                </td>
-                <td className="actions-cell">
-                  <div className="action-buttons">
-                    <button
-                      onClick={() => copyFormatted(ref, 'citation')}
-                      className="btn btn-sm btn-copy"
-                      title="引用形式でコピー"
-                    >
-                      📋
-                    </button>
-                    <button
-                      onClick={() => copyFormatted(ref, 'reference')}
-                      className="btn btn-sm btn-copy"
-                      title="参考文献形式でコピー"
-                    >
-                      📖
-                    </button>
-                    <button
-                      onClick={() => onEdit(ref)}
-                      className="btn btn-sm btn-edit"
-                      title="編集"
-                    >
-                      ✏️
-                    </button>
-                    <button
-                      onClick={() => onDelete(ref.id)}
-                      className="btn btn-sm btn-delete"
-                      title="削除"
-                    >
-                      🗑️
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="title-cell">
+                    <div className="title-text">{ref.title}</div>
+                  </td>
+                  <td className="year-cell">
+                    {ref.year}
+                  </td>
+                  <td className="publisher-cell">
+                    {ref.publisher || ref.journalName || '-'}
+                  </td>
+                  <td className="link-cell">
+                    {getExternalLink(ref) ? (
+                      <a 
+                        href={getExternalLink(ref)} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="external-link"
+                        title={ref.doi ? `DOI: ${ref.doi}` : 'リンクを開く'}
+                      >
+                        🔗
+                      </a>
+                    ) : (
+                      <span className="no-link">-</span>
+                    )}
+                  </td>
+                  <td className="actions-cell">
+                    <div className="action-buttons">
+                      <button
+                        onClick={() => copyFormatted(migratedRef, 'citation')}
+                        className="btn btn-sm btn-copy"
+                        title="引用形式でコピー"
+                      >
+                        📋
+                      </button>
+                      <button
+                        onClick={() => copyFormatted(migratedRef, 'reference')}
+                        className="btn btn-sm btn-copy"
+                        title="参考文献形式でコピー"
+                      >
+                        📖
+                      </button>
+                      <button
+                        onClick={() => onEdit(migratedRef)}
+                        className="btn btn-sm btn-edit"
+                        title="編集"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        onClick={() => onDelete(ref.id)}
+                        className="btn btn-sm btn-delete"
+                        title="削除"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
