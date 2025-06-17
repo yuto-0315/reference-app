@@ -1,6 +1,16 @@
 // アプリケーションの変更履歴
 export const CHANGELOG = [
     {
+    version: '1.2.2',
+    date: '2025-06-17',
+    changes: [
+      {
+        type: 'feature',
+        description: 'スタイルを改善し、多様な配色を選択できるように変更'
+      }
+    ]
+  },
+  {
     version: '1.2.1',
     date: '2025-06-17',
     changes: [
@@ -39,7 +49,7 @@ export const CHANGELOG = [
       {
         type: 'fix',
         description: '引用形式の修正：著者の姓と発行年の間に全角スペースを使用するように変更'
-      }, 
+      },
       {
         type: 'fix',
         description: '引用形式の修正：年とページの間のコロン後の半角スペースを削除'

@@ -1,0 +1,24 @@
+.version-info {
+  margin-top: 10px;
+}
+
+.version-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 12px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  font-size: 0.8rem;
+  backdrop-filter: blur(10px);
+}
+
+.version-label {
+  font-weight: 600;
+  color: var(--color-text-onSurface);
+}
+
+.update-date {
+  color: var(--color-text-onSurface);
+  opacity: 0.8;
+}
