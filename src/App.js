@@ -18,6 +18,7 @@ function App() {
   const [alert, setAlert] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
   const [showFormatGuide, setShowFormatGuide] = useState(false);
+  const [checkedReferences, setCheckedReferences] = useState(new Set());
 
   // ローカルストレージから自動読み込み（重複除去付き）
   useEffect(() => {
@@ -70,6 +71,11 @@ function App() {
   const deleteReference = (id) => {
     if (window.confirm('この参考文献を削除しますか？')) {
       setReferences(prev => prev.filter(ref => ref.id !== id));
+      setCheckedReferences(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(id);
+        return newSet;
+      });
       if (selectedReference && selectedReference.id === id) {
         setSelectedReference(null);
       }
@@ -182,6 +188,31 @@ function App() {
     }
   };
 
+  // チェック状態の管理
+  const toggleReferenceCheck = (referenceId) => {
+    setCheckedReferences(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(referenceId)) {
+        newSet.delete(referenceId);
+      } else {
+        newSet.add(referenceId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleAllReferences = (checked) => {
+    if (checked) {
+      setCheckedReferences(new Set(references.map(ref => ref.id)));
+    } else {
+      setCheckedReferences(new Set());
+    }
+  };
+
+  const getCheckedReferences = () => {
+    return references.filter(ref => checkedReferences.has(ref.id));
+  };
+
   return (
     <div className="app">
       <header className="header">
@@ -234,7 +265,10 @@ function App() {
         <div className="preview-section">
           <PreviewSection 
             references={references}
+            checkedReferences={checkedReferences}
             onCopy={copyToClipboard}
+            onToggleCheck={toggleReferenceCheck}
+            onToggleAll={toggleAllReferences}
           />
         </div>
       </div>
@@ -244,6 +278,8 @@ function App() {
         onEdit={setSelectedReference}
         onDelete={deleteReference}
         onCopy={copyToClipboard}
+        onToggleCheck={toggleReferenceCheck}
+        checkedReferences={checkedReferences}
       />
 
       <FormatGuideModal 
