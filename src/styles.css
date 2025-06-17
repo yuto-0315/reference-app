@@ -1250,6 +1250,7 @@ body {
   justify-content: center;
   z-index: 10000;
   animation: fadeIn 0.2s ease;
+  backdrop-filter: blur(2px);
 }
 
 .info-modal {
@@ -1261,6 +1262,8 @@ body {
   overflow: hidden;
   box-shadow: 0 8px 32px var(--color-shadow);
   animation: slideIn 0.3s ease;
+  position: relative;
+  z-index: 10001;
 }
 
 .info-modal-header {
