@@ -97,13 +97,12 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
     e.preventDefault();
     if (validateForm()) {
       onSubmit(formData);
-      if (!initialData) {
-        // 新規追加の場合のみフォームをリセット
-        setFormData({ 
-          type: 'japanese-book',
-          authors: [{ lastName: '', firstName: '', reading: '' }]
-        });
-      }
+      // 新規追加・編集問わずフォームをリセット
+      setFormData({ 
+        type: 'japanese-book',
+        authors: [{ lastName: '', firstName: '', reading: '' }]
+      });
+      setErrors({});
     }
   };
 
