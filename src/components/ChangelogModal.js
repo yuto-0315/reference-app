@@ -39,11 +39,8 @@ const ChangelogModal = ({ isOpen, onClose }) => {
                         {CHANGE_TYPE_ICONS[change.type]}
                       </span>
                       <div className="change-content">
-                        <span className="change-type">
-                          {CHANGE_TYPE_LABELS[change.type]}
-                        </span>
                         <span className="change-description">
-                          {change.description}
+                          {CHANGE_TYPE_LABELS[change.type]}：{change.description}
                         </span>
                       </div>
                     </div>
