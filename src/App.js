@@ -6,6 +6,7 @@ import PreviewSection from './components/PreviewSection';
 import FileControls from './components/FileControls';
 import ThemeToggle from './components/ThemeToggle';
 import FormatGuideModal from './components/FormatGuideModal';
+import Toast from './components/Toast';
 import { formatCitation, formatReference, getReferenceTypeFields } from './utils/formatters';
 import { loadFromStorage, saveToStorage, isDuplicate, validateAndCleanData } from './utils/dataUtils';
 
@@ -15,7 +16,7 @@ function App() {
   const [references, setReferences] = useState([]);
   const [selectedReference, setSelectedReference] = useState(null);
   const [alert, setAlert] = useState(null);
-  const [copyFeedback, setCopyFeedback] = useState('');
+  const [toastMessage, setToastMessage] = useState('');
   const [showFormatGuide, setShowFormatGuide] = useState(false);
 
   // ローカルストレージから自動読み込み（重複除去付き）
@@ -161,8 +162,7 @@ function App() {
 
   const copyToClipboard = (text, feedbackMessage) => {
     navigator.clipboard.writeText(text).then(() => {
-      setCopyFeedback(feedbackMessage);
-      setTimeout(() => setCopyFeedback(''), 2000);
+      setToastMessage(feedbackMessage);
     }).catch(() => {
       showAlert('コピーに失敗しました', 'error');
     });
@@ -209,12 +209,6 @@ function App() {
         </div>
       )}
 
-      {copyFeedback && (
-        <div className="copy-feedback">
-          {copyFeedback}
-        </div>
-      )}
-
       <FileControls 
         onExport={exportToJSON}
         onImport={importFromJSON}
@@ -255,6 +249,12 @@ function App() {
       <FormatGuideModal 
         isOpen={showFormatGuide}
         onClose={() => setShowFormatGuide(false)}
+      />
+
+      <Toast 
+        message={toastMessage}
+        isVisible={!!toastMessage}
+        onClose={() => setToastMessage('')}
       />
     </div>
   );
