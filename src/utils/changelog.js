@@ -1,6 +1,16 @@
 // アプリケーションの変更履歴
 export const CHANGELOG = [
-   {
+  {
+    version: '1.3.5',
+    date: '2025-06-18',
+    changes: [
+      {
+        type: 'fix',
+        description: '参考文献一覧の改行を一部削除し、空白行を削除して表示およびコピー時の見た目を改善'
+      }
+    ]
+  },
+  {
     version: '1.3.4',
     date: '2025-06-18',
     changes: [
