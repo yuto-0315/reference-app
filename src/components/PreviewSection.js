@@ -25,6 +25,10 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
       // 古い形式の翻訳書（後方互換性）
       return migratedRef.originalAuthorLastName || '';
     }
+    if (migratedRef.type === 'organization-book') {
+      // 団体出版本の場合は執筆団体名を表示
+      return migratedRef.organization || '';
+    }
     if (migratedRef.authors && migratedRef.authors.length > 0) {
       return migratedRef.authors
         .map(author => `${author.lastName}${author.firstName}`)
@@ -57,6 +61,10 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
             }
             // 古い形式の翻訳書（後方互換性）
             return ref.originalAuthorLastName || '';
+          }
+          if (ref.type === 'organization-book') {
+            // 団体出版本の場合は執筆団体名を使用
+            return ref.organization || '';
           }
           if (ref.authors && ref.authors.length > 0) {
             return ref.authors[0].lastName || '';
