@@ -1,5 +1,15 @@
 // アプリケーションの変更履歴
 export const CHANGELOG = [
+   {
+    version: '1.3.4',
+    date: '2025-06-18',
+    changes: [
+      {
+        type: 'fix',
+        description: '本文中の引用注で複数著者の表記基準を修正：「3名未満」→「3名以下」、「3名以上」→「4名以上」'
+      }
+    ]
+  },
   {
     version: '1.3.4',
     date: '2025-06-18',

@@ -317,9 +317,9 @@ export const formatAuthors = (authors, isJapanese = true, forCitation = false) =
     return firstAuthor.lastName || '';
   }
 
-  // 3名未満：全員を記載し、中黒でつなぐ
-  // 3名以上：筆頭著者のみ記載し、「ほか」を付加
-  if (authors.length < 3) {
+  // 3名以下：全員を記載し、中黒でつなぐ
+  // 4名以上：筆頭著者のみ記載し、「ほか」を付加
+  if (authors.length < 4) {
     if (isJapanese) {
       return authors.map(author =>
         `${author.lastName}${author.firstName}`
@@ -366,11 +366,11 @@ export const formatCitation = (reference, page = '') => {
   } else {
     // 複数著者の場合の処理
     if (reference.authors && reference.authors.length > 0) {
-      if (reference.authors.length < 3) {
-        // 3名未満：全員を記載し、中黒でつなぐ
+      if (reference.authors.length < 4) {
+        // 3名以下：全員を記載し、中黒でつなぐ
         authorName = reference.authors.map(author => author.lastName).join('・');
       } else {
-        // 3名以上：筆頭著者のみ記載し、「ほか」を付加
+        // 4名以上：筆頭著者のみ記載し、「ほか」を付加
         authorName = reference.authors[0].lastName + 'ほか';
       }
     }
