@@ -1,6 +1,28 @@
 // アプリケーションの変更履歴
 export const CHANGELOG = [
   {
+    version: '1.3.3',
+    date: '2025-06-18',
+    changes: [
+      {
+        type: 'fix',
+        description: '本文中の引用注で複数著者の表記基準を修正：「3名まで」→「3名未満」、「4名以上」→「3名以上」'
+      },
+      {
+        type: 'improvement',
+        description: '複数著者の引用形式を正確に実装：3名未満は全員表記、3名以上は筆頭著者＋「ほか」'
+      },
+      {
+        type: 'improvement',
+        description: '参考文献書方.mdとFormatGuideModalの引用例に複数著者の具体例を追加'
+      },
+      {
+        type: 'fix',
+        description: 'formatters.jsの著者フォーマット処理を修正し、引用と参考文献一覧で統一された基準を適用'
+      }
+    ]
+  },
+  {
     version: '1.3.2',
     date: '2025-06-17',
     changes: [
