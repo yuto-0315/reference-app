@@ -88,7 +88,7 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
   const generateReferenceList = () => {
     return sortedReferences
       .map(ref => formatReference(ref))
-      .join('\n\n');
+      .join('\n');
   };
 
   const generateCitation = () => {
