@@ -9,6 +9,12 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
   // 複数著者の表示用ユーティリティ関数
   const getAuthorDisplayName = (migratedRef) => {
     if (migratedRef.type === 'translation') {
+      // 翻訳書の場合は原語表記の原著者を使用
+      if (migratedRef.originalAuthorsEnglish && migratedRef.originalAuthorsEnglish.length > 0) {
+        return migratedRef.originalAuthorsEnglish
+          .map(author => `${author.lastName}, ${author.firstName}`)
+          .join('; ');
+      }
       // 新しい形式の翻訳書（日本語表記の原著者を使用）
       if (migratedRef.originalAuthors && migratedRef.originalAuthors.length > 0) {
         return migratedRef.originalAuthors
@@ -235,7 +241,32 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                   </td>
                   <td className="author-cell">
                     <div className="author-name">
-                      {migratedRef.type === 'organization-book' ? (
+                      {migratedRef.type === 'translation' ? (
+                        // 翻訳書の場合は原語表記の原著者を表示
+                        migratedRef.originalAuthorsEnglish?.length > 0 ? (
+                          migratedRef.originalAuthorsEnglish.map((author, index) => (
+                            <div key={index} className="author-entry">
+                              <div className="author-name-text">
+                                {author.lastName}, {author.firstName}
+                              </div>
+                            </div>
+                          ))
+                        ) : migratedRef.originalAuthors?.length > 0 ? (
+                          migratedRef.originalAuthors.map((author, index) => (
+                            <div key={index} className="author-entry">
+                              <div className="author-name-text">
+                                {author.lastName}{author.firstName}
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="author-entry">
+                            <div className="author-name-text">
+                              {migratedRef.originalAuthorLastName || '-'}
+                            </div>
+                          </div>
+                        )
+                      ) : migratedRef.type === 'organization-book' ? (
                         <div className="author-entry">
                           <div className="author-name-text">
                             {migratedRef.organization || '-'}
@@ -265,7 +296,12 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                     <div className="title-text">{ref.title}</div>
                   </td>
                   <td className="year-cell">
-                    {ref.year}
+                    {migratedRef.type === 'translation' ? (
+                      // 翻訳書の場合は「原著出版年(翻訳書出版年)」で表示
+                      `${migratedRef.originalYear || ''}(${ref.year || ''})`
+                    ) : (
+                      ref.year
+                    )}
                   </td>
                   <td className="publisher-cell">
                     {ref.publisher || ref.journalName || '-'}

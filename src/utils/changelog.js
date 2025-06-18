@@ -1,6 +1,28 @@
 // アプリケーションの変更履歴
 export const CHANGELOG = [
   {
+    version: '1.3.4',
+    date: '2025-06-18',
+    changes: [
+      {
+        type: 'fix',
+        description: '翻訳書の参考文献一覧表「著者」列で原語表記の著者名を表示するように修正'
+      },
+      {
+        type: 'fix',
+        description: '翻訳書の参考文献一覧表「出版年」列で「原著出版年(翻訳書出版年)」形式を表示するように修正'
+      },
+      {
+        type: 'improvement',
+        description: '翻訳書の表示で学術的な標準形式により準拠した表記に改善'
+      },
+      {
+        type: 'improvement',
+        description: 'ReferenceTableとPreviewSectionの両方で翻訳書の統一された表示形式を適用'
+      }
+    ]
+  },
+  {
     version: '1.3.3',
     date: '2025-06-18',
     changes: [

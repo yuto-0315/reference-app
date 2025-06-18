@@ -10,6 +10,12 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
   // 複数著者の表示用ユーティリティ関数
   const getAuthorDisplayName = (migratedRef) => {
     if (migratedRef.type === 'translation') {
+      // 翻訳書の場合は原語表記の原著者を使用
+      if (migratedRef.originalAuthorsEnglish && migratedRef.originalAuthorsEnglish.length > 0) {
+        return migratedRef.originalAuthorsEnglish
+          .map(author => `${author.lastName}, ${author.firstName}`)
+          .join('; ');
+      }
       // 新しい形式の翻訳書（日本語表記の原著者を使用）
       if (migratedRef.originalAuthors && migratedRef.originalAuthors.length > 0) {
         return migratedRef.originalAuthors
@@ -41,6 +47,10 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
       case 'author':
         const getAuthorName = (ref) => {
           if (ref.type === 'translation') {
+            // 翻訳書の場合は原語表記の原著者を使用（ソート用）
+            if (ref.originalAuthorsEnglish && ref.originalAuthorsEnglish.length > 0) {
+              return ref.originalAuthorsEnglish[0].lastName || '';
+            }
             // 新しい形式の翻訳書（日本語表記の原著者を使用）
             if (ref.originalAuthors && ref.originalAuthors.length > 0) {
               return ref.originalAuthors[0].lastName || '';
@@ -233,7 +243,14 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
                       <div className="reference-info">
                         <div className="reference-author">{authorName}</div>
                         <div className="reference-title">{ref.title}</div>
-                        <div className="reference-year">{ref.year}年</div>
+                        <div className="reference-year">
+                          {migratedRef.type === 'translation' ? (
+                            // 翻訳書の場合は「原著出版年(翻訳書出版年)」で表示
+                            `${migratedRef.originalYear || ''}(${ref.year || ''})年`
+                          ) : (
+                            `${ref.year}年`
+                          )}
+                        </div>
                       </div>
                     </label>
                   </div>
