@@ -18,6 +18,10 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
       // 古い形式の翻訳書（後方互換性）
       return migratedRef.originalAuthorLastName || '';
     }
+    if (migratedRef.type === 'organization-book') {
+      // 団体出版本の場合は執筆団体名を表示
+      return migratedRef.organization || '';
+    }
     if (migratedRef.authors && migratedRef.authors.length > 0) {
       return migratedRef.authors
         .map(author => `${author.lastName}${author.firstName}`)
@@ -39,8 +43,13 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
         author.reading?.toLowerCase().includes(searchLower)
       ) || false;
       
+      // 団体出版本の場合は執筆団体名も検索対象に含める
+      const organizationMatches = migratedRef.type === 'organization-book' && 
+        migratedRef.organization?.toLowerCase().includes(searchLower);
+      
       return (
         authorMatches ||
+        organizationMatches ||
         ref.title?.toLowerCase().includes(searchLower) ||
         ref.publisher?.toLowerCase().includes(searchLower) ||
         ref.journalName?.toLowerCase().includes(searchLower) ||
@@ -59,9 +68,22 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
           compareValue = (a.year || 0) - (b.year || 0);
           break;
         case 'reading':
-          // 筆頭著者の読み仮名または姓で比較
-          const aReading = migratedA.authors?.[0]?.reading || migratedA.authors?.[0]?.lastName || '';
-          const bReading = migratedB.authors?.[0]?.reading || migratedB.authors?.[0]?.lastName || '';
+          // 筆頭著者の読み仮名または姓で比較、団体出版本の場合は団体名
+          let aReading = '';
+          let bReading = '';
+          
+          if (migratedA.type === 'organization-book') {
+            aReading = migratedA.organization || '';
+          } else {
+            aReading = migratedA.authors?.[0]?.reading || migratedA.authors?.[0]?.lastName || '';
+          }
+          
+          if (migratedB.type === 'organization-book') {
+            bReading = migratedB.organization || '';
+          } else {
+            bReading = migratedB.authors?.[0]?.reading || migratedB.authors?.[0]?.lastName || '';
+          }
+          
           compareValue = aReading.localeCompare(bReading, 'ja');
           break;
         case 'title':
@@ -213,17 +235,24 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                   </td>
                   <td className="author-cell">
                     <div className="author-name">
-                      {migratedRef.authors?.map((author, index) => (
-                        <div key={index} className="author-entry">
+                      {migratedRef.type === 'organization-book' ? (
+                        <div className="author-entry">
                           <div className="author-name-text">
-                            {author.lastName}{author.firstName}
+                            {migratedRef.organization || '-'}
                           </div>
-                          {author.reading && (
-                            <div className="author-reading">({author.reading})</div>
-                          )}
                         </div>
-                      ))}
-                      {!migratedRef.authors?.length && (
+                      ) : migratedRef.authors?.length > 0 ? (
+                        migratedRef.authors.map((author, index) => (
+                          <div key={index} className="author-entry">
+                            <div className="author-name-text">
+                              {author.lastName}{author.firstName}
+                            </div>
+                            {author.reading && (
+                              <div className="author-reading">({author.reading})</div>
+                            )}
+                          </div>
+                        ))
+                      ) : (
                         <div className="author-entry">
                           <div className="author-name-text">
                             {migratedRef.composer || migratedRef.organization || '-'}
