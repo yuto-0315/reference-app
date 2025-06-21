@@ -4,7 +4,7 @@ import { formatReference, formatCitation, migrateReferenceData } from '../utils/
 const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, onToggleAll }) => {
   const [citationPage, setCitationPage] = useState('');
   const [selectedRef, setSelectedRef] = useState('');
-  const [sortBy, setSortBy] = useState('author'); // 'author', 'year', 'title'
+  const [sortBy, setSortBy] = useState('year'); // 'author', 'year', 'title'
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc', 'desc'
 
   // 複数著者の表示用ユーティリティ関数
