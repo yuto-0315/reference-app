@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { formatReference, formatCitation, migrateReferenceData } from '../utils/formatters';
+import { formatReference, formatCitation, migrateReferenceData, addYearSuffixes } from '../utils/formatters';
 
 const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, onToggleAll }) => {
   const [citationPage, setCitationPage] = useState('');
@@ -86,7 +86,9 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
   });
 
   const generateReferenceList = () => {
-    return sortedReferences
+    // チェックされた参考文献にアルファベットサフィックスを付与
+    const referencesWithSuffixes = addYearSuffixes(sortedReferences);
+    return referencesWithSuffixes
       .map(ref => formatReference(ref))
       .join('\n');
   };
@@ -96,10 +98,14 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
     if (!ref) return '';
     const migratedRef = migrateReferenceData(ref);
     
+    // 同一著者・同一年の文献に対してアルファベットサフィックスを付与
+    const allReferencesWithSuffixes = addYearSuffixes(references);
+    const refWithSuffix = allReferencesWithSuffixes.find(r => r.id === selectedRef) || migratedRef;
+    
     // 引用ページが設定されていない場合は掲載ページを使用
     const pageToUse = citationPage || migratedRef.pages || '';
     
-    return formatCitation(migratedRef, pageToUse);
+    return formatCitation(refWithSuffix, pageToUse);
   };
 
   const handleSort = (field) => {

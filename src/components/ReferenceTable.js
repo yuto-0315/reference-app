@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { formatCitation, formatReference, migrateReferenceData } from '../utils/formatters';
+import { formatCitation, formatReference, migrateReferenceData, addYearSuffixes } from '../utils/formatters';
 
 const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, checkedReferences }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -133,12 +133,19 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
       // ユーザーがキャンセルした場合は処理を中止
       if (pageInput === null) return;
       
+      // 同一著者・同一年の文献に対してアルファベットサフィックスを付与
+      const allReferencesWithSuffixes = addYearSuffixes(references);
+      const refWithSuffix = allReferencesWithSuffixes.find(r => r.id === ref.id) || ref;
+      
       // 入力されたページまたは登録済みのページを使用
       const pageToUse = pageInput.trim() || ref.pages;
-      const text = formatCitation(ref, pageToUse);
+      const text = formatCitation(refWithSuffix, pageToUse);
       onCopy(text, `引用をコピーしました${pageToUse ? ` (ページ: ${pageToUse})` : ''}`);
     } else {
-      const text = formatReference(ref);
+      // 参考文献の場合もアルファベットサフィックスを付与
+      const allReferencesWithSuffixes = addYearSuffixes(references);
+      const refWithSuffix = allReferencesWithSuffixes.find(r => r.id === ref.id) || ref;
+      const text = formatReference(refWithSuffix);
       onCopy(text, '参考文献をコピーしました');
     }
   };
@@ -228,19 +235,23 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
             </tr>
           </thead>
           <tbody>
-            {filteredAndSortedReferences.map((ref) => {
-              const migratedRef = migrateReferenceData(ref);
-              return (
-                <tr key={ref.id}>
-                  <td style={{ textAlign: 'center' }}>
-                    <input
-                      type="checkbox"
-                      checked={checkedReferences.has(ref.id)}
-                      onChange={() => onToggleCheck(ref.id)}
-                    />
-                  </td>
-                  <td className="author-cell">
-                    <div className="author-name">
+            {(() => {
+              // 同一著者・同一年の文献にアルファベットサフィックスを付与
+              const referencesWithSuffixes = addYearSuffixes(filteredAndSortedReferences);
+              
+              return referencesWithSuffixes.map((ref) => {
+                const migratedRef = migrateReferenceData(ref);
+                return (
+                  <tr key={ref.id}>
+                    <td style={{ textAlign: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={checkedReferences.has(ref.id)}
+                        onChange={() => onToggleCheck(ref.id)}
+                      />
+                    </td>
+                    <td className="author-cell">
+                      <div className="author-name">
                       {migratedRef.type === 'translation' ? (
                         // 翻訳書の場合は原語表記の原著者を表示
                         migratedRef.originalAuthorsEnglish?.length > 0 ? (
@@ -298,9 +309,11 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                   <td className="year-cell">
                     {migratedRef.type === 'translation' ? (
                       // 翻訳書の場合は「原著出版年(翻訳書出版年)」で表示
-                      `${migratedRef.originalYear || ''}(${ref.year || ''})`
+                      ref.yearSuffix ? 
+                        `${migratedRef.originalYear || ''}(${ref.year || ''}${ref.yearSuffix})` :
+                        `${migratedRef.originalYear || ''}(${ref.year || ''})`
                     ) : (
-                      ref.year
+                      ref.yearSuffix ? `${ref.year}${ref.yearSuffix}` : ref.year
                     )}
                   </td>
                   <td className="publisher-cell">
@@ -355,7 +368,8 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                   </td>
                 </tr>
               );
-            })}
+              });
+            })()}
           </tbody>
         </table>
       </div>
