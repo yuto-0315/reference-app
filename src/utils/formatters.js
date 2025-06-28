@@ -345,6 +345,8 @@ export const formatAuthors = (authors, isJapanese = true, forCitation = false) =
 export const formatCitation = (reference, page = '') => {
   const type = reference.type;
   const year = reference.year;
+  const yearSuffix = reference.yearSuffix || '';
+  const displayYear = yearSuffix ? `${year}${yearSuffix}` : `${year}`;
   const formattedPage = page ? formatCitationPageRange(page) : '';
   const pageText = formattedPage ? `:${formattedPage}` : '';
 
@@ -359,7 +361,7 @@ export const formatCitation = (reference, page = '') => {
       authorName = reference.originalAuthorLastName || '';
     }
     const originalYear = reference.originalYear;
-    return `(${authorName}　${year}(${originalYear})${pageText})`;
+    return `(${authorName}　${displayYear}(${originalYear})${pageText})`;
   } else if (type === 'organization-book') {
     // 団体出版本の場合は団体名を使用
     authorName = reference.organization || '';
@@ -376,7 +378,70 @@ export const formatCitation = (reference, page = '') => {
     }
   }
 
-  return `(${authorName}　${year}${pageText})`;
+  return `(${authorName}　${displayYear}${pageText})`;
+};
+
+// 同一著者・同一年の文献を検出してアルファベットを付与する関数
+export const addYearSuffixes = (references) => {
+  if (!Array.isArray(references) || references.length === 0) {
+    return references;
+  }
+
+  // 著者と年でグループ化
+  const groups = {};
+  
+  references.forEach((ref, index) => {
+    const migratedRef = migrateReferenceData(ref);
+    let authorKey = '';
+    
+    // 著者キーを生成（文献種別によって異なる）
+    if (migratedRef.type === 'translation') {
+      // 翻訳書の場合は原著者を使用
+      if (migratedRef.originalAuthors && migratedRef.originalAuthors.length > 0) {
+        authorKey = migratedRef.originalAuthors[0].lastName || '';
+      } else {
+        authorKey = migratedRef.originalAuthorLastName || '';
+      }
+    } else if (migratedRef.type === 'organization-book') {
+      // 団体出版本の場合は団体名を使用
+      authorKey = migratedRef.organization || '';
+    } else if (migratedRef.authors && migratedRef.authors.length > 0) {
+      // 通常の文献の場合は筆頭著者の姓を使用
+      authorKey = migratedRef.authors[0].lastName || '';
+    } else {
+      authorKey = migratedRef.composer || '';
+    }
+    
+    const year = migratedRef.year;
+    const groupKey = `${authorKey}_${year}`;
+    
+    if (!groups[groupKey]) {
+      groups[groupKey] = [];
+    }
+    
+    groups[groupKey].push({ ref: migratedRef, originalIndex: index });
+  });
+  
+  // 各グループで2つ以上の文献がある場合にアルファベットを付与
+  const updatedReferences = [...references];
+  
+  Object.values(groups).forEach(group => {
+    if (group.length > 1) {
+      // タイトルでソートして一貫した順序を保つ
+      group.sort((a, b) => (a.ref.title || '').localeCompare(b.ref.title || '', 'ja'));
+      
+      group.forEach((item, index) => {
+        const suffix = String.fromCharCode(97 + index); // a, b, c...
+        updatedReferences[item.originalIndex] = {
+          ...item.ref,
+          yearSuffix: suffix,
+          displayYear: `${item.ref.year}${suffix}`
+        };
+      });
+    }
+  });
+  
+  return updatedReferences;
 };
 
 // 参考文献一覧の形式を生成
@@ -417,46 +482,51 @@ export const formatReference = (reference) => {
 
 // 個別のフォーマット関数
 const formatJapaneseBook = (ref) => {
-  const { authors, title, publisher, year, editors, translators } = ref;
+  const { authors, title, publisher, year, yearSuffix, editors, translators } = ref;
   const authorText = formatAuthors(authors, true, false);
-  let result = `${authorText}『${title}』${publisher}、${year}年。`;
+  const displayYear = yearSuffix ? `${year}年${yearSuffix}` : `${year}年`;
+  let result = `${authorText}『${title}』${publisher}、${displayYear}。`;
   return result;
 };
 
 const formatJapaneseJournal = (ref) => {
-  const { authors, title, editorialOrganization, journalName, volume, issue, year, pages } = ref;
+  const { authors, title, editorialOrganization, journalName, volume, issue, year, yearSuffix, pages } = ref;
   const authorText = formatAuthors(authors, true, false);
   const volumeIssue = formatVolumeIssue(volume, issue);
   const formattedPages = formatPageRange(pages);
+  const displayYear = yearSuffix ? `${year}年${yearSuffix}` : `${year}年`;
 
   // 編集団体がある場合とない場合で形式を変える
   if (editorialOrganization) {
-    return `${authorText}「${title}」${editorialOrganization}編『${journalName}』${volumeIssue}、${year}年、${formattedPages}頁。`;
+    return `${authorText}「${title}」${editorialOrganization}編『${journalName}』${volumeIssue}、${displayYear}、${formattedPages}頁。`;
   } else {
-    return `${authorText}「${title}」『${journalName}』${volumeIssue}、${year}年、${formattedPages}頁。`;
+    return `${authorText}「${title}」『${journalName}』${volumeIssue}、${displayYear}、${formattedPages}頁。`;
   }
 };
 
 const formatJapaneseChapter = (ref) => {
-  const { authors, title, editors, bookTitle, publisher, year, pages } = ref;
+  const { authors, title, editors, bookTitle, publisher, year, yearSuffix, pages } = ref;
   const authorText = formatAuthors(authors, true, false);
   const formattedPages = formatPageRange(pages);
-  return `${authorText}「${title}」、${editors}編『${bookTitle}』${publisher}、${year}年、${formattedPages}頁。`;
+  const displayYear = yearSuffix ? `${year}年${yearSuffix}` : `${year}年`;
+  return `${authorText}「${title}」、${editors}編『${bookTitle}』${publisher}、${displayYear}、${formattedPages}頁。`;
 };
 
 const formatOrganizationBook = (ref) => {
-  const { organization, title, year } = ref;
-  return `${organization}『${title}』、${year}年。`;
+  const { organization, title, year, yearSuffix } = ref;
+  const displayYear = yearSuffix ? `${year}年${yearSuffix}` : `${year}年`;
+  return `${organization}『${title}』、${displayYear}。`;
 };
 
 const formatEnglishBook = (ref) => {
-  const { authors, title, publisherLocation, publisher, year } = ref;
+  const { authors, title, publisherLocation, publisher, year, yearSuffix } = ref;
   const authorText = formatAuthors(authors, false, false);
-  return `${authorText}. *${title}*. ${publisherLocation}: ${publisher}, ${year}.`;
+  const displayYear = yearSuffix ? `${year}${yearSuffix}` : `${year}`;
+  return `${authorText}. *${title}*. ${publisherLocation}: ${publisher}, ${displayYear}.`;
 };
 
 const formatEnglishJournal = (ref) => {
-  const { authors, title, journalName, volume, issue, year, pages } = ref;
+  const { authors, title, journalName, volume, issue, year, yearSuffix, pages } = ref;
   const authorText = formatAuthors(authors, false, false);
   let volumeIssue = '';
   if (volume && issue) {
@@ -464,20 +534,22 @@ const formatEnglishJournal = (ref) => {
   } else if (volume) {
     volumeIssue = ` ${volume}`;
   }
+  const displayYear = yearSuffix ? `${year}${yearSuffix}` : `${year}`;
 
   const formattedPages = pages ? formatPageRange(pages) : '';
-  return `${authorText}, "${title}", *${journalName}*${volumeIssue}. (${year}) pp. ${formattedPages}.`;
+  return `${authorText}, "${title}", *${journalName}*${volumeIssue}. (${displayYear}) pp. ${formattedPages}.`;
 };
 
 const formatEnglishChapter = (ref) => {
-  const { authors, title, bookTitle, publisherLocation, publisher, year, pages } = ref;
+  const { authors, title, bookTitle, publisherLocation, publisher, year, yearSuffix, pages } = ref;
   const authorText = formatAuthors(authors, false, false);
   const formattedPages = pages ? formatPageRange(pages) : '';
-  return `${authorText}, "${title}", *${bookTitle}*. (${publisherLocation}: ${publisher}, ${year}) pp. ${formattedPages}.`;
+  const displayYear = yearSuffix ? `${year}${yearSuffix}` : `${year}`;
+  return `${authorText}, "${title}", *${bookTitle}*. (${publisherLocation}: ${publisher}, ${displayYear}) pp. ${formattedPages}.`;
 };
 
 const formatTranslation = (ref) => {
-  const { originalAuthors, originalAuthorsEnglish, translators, title, publisher, year, originalTitle, originalPublisherLocation, originalPublisher, originalYear } = ref;
+  const { originalAuthors, originalAuthorsEnglish, translators, title, publisher, year, yearSuffix, originalTitle, originalPublisherLocation, originalPublisher, originalYear } = ref;
   
   // 原著者を日本語形式でフォーマット
   const originalAuthorTextJapanese = formatAuthors(originalAuthors, true, false);
@@ -488,29 +560,34 @@ const formatTranslation = (ref) => {
   // 原書の著者を英語形式でフォーマット
   const originalAuthorEnglish = formatAuthors(originalAuthorsEnglish, false, false);
   
-  return `${originalAuthorTextJapanese}、${translatorText}『${title}』、${publisher}、${year}年。(${originalAuthorEnglish}. *${originalTitle}*. ${originalPublisherLocation}: ${originalPublisher}, ${originalYear}.)`;
+  const displayYear = yearSuffix ? `${year}年${yearSuffix}` : `${year}年`;
+
+  return `${originalAuthorTextJapanese}、${translatorText}『${title}』、${publisher}、${displayYear}。(${originalAuthorEnglish}. *${originalTitle}*. ${originalPublisherLocation}: ${originalPublisher}, ${originalYear}.)`;
 };
 
 const formatDictionary = (ref) => {
-  const { authors, title, dictionaryTitle, volume, publisher, year, pages } = ref;
+  const { authors, title, dictionaryTitle, volume, publisher, year, yearSuffix, pages } = ref;
   const authorText = formatAuthors(authors, true, false);
   const volumeText = volume ? `第${formatNumber(volume)}巻、` : '';
   const formattedPages = formatPageRange(pages);
-  return `${authorText}「${title}」『${dictionaryTitle}』${volumeText}${publisher}、${year}年、${formattedPages}頁。`;
+  const displayYear = yearSuffix ? `${year}年${yearSuffix}` : `${year}年`;
+  return `${authorText}「${title}」『${dictionaryTitle}』${volumeText}${publisher}、${displayYear}、${formattedPages}頁。`;
 };
 
 const formatScoreDomestic = (ref) => {
-  const { composer, title, collectionTitle, editor, publisherLocation, publisher, year } = ref;
+  const { composer, title, collectionTitle, editor, publisherLocation, publisher, year, yearSuffix } = ref;
   const collection = collectionTitle ? ` ${collectionTitle}` : '';
   const editorText = editor ? ` ${editor}` : '';
-  return `${composer} ${title}${collection}${editorText} ${publisherLocation}:${publisher} ${year}`;
+  const displayYear = yearSuffix ? `${year}年${yearSuffix}` : `${year}年`;
+  return `${composer} ${title}${collection}${editorText} ${publisherLocation}:${publisher} ${displayYear}`;
 };
 
 const formatScoreForeign = (ref) => {
-  const { composer, title, collectionTitle, editor, catalogNumber, publisherLocation, publisher, year } = ref;
+  const { composer, title, collectionTitle, editor, catalogNumber, publisherLocation, publisher, year, yearSuffix } = ref;
   const collection = collectionTitle ? ` ${collectionTitle}` : '';
   const editorText = editor ? ` ${editor}.` : '';
-  return `${composer}. ${title}${collection}.${editorText} ${catalogNumber}. ${publisherLocation}: ${publisher}, ${year}`;
+  const displayYear = yearSuffix ? `${year}${yearSuffix}` : `${year}`;
+  return `${composer}. ${title}${collection}.${editorText} ${catalogNumber}. ${publisherLocation}: ${publisher}, ${displayYear}`;
 };
 
 const formatWebsite = (ref) => {
@@ -524,10 +601,11 @@ const formatWebsite = (ref) => {
 };
 
 const formatAudiovisual = (ref) => {
-  const { composer, title, performers, label, mediaType, catalogNumber, trackNumber, recordingYear, releaseYear } = ref;
+  const { composer, title, performers, label, mediaType, catalogNumber, trackNumber, recordingYear, releaseYear, yearSuffix } = ref;
   const track = trackNumber ? `、トラック${formatNumber(trackNumber)}` : '';
   const recording = recordingYear ? `、${recordingYear}年録音` : '';
-  return `${composer}作曲《${title}》 ${performers}演奏、${label}: ${catalogNumber}(${mediaType})${track}${recording}・${releaseYear}年発売。`;
+  const displayReleaseYear = yearSuffix ? `${releaseYear}年${yearSuffix}` : `${releaseYear}年`;
+  return `${composer}作曲《${title}》 ${performers}演奏、${label}: ${catalogNumber}(${mediaType})${track}${recording}・${displayReleaseYear}発売。`;
 };
 
 // 数字フォーマット用のユーティリティ関数
