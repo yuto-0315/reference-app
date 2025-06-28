@@ -427,8 +427,12 @@ export const addYearSuffixes = (references) => {
   
   Object.values(groups).forEach(group => {
     if (group.length > 1) {
-      // タイトルでソートして一貫した順序を保つ
-      group.sort((a, b) => (a.ref.title || '').localeCompare(b.ref.title || '', 'ja'));
+      // 登録順（createdAtの古い順）でソートして先に登録されたものからa,b,cを付与
+      group.sort((a, b) => {
+        const dateA = new Date(a.ref.createdAt || 0);
+        const dateB = new Date(b.ref.createdAt || 0);
+        return dateA - dateB;
+      });
       
       group.forEach((item, index) => {
         const suffix = String.fromCharCode(97 + index); // a, b, c...
