@@ -1,6 +1,32 @@
 // アプリケーションの変更履歴
 export const CHANGELOG = [
   {
+    version: '1.4.0',
+    date: '2025-06-28',
+    changes: [
+      {
+        type: 'feature',
+        description: '同一著者・同一年の文献に対してa,b,cを自動付与する機能を実装'
+      },
+      {
+        type: 'feature',
+        description: '参考文献一覧と本文中の引用で同一著者・同一年の文献を適切に区別表示'
+      },
+      {
+        type: 'improvement',
+        description: 'アルファベットサフィックス（a,b,c）は文献の登録順（createdAtの古い順）で付与'
+      },
+      {
+        type: 'improvement',
+        description: '全ての文献種別（日本語書籍、英語書籍、論文、翻訳書、団体出版本など）でアルファベットサフィックスに対応'
+      },
+      {
+        type: 'improvement',
+        description: 'PreviewSection、ReferenceList、ReferenceTableの全てで統一されたa,b,c表示'
+      }
+    ]
+  },
+  {
     version: '1.3.5',
     date: '2025-06-18',
     changes: [
