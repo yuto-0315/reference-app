@@ -357,7 +357,8 @@ export const formatCitation = (reference, page = '') => {
     authorName = reference.organization
       ? reference.organization
       : '';
-
+      // Webサイトは運営団体名を使用し、年は表示しない
+      //そのためここで早期にreturnして終了。
       return `(${authorName}webページ ${yearSuffix})`;
 
   } else if (type === 'translation') {
