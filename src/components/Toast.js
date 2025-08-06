@@ -22,9 +22,16 @@ const Toast = ({ message, isVisible, onClose }) => {
     <div className={`toast ${show ? 'toast-show' : ''}`}>
       <div className="toast-content">
         <span className="toast-icon">✅</span>
-        <span className="toast-message">{message}</span>
-        <button 
-          className="toast-close" 
+        <span className="toast-message">
+          {message.split('\n').map((line, i) => (
+            <React.Fragment key={i}>
+              {line}
+              {i < message.split('\n').length - 1 && <br />}
+            </React.Fragment>
+          ))}
+        </span>
+        <button
+          className="toast-close"
           onClick={() => {
             setShow(false);
             setTimeout(onClose, 300);

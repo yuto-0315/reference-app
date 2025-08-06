@@ -41,18 +41,18 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
     let filtered = references.filter(ref => {
       const migratedRef = migrateReferenceData(ref);
       const searchLower = searchTerm.toLowerCase();
-      
+
       // 複数著者に対応した検索
-      const authorMatches = migratedRef.authors?.some(author => 
+      const authorMatches = migratedRef.authors?.some(author =>
         author.lastName?.toLowerCase().includes(searchLower) ||
         author.firstName?.toLowerCase().includes(searchLower) ||
         author.reading?.toLowerCase().includes(searchLower)
       ) || false;
-      
+
       // 団体出版本の場合は執筆団体名も検索対象に含める
-      const organizationMatches = migratedRef.type === 'organization-book' && 
+      const organizationMatches = migratedRef.type === 'organization-book' &&
         migratedRef.organization?.toLowerCase().includes(searchLower);
-      
+
       return (
         authorMatches ||
         organizationMatches ||
@@ -68,7 +68,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
       const migratedA = migrateReferenceData(a);
       const migratedB = migrateReferenceData(b);
       let compareValue = 0;
-      
+
       switch (sortBy) {
         case 'year':
           compareValue = (a.year || 0) - (b.year || 0);
@@ -77,19 +77,19 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
           // 筆頭著者の読み仮名または姓で比較、団体出版本の場合は団体名
           let aReading = '';
           let bReading = '';
-          
+
           if (migratedA.type === 'organization-book') {
             aReading = migratedA.organization || '';
           } else {
             aReading = migratedA.authors?.[0]?.reading || migratedA.authors?.[0]?.lastName || '';
           }
-          
+
           if (migratedB.type === 'organization-book') {
             bReading = migratedB.organization || '';
           } else {
             bReading = migratedB.authors?.[0]?.reading || migratedB.authors?.[0]?.lastName || '';
           }
-          
+
           compareValue = aReading.localeCompare(bReading, 'ja');
           break;
         case 'title':
@@ -100,7 +100,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
         default:
           compareValue = 0;
       }
-      
+
       return sortOrder === 'asc' ? compareValue : -compareValue;
     });
 
@@ -123,24 +123,30 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
 
   const copyFormatted = (ref, type) => {
     if (type === 'citation') {
-      // 引用の場合はページ指定のプロンプトを表示
-      const pageInput = prompt(
-        'ページを指定してください（例：45、45-58、45-58, 62）\n' +
-        '空白にすると登録済みのページ情報を使用します：',
-        ref.pages || ''
-      );
-      
+
+      let pageInput = ""
+      if (ref.type === 'website') {
+
+      } else {
+        // 引用の場合はページ指定のプロンプトを表示
+        pageInput = prompt(
+          'ページを指定してください（例：45、45-58、45-58, 62）\n' +
+          '空白にすると登録済みのページ情報を使用します：',
+          ref.pages || ''
+        );
+      }
+
       // ユーザーがキャンセルした場合は処理を中止
       if (pageInput === null) return;
-      
+
       // 同一著者・同一年の文献に対してアルファベットサフィックスを付与
       const allReferencesWithSuffixes = addYearSuffixes(references);
       const refWithSuffix = allReferencesWithSuffixes.find(r => r.id === ref.id) || ref;
-      
+
       // 入力されたページまたは登録済みのページを使用
       const pageToUse = pageInput.trim() || ref.pages;
       const text = formatCitation(refWithSuffix, pageToUse);
-      onCopy(text, `引用をコピーしました${pageToUse ? ` (ページ: ${pageToUse})` : ''}`);
+      onCopy(text, `引用をコピーしました\n${text ? `${text}` : ''}`);
     } else {
       // 参考文献の場合もアルファベットサフィックスを付与
       const allReferencesWithSuffixes = addYearSuffixes(references);
@@ -172,22 +178,22 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
             className="search-input"
           />
         </div>
-        
+
         <div className="sort-controls">
           <span className="sort-label">並べ替え:</span>
-          <button 
+          <button
             className={`sort-btn ${sortBy === 'year' ? 'active' : ''}`}
             onClick={() => handleSort('year')}
           >
             発行年 {getSortIcon('year')}
           </button>
-          <button 
+          <button
             className={`sort-btn ${sortBy === 'reading' ? 'active' : ''}`}
             onClick={() => handleSort('reading')}
           >
             読み仮名 {getSortIcon('reading')}
           </button>
-          <button 
+          <button
             className={`sort-btn ${sortBy === 'title' ? 'active' : ''}`}
             onClick={() => handleSort('title')}
           >
@@ -238,7 +244,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
             {(() => {
               // 同一著者・同一年の文献にアルファベットサフィックスを付与
               const referencesWithSuffixes = addYearSuffixes(filteredAndSortedReferences);
-              
+
               return referencesWithSuffixes.map((ref) => {
                 const migratedRef = migrateReferenceData(ref);
                 return (
@@ -252,122 +258,134 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                     </td>
                     <td className="author-cell">
                       <div className="author-name">
-                      {migratedRef.type === 'translation' ? (
-                        // 翻訳書の場合は原語表記の原著者を表示
-                        migratedRef.originalAuthorsEnglish?.length > 0 ? (
-                          migratedRef.originalAuthorsEnglish.map((author, index) => (
-                            <div key={index} className="author-entry">
+                        {migratedRef.type === 'translation' ? (
+                          // 翻訳書の場合は原語表記の原著者を表示
+                          migratedRef.originalAuthorsEnglish?.length > 0 ? (
+                            migratedRef.originalAuthorsEnglish.map((author, index) => (
+                              <div key={index} className="author-entry">
+                                <div className="author-name-text">
+                                  {author.lastName}, {author.firstName}
+                                </div>
+                              </div>
+                            ))
+                          ) : migratedRef.originalAuthors?.length > 0 ? (
+                            migratedRef.originalAuthors.map((author, index) => (
+                              <div key={index} className="author-entry">
+                                <div className="author-name-text">
+                                  {author.lastName}{author.firstName}
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="author-entry">
                               <div className="author-name-text">
-                                {author.lastName}, {author.firstName}
+                                {migratedRef.originalAuthorLastName || '-'}
                               </div>
                             </div>
-                          ))
-                        ) : migratedRef.originalAuthors?.length > 0 ? (
-                          migratedRef.originalAuthors.map((author, index) => (
+                          )
+                        ) : migratedRef.type === 'organization-book' ? (
+                          <div className="author-entry">
+                            <div className="author-name-text">
+                              {migratedRef.organization || '-'}
+                            </div>
+                          </div>
+                        ) : migratedRef.authors?.length > 0 ? (
+                          migratedRef.authors.map((author, index) => (
                             <div key={index} className="author-entry">
                               <div className="author-name-text">
                                 {author.lastName}{author.firstName}
                               </div>
+                              {author.reading && (
+                                <div className="author-reading">({author.reading})</div>
+                              )}
                             </div>
                           ))
                         ) : (
                           <div className="author-entry">
                             <div className="author-name-text">
-                              {migratedRef.originalAuthorLastName || '-'}
+                              {migratedRef.composer || migratedRef.organization || '-'}
                             </div>
                           </div>
-                        )
-                      ) : migratedRef.type === 'organization-book' ? (
-                        <div className="author-entry">
-                          <div className="author-name-text">
-                            {migratedRef.organization || '-'}
-                          </div>
-                        </div>
-                      ) : migratedRef.authors?.length > 0 ? (
-                        migratedRef.authors.map((author, index) => (
-                          <div key={index} className="author-entry">
-                            <div className="author-name-text">
-                              {author.lastName}{author.firstName}
-                            </div>
-                            {author.reading && (
-                              <div className="author-reading">({author.reading})</div>
-                            )}
-                          </div>
-                        ))
+                        )}
+                      </div>
+                    </td>
+                    <td className="title-cell">
+                      <div className="title-text">{ref.title}</div>
+                    </td>
+                    <td className="year-cell">
+                      {(() => {
+                        let yearDisplay;
+                        if (migratedRef.type === 'translation') {
+                          // 翻訳書の場合は「原著出版年(翻訳書出版年)」で表示
+                          if (ref.yearSuffix) {
+                            yearDisplay = `${migratedRef.originalYear || ''}(${ref.year || ''}${ref.yearSuffix})`;
+                          } else {
+                            yearDisplay = `${migratedRef.originalYear || ''}(${ref.year || ''})`;
+                          }
+                        } else if (migratedRef.type === 'website') {
+                          yearDisplay = `${ref.yearSuffix || '-'}`;
+                        } else {
+                          if (ref.yearSuffix) {
+                            yearDisplay = `${ref.year}${ref.yearSuffix}`;
+                          } else {
+                            yearDisplay = ref.year;
+                          }
+                        }
+                        return yearDisplay;
+                      })()}
+                    </td>
+                    <td className="publisher-cell">
+                      {ref.publisher || ref.journalName || '-'}
+                    </td>
+                    <td className="link-cell">
+                      {getExternalLink(ref) ? (
+                        <a
+                          href={getExternalLink(ref)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="external-link"
+                          title={ref.doi ? `DOI: ${ref.doi}` : 'リンクを開く'}
+                        >
+                          🔗
+                        </a>
                       ) : (
-                        <div className="author-entry">
-                          <div className="author-name-text">
-                            {migratedRef.composer || migratedRef.organization || '-'}
-                          </div>
-                        </div>
+                        <span className="no-link">-</span>
                       )}
-                    </div>
-                  </td>
-                  <td className="title-cell">
-                    <div className="title-text">{ref.title}</div>
-                  </td>
-                  <td className="year-cell">
-                    {migratedRef.type === 'translation' ? (
-                      // 翻訳書の場合は「原著出版年(翻訳書出版年)」で表示
-                      ref.yearSuffix ? 
-                        `${migratedRef.originalYear || ''}(${ref.year || ''}${ref.yearSuffix})` :
-                        `${migratedRef.originalYear || ''}(${ref.year || ''})`
-                    ) : (
-                      ref.yearSuffix ? `${ref.year}${ref.yearSuffix}` : ref.year
-                    )}
-                  </td>
-                  <td className="publisher-cell">
-                    {ref.publisher || ref.journalName || '-'}
-                  </td>
-                  <td className="link-cell">
-                    {getExternalLink(ref) ? (
-                      <a 
-                        href={getExternalLink(ref)} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="external-link"
-                        title={ref.doi ? `DOI: ${ref.doi}` : 'リンクを開く'}
-                      >
-                        🔗
-                      </a>
-                    ) : (
-                      <span className="no-link">-</span>
-                    )}
-                  </td>
-                  <td className="actions-cell">
-                    <div className="action-buttons">
-                      <button
-                        onClick={() => copyFormatted(migratedRef, 'citation')}
-                        className="btn btn-sm btn-copy"
-                        title="引用形式でコピー"
-                      >
-                        📋
-                      </button>
-                      <button
-                        onClick={() => copyFormatted(migratedRef, 'reference')}
-                        className="btn btn-sm btn-copy"
-                        title="参考文献形式でコピー"
-                      >
-                        📖
-                      </button>
-                      <button
-                        onClick={() => onEdit(migratedRef)}
-                        className="btn btn-sm btn-edit"
-                        title="編集"
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        onClick={() => onDelete(ref.id)}
-                        className="btn btn-sm btn-delete"
-                        title="削除"
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
+                    </td>
+                    <td className="actions-cell">
+                      <div className="action-buttons">
+                        <button
+                          onClick={() => copyFormatted(migratedRef, 'citation')}
+                          className="btn btn-sm btn-copy"
+                          title="引用形式でコピー(割注)"
+                        >
+                          📋
+                        </button>
+                        <button
+                          onClick={() => copyFormatted(migratedRef, 'reference')}
+                          className="btn btn-sm btn-copy"
+                          title="参考文献形式でコピー"
+                        >
+                          📖
+                        </button>
+                        <button
+                          onClick={() => onEdit(migratedRef)}
+                          className="btn btn-sm btn-edit"
+                          title="編集"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => onDelete(ref.id)}
+                          className="btn btn-sm btn-delete"
+                          title="削除"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
               });
             })()}
           </tbody>
