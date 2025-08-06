@@ -4,9 +4,8 @@ import ChangelogModal from './ChangelogModal';
 
 const VersionInfo = () => {
   const [showChangelog, setShowChangelog] = useState(false);
-  
-  // アプリケーションの更新日時 (2025年6月17日)
-  const updateDate = new Date('2025-06-18').toLocaleDateString('ja-JP', {
+
+  const updateDate = new Date('2025-08-06').toLocaleDateString('ja-JP', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
