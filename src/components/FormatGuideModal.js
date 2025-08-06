@@ -80,7 +80,7 @@ const FormatGuideModal = ({ isOpen, onClose }) => {
     website: {
       title: 'インターネット上の資料',
       format: '著者もしくは団体名「ページの名称」URL (閲覧年月日)',
-      example: '文部科学省ウェブサイト「学習指導要領『生きる力』」https://www.mext.go.jp/a_menu/shotou/new-cs/index.htm (2020年2月11日閲覧)'
+      example: '文部科学省webサイト 「学習指導要領『生きる力』」 https://www.mext.go.jp/a_menu/shotou/new-cs/index.htm (2020年2月11日閲覧)'
     },
     audiovisual: {
       title: '視聴覚資料',

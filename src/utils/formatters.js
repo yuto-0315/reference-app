@@ -285,10 +285,10 @@ export const getReferenceTypeFields = (type) => {
     ],
 
     'website': [
-      { key: 'organization', label: 'ウェブサイト運営団体名', required: true, type: 'text' },
-      { key: 'title', label: 'ページタイトル', required: true, type: 'text' },
-      { key: 'url', label: 'URL', required: true, type: 'url' },
-      { key: 'accessDate', label: '閲覧年月日', required: true, type: 'date' }
+      { key: 'organization', label: 'ウェブサイト運営団体名', required: true, type: 'text', description: 'Webサイトの運営団体や著者名を入力してください。', example: '文部科学省ウェブサイト' },
+      { key: 'title', label: 'ページタイトル', required: true, type: 'text', description: 'Webページの正式なタイトルを入力してください。', example: '学習指導要領「生きる力」' },
+      { key: 'url', label: 'URL', required: true, type: 'url', description: 'WebページのURLを入力してください。', example: 'https://www.mext.go.jp/a_menu/shotou/new-cs/index.htm' },
+      { key: 'accessDate', label: '閲覧年月日', required: true, type: 'date', description: '実際にアクセスした日付を入力してください。', example: '2020-02-11' }
     ],
 
     'audiovisual': [
@@ -387,47 +387,70 @@ export const addYearSuffixes = (references) => {
     return references;
   }
 
+  // Webサイトの場合は全件を登録順でサフィックス付与（1件のみは付与しない）
+  const websiteRefs = references
+    .map((ref, idx) => ({ ref: migrateReferenceData(ref), originalIndex: idx }))
+    .filter(item => item.ref.type === 'website');
+
+  const updatedReferences = [...references];
+
+  if (websiteRefs.length > 1) {
+    // createdAt順でソート
+    websiteRefs.sort((a, b) => {
+      const dateA = new Date(a.ref.createdAt || 0);
+      const dateB = new Date(b.ref.createdAt || 0);
+      return dateA - dateB;
+    });
+    websiteRefs.forEach((item, index) => {
+      const suffix = String.fromCharCode(97 + index); // a, b, c...
+      updatedReferences[item.originalIndex] = {
+        ...item.ref,
+        yearSuffix: suffix,
+        displayYear: suffix // WebサイトはdisplayYear未使用だが一応セット
+      };
+    });
+  } else if (websiteRefs.length === 1) {
+    // サフィックスなし
+    updatedReferences[websiteRefs[0].originalIndex] = {
+      ...websiteRefs[0].ref,
+      yearSuffix: undefined,
+      displayYear: undefined
+    };
+  }
+
+  // Webサイト以外は従来通りグループ化
+  const nonWebsiteRefs = references
+    .map((ref, idx) => ({ ref: migrateReferenceData(ref), originalIndex: idx }))
+    .filter(item => item.ref.type !== 'website');
+
   // 著者と年でグループ化
   const groups = {};
-  
-  references.forEach((ref, index) => {
-    const migratedRef = migrateReferenceData(ref);
+  nonWebsiteRefs.forEach((item) => {
+    const ref = item.ref;
     let authorKey = '';
-    
-    // 著者キーを生成（文献種別によって異なる）
-    if (migratedRef.type === 'translation') {
-      // 翻訳書の場合は原著者を使用
-      if (migratedRef.originalAuthors && migratedRef.originalAuthors.length > 0) {
-        authorKey = migratedRef.originalAuthors[0].lastName || '';
+    if (ref.type === 'translation') {
+      if (ref.originalAuthors && ref.originalAuthors.length > 0) {
+        authorKey = ref.originalAuthors[0].lastName || '';
       } else {
-        authorKey = migratedRef.originalAuthorLastName || '';
+        authorKey = ref.originalAuthorLastName || '';
       }
-    } else if (migratedRef.type === 'organization-book') {
-      // 団体出版本の場合は団体名を使用
-      authorKey = migratedRef.organization || '';
-    } else if (migratedRef.authors && migratedRef.authors.length > 0) {
-      // 通常の文献の場合は筆頭著者の姓を使用
-      authorKey = migratedRef.authors[0].lastName || '';
+    } else if (ref.type === 'organization-book') {
+      authorKey = ref.organization || '';
+    } else if (ref.authors && ref.authors.length > 0) {
+      authorKey = ref.authors[0].lastName || '';
     } else {
-      authorKey = migratedRef.composer || '';
+      authorKey = ref.composer || '';
     }
-    
-    const year = migratedRef.year;
+    const year = ref.year;
     const groupKey = `${authorKey}_${year}`;
-    
     if (!groups[groupKey]) {
       groups[groupKey] = [];
     }
-    
-    groups[groupKey].push({ ref: migratedRef, originalIndex: index });
+    groups[groupKey].push(item);
   });
-  
-  // 各グループで2つ以上の文献がある場合にアルファベットを付与
-  const updatedReferences = [...references];
-  
+
   Object.values(groups).forEach(group => {
     if (group.length > 1) {
-      // 登録順（createdAtの古い順）でソートして先に登録されたものからa,b,cを付与
       group.sort((a, b) => {
         const dateA = new Date(a.ref.createdAt || 0);
         const dateB = new Date(b.ref.createdAt || 0);
@@ -444,7 +467,7 @@ export const addYearSuffixes = (references) => {
       });
     }
   });
-  
+
   return updatedReferences;
 };
 
@@ -595,13 +618,15 @@ const formatScoreForeign = (ref) => {
 };
 
 const formatWebsite = (ref) => {
-  const { organization, title, url, accessDate } = ref;
-  const formattedDate = new Date(accessDate).toLocaleDateString('ja-JP', {
+  const { organization, title, url, accessDate, yearSuffix } = ref;
+  // アルファベットサフィックスがあれば末尾に付加
+  const formattedDate = accessDate ? new Date(accessDate).toLocaleDateString('ja-JP', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
-  });
-  return `${organization}ウェブサイト 「${title}」 ${url} (${formattedDate}閲覧)`;
+  }) : '';
+  const suffix = yearSuffix ? yearSuffix : '';
+  return `${organization}webサイト 「${title}」 ${url} (${formattedDate}閲覧)${suffix}`;
 };
 
 const formatAudiovisual = (ref) => {
