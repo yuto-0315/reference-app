@@ -1,5 +1,15 @@
 // アプリケーションの変更履歴
 export const CHANGELOG = [
+    {
+    version: '1.5.0',
+    date: '2025-08-06',
+    changes: [
+      {
+        type: 'feature',
+        description: 'webページを参考文献として使用するときの書式を追加'
+      }
+    ]
+  },
   {
     version: '1.4.0',
     date: '2025-06-28',
