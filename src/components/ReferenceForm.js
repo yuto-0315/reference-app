@@ -136,7 +136,6 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
 
   const validateForm = () => {
     const newErrors = {};
-    
     // 著者フィールドがある文献タイプの場合のみ著者の検証を行う
     const hasAuthorsField = fields.some(field => field.key === 'authors');
     if (hasAuthorsField) {
@@ -149,7 +148,6 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
         }
       });
     }
-
     // 翻訳書の場合は原著者と訳者の検証を行う
     if (formData.type === 'translation') {
       // 原著者（日本語）の検証
@@ -188,15 +186,14 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
         });
       }
     }
-    
+    // Webサイトの場合は「出版年」「ページ」不要なのでバリデーション不要
     // その他のフィールドの検証
     fields.forEach(field => {
       if (field.key === 'authors') return; // 著者は上で処理済み
-      
+      if (formData.type === 'website' && (field.key === 'year' || field.key === 'pages')) return;
       if (field.required && !formData[field.key]) {
         newErrors[field.key] = `${field.label}は必須項目です`;
       }
-      // 特別な検証: メールアドレス形式のURL
       if (field.type === 'url' && formData[field.key] && 
           !formData[field.key].match(/^https?:\/\/.+/)) {
         newErrors[field.key] = '有効なURLを入力してください（http://またはhttps://で始まる）';
