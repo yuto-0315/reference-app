@@ -1,5 +1,15 @@
 // アプリケーションの変更履歴
 export const CHANGELOG = [
+   {
+    version: '1.5.2',
+    date: '2025-08-06',
+    changes: [
+      {
+        type: 'fix',
+        description: '引用ボタンを押した時に不要な情報が聞かれる問題を修正'
+      }
+    ]
+  },
       {
     version: '1.5.1',
     date: '2025-08-06',
