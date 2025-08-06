@@ -352,7 +352,15 @@ export const formatCitation = (reference, page = '') => {
 
   // 著者名の取得
   let authorName = '';
-  if (type === 'translation') {
+  if (type === 'website') {
+    console.log(reference);
+    authorName = reference.organization
+      ? reference.organization
+      : '';
+
+      return `(${authorName}webページ ${yearSuffix})`;
+
+  } else if (type === 'translation') {
     // 翻訳書の場合は筆頭原著者をカタカナで
     if (reference.originalAuthors && reference.originalAuthors.length > 0) {
       authorName = reference.originalAuthors[0].lastName || '';
