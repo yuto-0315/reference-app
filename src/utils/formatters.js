@@ -34,8 +34,6 @@ export const REFERENCE_TYPE_HINTS = {
 
 // 各文献種別に必要なフィールド
 export const getReferenceTypeFields = (type) => {
-  const commonFields = ['authors', 'title', 'year', 'publisher'];
-
   const fieldConfigs = {
     'japanese-book': [
       {
@@ -364,7 +362,7 @@ export const formatCitation = (reference, page = '') => {
   } else if (type === 'translation') {
     // 翻訳書の場合は筆頭原著者をカタカナで
     if (reference.originalAuthors && reference.originalAuthors.length > 0) {
-      authorName = reference.originalAuthors[0].lastName || '';
+      authorName = reference.originalAuthors.map(author => author.lastName).join('・');
     } else {
       // 後方互換性：古い形式のデータをサポート
       authorName = reference.originalAuthorLastName || '';
