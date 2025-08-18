@@ -67,7 +67,7 @@ export const CHANGELOG = [
     ]
   },
   {
-    version: '1.3.4',
+    version: '1.3.4.1',
     date: '2025-06-18',
     changes: [
       {
