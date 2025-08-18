@@ -210,17 +210,13 @@ function App() {
     }
   };
 
-  const getCheckedReferences = () => {
-    return references.filter(ref => checkedReferences.has(ref.id));
-  };
-
   return (
     <div className="app">
       <header className="header">
         <div className="header-content">
           <div className="header-main">
             <h1>📚 参考文献管理アプリ</h1>
-            <p>学術論文の参考文献と引用を正しい形式で管理・生成</p>
+            <p>音楽領域-卒業論文の参考文献と引用を正しい形式で管理・生成</p>
             <VersionInfo />
           </div>
           <div className="header-controls">
