@@ -1,5 +1,15 @@
 // アプリケーションの変更履歴
 export const CHANGELOG = [
+  {
+    version: '1.5.3',
+    date: '2025-08-18',
+    changes: [
+      {
+        type: 'feature',
+        description: '色のテーマを追加'
+      }
+    ]
+  },
    {
     version: '1.5.2',
     date: '2025-08-06',
