@@ -567,6 +567,345 @@ export const themes = {
       shadow: 'rgba(72, 166, 167, 0.3)',
       shadowLight: 'rgba(72, 166, 167, 0.1)',
     }
+  },
+    sunset: {
+    name: 'サンセット',
+    colors: {
+      primary: '#FF9966',
+      primaryHover: '#FF7F4D',
+      secondary: '#FFD1A9',
+      secondaryHover: '#FF9966',
+      accent: '#CC5A2F',
+      accentHover: '#B34726',
+      danger: '#E57373',
+      dangerHover: '#D32F2F',
+
+      background: '#FFF5F0',
+      surface: '#FFFFFF',
+      surfaceHover: '#F8F9FA',
+
+      text: {
+        primary: '#B34726',
+        secondary: '#FF9966',
+        muted: '#FFD1A9',
+        onSurface: '#333333'
+      },
+
+      border: {
+        primary: '#FFD1A9',
+        secondary: '#FF9966',
+        accent: '#CC5A2F'
+      },
+
+      shadow: 'rgba(255, 153, 102, 0.3)',
+      shadowLight: 'rgba(255, 153, 102, 0.1)',
+    }
+  },
+
+  forest: {
+    name: 'フォレスト',
+    colors: {
+      primary: '#4CAF50',
+      primaryHover: '#43A047',
+      secondary: '#A5D6A7',
+      secondaryHover: '#81C784',
+      accent: '#2E7D32',
+      accentHover: '#1B5E20',
+      danger: '#E57373',
+      dangerHover: '#D32F2F',
+
+      background: '#F1F8F6',
+      surface: '#FFFFFF',
+      surfaceHover: '#F8F9FA',
+
+      text: {
+        primary: '#2E7D32',
+        secondary: '#4CAF50',
+        muted: '#A5D6A7',
+        onSurface: '#333333'
+      },
+
+      border: {
+        primary: '#A5D6A7',
+        secondary: '#81C784',
+        accent: '#2E7D32'
+      },
+
+      shadow: 'rgba(76, 175, 80, 0.3)',
+      shadowLight: 'rgba(76, 175, 80, 0.1)',
+    }
+  },
+
+  midnight: {
+    name: 'ミッドナイト',
+    colors: {
+      primary: '#37474F',
+      primaryHover: '#263238',
+      secondary: '#90A4AE',
+      secondaryHover: '#607D8B',
+      accent: '#455A64',
+      accentHover: '#37474F',
+      danger: '#EF5350',
+      dangerHover: '#C62828',
+
+      background: '#ECEFF1',
+      surface: '#FFFFFF',
+      surfaceHover: '#F5F5F5',
+
+      text: {
+        primary: '#263238',
+        secondary: '#455A64',
+        muted: '#90A4AE',
+        onSurface: '#333333'
+      },
+
+      border: {
+        primary: '#B0BEC5',
+        secondary: '#90A4AE',
+        accent: '#455A64'
+      },
+
+      shadow: 'rgba(55, 71, 79, 0.3)',
+      shadowLight: 'rgba(55, 71, 79, 0.1)',
+    }
+  },
+
+  coral: {
+    name: 'コーラル',
+    colors: {
+      primary: '#FF6F61',
+      primaryHover: '#E85C50',
+      secondary: '#FFD5D0',
+      secondaryHover: '#FF6F61',
+      accent: '#D94F3C',
+      accentHover: '#C13C2E',
+      danger: '#E57373',
+      dangerHover: '#D32F2F',
+
+      background: '#FFF6F5',
+      surface: '#FFFFFF',
+      surfaceHover: '#F8F9FA',
+
+      text: {
+        primary: '#C13C2E',
+        secondary: '#FF6F61',
+        muted: '#FFD5D0',
+        onSurface: '#333333'
+      },
+
+      border: {
+        primary: '#FFD5D0',
+        secondary: '#FF6F61',
+        accent: '#D94F3C'
+      },
+
+      shadow: 'rgba(255, 111, 97, 0.3)',
+      shadowLight: 'rgba(255, 111, 97, 0.1)',
+    }
+  },
+
+  grape: {
+    name: 'グレープ',
+    colors: {
+      primary: '#8E44AD',
+      primaryHover: '#732D91',
+      secondary: '#D7BDE2',
+      secondaryHover: '#A569BD',
+      accent: '#6C3483',
+      accentHover: '#512E5F',
+      danger: '#E57373',
+      dangerHover: '#D32F2F',
+
+      background: '#F9F3FB',
+      surface: '#FFFFFF',
+      surfaceHover: '#F8F9FA',
+
+      text: {
+        primary: '#6C3483',
+        secondary: '#8E44AD',
+        muted: '#D7BDE2',
+        onSurface: '#333333'
+      },
+
+      border: {
+        primary: '#D7BDE2',
+        secondary: '#A569BD',
+        accent: '#6C3483'
+      },
+
+      shadow: 'rgba(142, 68, 173, 0.3)',
+      shadowLight: 'rgba(142, 68, 173, 0.1)',
+    }
+  },
+
+  lemon: {
+    name: 'レモン',
+    colors: {
+      primary: '#FFEB3B',
+      primaryHover: '#FDD835',
+      secondary: '#FFF9C4',
+      secondaryHover: '#FFEB3B',
+      accent: '#FBC02D',
+      accentHover: '#F57F17',
+      danger: '#E57373',
+      dangerHover: '#D32F2F',
+
+      background: '#FFFEF0',
+      surface: '#FFFFFF',
+      surfaceHover: '#F8F9FA',
+
+      text: {
+        primary: '#F57F17',
+        secondary: '#FFEB3B',
+        muted: '#FFF9C4',
+        onSurface: '#333333'
+      },
+
+      border: {
+        primary: '#FFF9C4',
+        secondary: '#FFEB3B',
+        accent: '#FBC02D'
+      },
+
+      shadow: 'rgba(255, 235, 59, 0.3)',
+      shadowLight: 'rgba(255, 235, 59, 0.1)',
+    }
+  },
+
+  sky: {
+    name: 'スカイ',
+    colors: {
+      primary: '#03A9F4',
+      primaryHover: '#0288D1',
+      secondary: '#B3E5FC',
+      secondaryHover: '#81D4FA',
+      accent: '#0277BD',
+      accentHover: '#01579B',
+      danger: '#E57373',
+      dangerHover: '#D32F2F',
+
+      background: '#F0FBFF',
+      surface: '#FFFFFF',
+      surfaceHover: '#F8F9FA',
+
+      text: {
+        primary: '#0277BD',
+        secondary: '#03A9F4',
+        muted: '#B3E5FC',
+        onSurface: '#333333'
+      },
+
+      border: {
+        primary: '#B3E5FC',
+        secondary: '#81D4FA',
+        accent: '#0277BD'
+      },
+
+      shadow: 'rgba(3, 169, 244, 0.3)',
+      shadowLight: 'rgba(3, 169, 244, 0.1)',
+    }
+  },
+
+  cocoa: {
+    name: 'ココア',
+    colors: {
+      primary: '#6D4C41',
+      primaryHover: '#5D4037',
+      secondary: '#D7CCC8',
+      secondaryHover: '#BCAAA4',
+      accent: '#4E342E',
+      accentHover: '#3E2723',
+      danger: '#E57373',
+      dangerHover: '#D32F2F',
+
+      background: '#F8F6F4',
+      surface: '#FFFFFF',
+      surfaceHover: '#F8F9FA',
+
+      text: {
+        primary: '#3E2723',
+        secondary: '#6D4C41',
+        muted: '#D7CCC8',
+        onSurface: '#333333'
+      },
+
+      border: {
+        primary: '#D7CCC8',
+        secondary: '#BCAAA4',
+        accent: '#4E342E'
+      },
+
+      shadow: 'rgba(109, 76, 65, 0.3)',
+      shadowLight: 'rgba(109, 76, 65, 0.1)',
+    }
+  },
+
+  moss: {
+    name: 'モス',
+    colors: {
+      primary: '#8C9A6D',
+      primaryHover: '#7A875C',
+      secondary: '#DCE1C5',
+      secondaryHover: '#BFC7A5',
+      accent: '#6B7751',
+      accentHover: '#55613E',
+      danger: '#E57373',
+      dangerHover: '#D32F2F',
+
+      background: '#FAFBF7',
+      surface: '#FFFFFF',
+      surfaceHover: '#F8F9FA',
+
+      text: {
+        primary: '#55613E',
+        secondary: '#8C9A6D',
+        muted: '#DCE1C5',
+        onSurface: '#333333'
+      },
+
+      border: {
+        primary: '#DCE1C5',
+        secondary: '#BFC7A5',
+        accent: '#6B7751'
+      },
+
+      shadow: 'rgba(140, 154, 109, 0.3)',
+      shadowLight: 'rgba(140, 154, 109, 0.1)',
+    }
+  },
+
+  aurora: {
+    name: 'オーロラ',
+    colors: {
+      primary: '#7E57C2',
+      primaryHover: '#673AB7',
+      secondary: '#B39DDB',
+      secondaryHover: '#9575CD',
+      accent: '#4A148C',
+      accentHover: '#311B92',
+      danger: '#E57373',
+      dangerHover: '#D32F2F',
+
+      background: '#F7F5FF',
+      surface: '#FFFFFF',
+      surfaceHover: '#F8F9FA',
+
+      text: {
+        primary: '#4A148C',
+        secondary: '#7E57C2',
+        muted: '#B39DDB',
+        onSurface: '#333333'
+      },
+
+      border: {
+        primary: '#B39DDB',
+        secondary: '#9575CD',
+        accent: '#4A148C'
+      },
+
+      shadow: 'rgba(126, 87, 194, 0.3)',
+      shadowLight: 'rgba(126, 87, 194, 0.1)',
+    }
   }
 };
 
