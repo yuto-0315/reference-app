@@ -5,8 +5,8 @@ export const CHANGELOG = [
     date: '2025-08-06',
     changes: [
       {
-        type: 'fix',
-        description: '引用ボタンを押した時に不要な情報が聞かれる問題を修正'
+        type: 'improvement',
+        description: '引用ボタンを押した時に不要な情報が聞かれる問題を改善'
       }
     ]
   },

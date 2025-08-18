@@ -44,3 +44,7 @@
   position: absolute;
   left: 0;
 }
+
+.change-item{
+  display: flex;
+}
