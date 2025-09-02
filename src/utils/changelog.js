@@ -1,6 +1,28 @@
 // アプリケーションの変更履歴
 export const CHANGELOG = [
   {
+    version: '2.0.0',
+    date: '2025-09-03',
+    changes: [
+      {
+        type: 'feature',
+        description: 'CiNii / NDL 連携: opensearch JSON の正規化と詳細 (.json) 取得によるメタデータ自動マッピングを追加'
+      },
+      {
+        type: 'feature',
+        description: 'MappingModal: 著者抽出の改善（dc:creator 優先、URL-only 除外）、著者選択・編集 UI、前からN文字分割機能を追加'
+      },
+      {
+        type: 'improvement',
+        description: 'DOI と NDL リンクを dc:identifier から抽出し、リンク欄は NDL を優先、DOI は別フィールドで保持・表示するように変更'
+      },
+      {
+        type: 'improvement',
+        description: '取得メタデータの安全なマージ処理を導入（空の値で既存値を上書きしない）およびデバッグログの追加'
+      }
+    ]
+  },
+  {
     version: '1.5.3',
     date: '2025-08-18',
     changes: [

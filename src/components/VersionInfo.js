@@ -1,15 +1,49 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import packageInfo from '../../package.json';
-import ChangelogModal from './ChangelogModal';
+import UpdateGuideModal from './UpdateGuideModal';
+
+const STORAGE_KEY = 'referenceApp:lastSeenVersion';
 
 const VersionInfo = () => {
   const [showChangelog, setShowChangelog] = useState(false);
 
-  const updateDate = new Date('2025-08-06').toLocaleDateString('ja-JP', {
+  const updateDate = new Date('2025-09-03').toLocaleDateString('ja-JP', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
   });
+
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      // force show if any query param present (e.g., ?changelog=1 or ?update)
+      const force = params.toString() !== '';
+
+      const lastSeen = localStorage.getItem(STORAGE_KEY);
+      const current = packageInfo.version;
+
+      if (force) {
+        setShowChangelog(true);
+        return;
+      }
+
+      if (!lastSeen || lastSeen !== current) {
+        setShowChangelog(true);
+      }
+    } catch (e) {
+      // ignore storage errors
+      setShowChangelog(true);
+    }
+  }, []);
+
+  const handleClose = () => {
+    try {
+      localStorage.setItem(STORAGE_KEY, packageInfo.version);
+    } catch (e) {
+      // ignore
+    }
+    setShowChangelog(false);
+  };
 
   return (
     <>
@@ -21,9 +55,9 @@ const VersionInfo = () => {
         </div>
       </div>
       
-      <ChangelogModal 
-        isOpen={showChangelog} 
-        onClose={() => setShowChangelog(false)} 
+      <UpdateGuideModal
+        isOpen={showChangelog}
+        onClose={handleClose}
       />
     </>
   );

@@ -246,9 +246,63 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
   };
 
   const handleSelectCiniiResult = (result) => {
-      setApiData(result);
-      setShowResultsModal(false);
-      setShowMappingModal(true);
+      // fetch detailed article info (authors etc.) if possible, then open mapping modal
+      (async () => {
+        try {
+          const { fetchCiNiiArticleDetails } = await import('../utils/api');
+          const details = await fetchCiNiiArticleDetails(result.seeAlso || result.link);
+          // merge details into result but do not overwrite non-empty result fields with empty values from details
+          const merged = { ...result };
+          if (details) {
+            for (const k of Object.keys(details)) {
+              const v = details[k];
+              // skip null/undefined
+              if (v === null || v === undefined) continue;
+              // skip empty strings
+              if (typeof v === 'string' && v.trim() === '') continue;
+              // skip empty arrays
+              if (Array.isArray(v) && v.length === 0) continue;
+              // otherwise use details' value
+              merged[k] = v;
+            }
+          }
+
+          // if details contains explicit creators/authors, decide whether to prefer them
+          const detailAuthors = details && (details['dc:creator'] || details.creators || details.authors);
+          const resultAuthors = result['dc:creator'] || result.creators || result.authors || merged.creators || merged.authors || [];
+          if (detailAuthors) {
+            const isUrl = (s) => typeof s === 'string' && /^https?:\/\//.test(s);
+            const detailAllUrls = Array.isArray(detailAuthors) && detailAuthors.length > 0 && detailAuthors.every(a => isUrl(a));
+            const resultHasNames = Array.isArray(resultAuthors) && resultAuthors.some(a => (typeof a === 'string' && !isUrl(a)) || (a && a.name));
+
+            if (detailAllUrls && resultHasNames) {
+              // keep original human-readable authors from search result
+              merged.creators = resultAuthors;
+              merged.authors = resultAuthors;
+            } else {
+              // otherwise prefer the detailed authors (mapped already into merged by above loop)
+              // ensure creators/authors fields exist
+              if (details['dc:creator'] && Array.isArray(details['dc:creator'])) {
+                merged.creators = details['dc:creator'];
+                merged.authors = details['dc:creator'];
+              } else if (details.creators) {
+                merged.creators = details.creators;
+                merged.authors = details.creators;
+              } else if (details.authors) {
+                merged.creators = details.authors;
+                merged.authors = details.authors;
+              }
+            }
+          }
+
+          setApiData(merged);
+        } catch (e) {
+          // fallback: use the search result as-is
+          setApiData(result);
+        }
+        setShowResultsModal(false);
+        setShowMappingModal(true);
+      })();
   };
 
   const renderField = (field) => {
