@@ -77,6 +77,7 @@ npm start
 - **スタイリング**: CSS3
 - **データ保存**: LocalStorage + JSON
 - **ID管理**: UUID v4
+- **API**: 国立国会図書館API + CiNii API
 
 ## 引用形式について
 

@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { REFERENCE_TYPES, REFERENCE_TYPE_HINTS, getReferenceTypeFields } from '../utils/formatters';
 import InfoTooltip from './InfoTooltip';
+import APISearch from './APISearch';
+import MappingModal from './MappingModal';
+import SearchResultsModal from './SearchResultsModal';
+import { fetchBookInfoByISBN, searchCiNiiByTitle } from '../utils/api';
 
 const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
   // 初期データの著者フィールド設定を調整
@@ -36,6 +40,10 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
 
   const [formData, setFormData] = useState(getInitialFormData());
   const [errors, setErrors] = useState({});
+  const [showMappingModal, setShowMappingModal] = useState(false);
+  const [showResultsModal, setShowResultsModal] = useState(false);
+  const [apiData, setApiData] = useState(null);
+  const [ciniiResults, setCiniiResults] = useState([]);
 
   useEffect(() => {
     if (initialData) {
@@ -215,6 +223,32 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
       setFormData(resetData);
       setErrors({});
     }
+  };
+
+
+  const handleIsbnSearchResult = async (isbn) => {
+    const data = await fetchBookInfoByISBN(isbn);
+    if (data) {
+      setApiData(data);
+      setShowMappingModal(true);
+    }
+    return !!data;
+  };
+  
+  const handleCiniiSearchResult = async (query) => {
+      const results = await searchCiNiiByTitle(query);
+      setCiniiResults(results);
+      setShowResultsModal(true);
+  };
+  
+  const handleApplyMapping = (mappedData) => {
+    setFormData(prev => ({ ...prev, ...mappedData }));
+  };
+
+  const handleSelectCiniiResult = (result) => {
+      setApiData(result);
+      setShowResultsModal(false);
+      setShowMappingModal(true);
   };
 
   const renderField = (field) => {
@@ -420,6 +454,12 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
         )}
       </div>
 
+      <APISearch 
+        type={formData.type} 
+        onSearchResult={handleIsbnSearchResult}
+        onCiniiResult={handleCiniiSearchResult}
+      />
+
       {fields.map(renderField)}
 
       <div className="button-group">
@@ -436,6 +476,21 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
           </button>
         )}
       </div>
+      
+      <MappingModal 
+        isOpen={showMappingModal}
+        onClose={() => setShowMappingModal(false)}
+        apiData={apiData}
+        onApply={handleApplyMapping}
+        referenceType={formData.type}
+      />
+
+      <SearchResultsModal 
+        isOpen={showResultsModal}
+        onClose={() => setShowResultsModal(false)}
+        results={ciniiResults}
+        onSelect={handleSelectCiniiResult}
+      />
     </form>
   );
 };

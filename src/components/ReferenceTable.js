@@ -71,7 +71,8 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
 
       switch (sortBy) {
         case 'year':
-          compareValue = (a.year || 0) - (b.year || 0);
+          // use migrated values and coerce to Number to avoid string subtraction
+          compareValue = (Number(migratedA.year) || 0) - (Number(migratedB.year) || 0);
           break;
         case 'reading':
           // 筆頭著者の読み仮名または姓で比較、団体出版本の場合は団体名
@@ -232,6 +233,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                   title="全て選択/解除"
                 />
               </th>
+              <th className="cover-art-header">書影</th>
               <th>著者</th>
               <th>タイトル</th>
               <th>発行年</th>
@@ -255,6 +257,25 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                         checked={checkedReferences.has(ref.id)}
                         onChange={() => onToggleCheck(ref.id)}
                       />
+                    </td>
+                    <td className="cover-art-cell">
+                      {(() => {
+                        const imageUrl = migratedRef.isbn ? `https://ndlsearch.ndl.go.jp/thumbnail/${migratedRef.isbn}.jpg` : null;
+                        if (imageUrl) {
+                          return (
+                            <>
+                              <img
+                                src={imageUrl}
+                                alt={`${ref.title}の書影`}
+                                style={{ height: '60px', width: 'auto' }}
+                                onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'inline'; }}
+                              />
+                              <span style={{ display: 'none' }}>-</span>
+                            </>
+                          );
+                        }
+                        return '-';
+                      })()}
                     </td>
                     <td className="author-cell">
                       <div className="author-name">

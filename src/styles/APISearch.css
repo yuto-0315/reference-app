@@ -1,0 +1,39 @@
+/* src/styles/APISearch.css */
+.api-search-container {
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: var(--color-surfaceHover);
+  border-radius: 8px;
+  border: 1px solid var(--color-border-primary);
+}
+
+.api-search-container label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.search-input-group {
+  display: flex;
+  gap: 10px;
+}
+
+.search-input-group input {
+  flex-grow: 1;
+  padding: 10px;
+  border: 1px solid var(--color-border-primary);
+  border-radius: 4px;
+}
+
+.mapping-creators {
+    margin-top: 1rem;
+}
+.search-result-item {
+    cursor: pointer;
+    padding: 0.5rem;
+    border-bottom: 1px solid #eee;
+}
+.search-result-item:hover {
+    background-color: #f0f0f0;
+}
