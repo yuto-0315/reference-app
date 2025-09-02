@@ -4,6 +4,8 @@
 /* Layout styles */
 @import './styles/header.css';
 
+@import './styles/APISearch.css';
+
 /* Component styles */
 @import './styles/VersionInfo.css';
 @import './styles/ThemeToggle.css';
