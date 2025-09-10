@@ -194,7 +194,7 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType }) => {
                     return;
                 }
                 const display = name;
-                if (typeof display === 'string') {
+                    if (typeof display === 'string') {
                     const nameStr = display.trim();
                     let last = '';
                     let first = '';
@@ -202,6 +202,11 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType }) => {
                         const parts = nameStr.split(',').map(s => s.trim());
                         last = parts[0] || '';
                         first = parts[1] || '';
+                    } else if (nameStr.indexOf(' ') >= 0) {
+                        // if ASCII (half-width) space exists, prefer splitting on that
+                        const parts = nameStr.split(/\s+/);
+                        last = parts[0] || '';
+                        first = parts.slice(1).join(' ') || '';
                     } else if (isJapaneseText(nameStr)) {
                         const parts = splitJapaneseName(nameStr);
                         last = parts[0] || '';
@@ -222,6 +227,11 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType }) => {
                         const parts = name.split(',').map(s => s.trim());
                         last = parts[0] || '';
                         first = parts[1] || '';
+                    } else if (name.indexOf(' ') >= 0) {
+                        // prefer splitting on ASCII space when present
+                        const parts = name.split(/\s+/);
+                        last = parts[0] || '';
+                        first = parts.slice(1).join(' ') || '';
                     } else if (isJapaneseText(name)) {
                         const parts = splitJapaneseName(name);
                         last = parts[0] || '';
@@ -277,6 +287,10 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType }) => {
                         const parts = name.split(',').map(s => s.trim());
                         last = parts[0] || '';
                         first = parts[1] || '';
+                    } else if (name.indexOf(' ') >= 0) {
+                        const parts = name.split(/\s+/);
+                        last = parts[0] || '';
+                        first = parts.slice(1).join(' ') || '';
                     } else if (isJapaneseText(name)) {
                         const parts = splitJapaneseName(name);
                         last = parts[0] || '';
@@ -297,6 +311,10 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType }) => {
                     const parts = name.split(',').map(s => s.trim());
                     last = parts[0] || '';
                     first = parts[1] || '';
+                } else if (name.indexOf(' ') >= 0) {
+                    const parts = name.split(/\s+/);
+                    last = parts[0] || '';
+                    first = parts.slice(1).join(' ') || '';
                 } else if (isJapaneseText(name)) {
                     const parts = splitJapaneseName(name);
                     last = parts[0] || '';
