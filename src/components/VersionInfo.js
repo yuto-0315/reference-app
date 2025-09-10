@@ -53,6 +53,15 @@ const VersionInfo = () => {
           <span className="update-date">最終更新: {updateDate}</span>
           <span className="changelog-hint">📝 変更履歴</span>
         </div>
+        <div className="credits">
+          <div>一部メタデータは国立国会図書館サーチ（NDL）およびCiNii APIから取得しています。</div>
+          <div className="credits-links">
+            <a href="https://ndl.go.jp" target="_blank" rel="noopener noreferrer">国立国会図書館サーチ</a>
+            <span> ／ </span>
+            <a href="https://ci.nii.ac.jp" target="_blank" rel="noopener noreferrer">CiNii</a>
+          </div>
+          <div className="credits-license">該当データは各提供機関の利用条件（例: CC BY 4.0 等）に従っています。データ提供元のクレジット表示を行ってください。</div>
+        </div>
       </div>
       
       <UpdateGuideModal

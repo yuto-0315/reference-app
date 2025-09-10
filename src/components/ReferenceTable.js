@@ -192,7 +192,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
             className={`sort-btn ${sortBy === 'reading' ? 'active' : ''}`}
             onClick={() => handleSort('reading')}
           >
-            読み仮名 {getSortIcon('reading')}
+            著者名 {getSortIcon('reading')}
           </button>
           <button
             className={`sort-btn ${sortBy === 'title' ? 'active' : ''}`}
