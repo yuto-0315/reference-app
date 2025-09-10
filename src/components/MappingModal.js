@@ -115,6 +115,7 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType }) => {
                 'japanese-book': { title: 'title', publisher: 'publisher', year: 'year', authors: 'creators', isbn: 'isbn', link: 'link', doi: 'doi' },
                 'english-book': { title: 'title', publisher: 'publisher', year: 'year', authors: 'creators', isbn: 'isbn', link: 'link', doi: 'doi' },
                 'japanese-journal': { title: 'title', journalName: 'journal', publisher: 'publisher', volume: 'volume', issue: 'issue', pages: 'pages', year: 'year', authors: 'authors', link: 'link', doi: 'doi' },
+                'organization-book': { title: 'title', organization: 'publisher', year: 'year', isbn: 'isbn', link: 'link', doi: 'doi' },
             };
             const typeFields = fields[referenceType] || {};
 
@@ -135,6 +136,10 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType }) => {
             // fill common fields from alternative keys if empty
             initialMapping.title = initialMapping.title || getAny(['title', 'dc:title', 'dc:label']);
             initialMapping.publisher = initialMapping.publisher || getAny(['publisher', 'dc:publisher']);
+            // for organization-book, prefer publisher/foaf agent name as organization
+            if (referenceType === 'organization-book') {
+                initialMapping.organization = initialMapping.organization || initialMapping.publisher || getAny(['organization', 'editorialOrganization']);
+            }
             initialMapping.year = initialMapping.year || getAny(['year', 'prism:publicationDate', 'issued']);
             initialMapping.journalName = initialMapping.journalName || getAny(['journal', 'prism:publicationName', 'dc:source']);
             initialMapping.volume = initialMapping.volume || getAny(['volume', 'prism:volume']);
@@ -306,7 +311,13 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType }) => {
                 return { lastName: last, firstName: first, reading: normalizedReading };
             });
 
-        onApply({ ...mapping, authors });
+        // If organization-book, set organization field instead of authors
+        if (referenceType === 'organization-book') {
+            const orgName = mapping.organization || mapping.publisher || '';
+            onApply({ ...mapping, organization: orgName });
+        } else {
+            onApply({ ...mapping, authors });
+        }
         onClose();
     };
 
