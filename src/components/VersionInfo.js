@@ -60,7 +60,7 @@ const VersionInfo = () => {
             <span> ／ </span>
             <a href="https://ci.nii.ac.jp" target="_blank" rel="noopener noreferrer">CiNii</a>
           </div>
-          <div className="credits-license">該当データは各提供機関の利用条件（例: CC BY 4.0 等）に従っています。データ提供元のクレジット表示を行ってください。</div>
+          <div className="credits-license">該当データは各提供機関の利用条件（CC BY 4.0 等）に従っています。</div>
         </div>
       </div>
       
