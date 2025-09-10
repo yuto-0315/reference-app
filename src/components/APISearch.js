@@ -94,7 +94,8 @@ const APISearch = ({ type, onSearchResult, onCiniiResult }) => {
     }
 };
 
-  if (type === 'japanese-book' || type === 'english-book') {
+  // Allow ISBN lookup for normal books and organization-published books
+  if (type === 'japanese-book' || type === 'english-book' || type === 'organization-book') {
     return (
       <div className="api-search-container">
         <label>ISBNで書籍情報を検索</label>
