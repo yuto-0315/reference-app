@@ -311,12 +311,18 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType }) => {
                 return { lastName: last, firstName: first, reading: normalizedReading };
             });
 
+        // Ensure link is also provided as `url` which is the form field key
+        const mappingForApply = { ...mapping };
+        if (mappingForApply.link && !mappingForApply.url) {
+            mappingForApply.url = mappingForApply.link;
+        }
+
         // If organization-book, set organization field instead of authors
         if (referenceType === 'organization-book') {
-            const orgName = mapping.organization || mapping.publisher || '';
-            onApply({ ...mapping, organization: orgName });
+            const orgName = mappingForApply.organization || mappingForApply.publisher || '';
+            onApply({ ...mappingForApply, organization: orgName });
         } else {
-            onApply({ ...mapping, authors });
+            onApply({ ...mappingForApply, authors });
         }
         onClose();
     };
