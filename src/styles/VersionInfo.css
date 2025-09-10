@@ -22,3 +22,21 @@
   color: var(--color-text-onSurface);
   opacity: 0.8;
 }
+
+.credits {
+  margin-top: 6px;
+  font-size: 0.75rem;
+  color: var(--color-text-onSurface);
+  opacity: 0.9;
+  line-height: 1.2;
+}
+
+.credits-links a {
+  color: var(--color-link, #90caf9);
+  text-decoration: underline;
+}
+
+.credits-license {
+  margin-top: 2px;
+  opacity: 0.8;
+}
