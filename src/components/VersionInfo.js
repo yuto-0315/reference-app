@@ -56,9 +56,9 @@ const VersionInfo = () => {
         <div className="credits">
           <div>一部メタデータは国立国会図書館サーチ（NDL）およびCiNii APIから取得しています。</div>
           <div className="credits-links">
-            <a href="https://ndl.go.jp" target="_blank" rel="noopener noreferrer">国立国会図書館サーチ</a>
+            <a href="https://ndl.go.jp" target="_blank" rel="noopener noreferrer" style={{color: 'var(--color-text-onSurface, #90caf9)'}}>国立国会図書館サーチ</a>
             <span> ／ </span>
-            <a href="https://ci.nii.ac.jp" target="_blank" rel="noopener noreferrer">CiNii</a>
+            <a href="https://ci.nii.ac.jp" target="_blank" rel="noopener noreferrer" style={{color: 'var(--color-text-onSurface, #90caf9)'}}>CiNii</a>
           </div>
           <div className="credits-license">該当データは各提供機関の利用条件（CC BY 4.0 等）に従っています。</div>
         </div>
