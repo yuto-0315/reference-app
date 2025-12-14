@@ -63,6 +63,28 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
       );
     });
 
+    // ソート用のヘルパー関数
+    const getReading = (migratedRef) => {
+      if (migratedRef.type === 'organization-book') {
+        // 団体出版本は「執筆団体（読み仮名）」を優先、なければ団体名
+        return migratedRef.organizationReading || migratedRef.organization || '';
+      } else if (migratedRef.type === 'website') {
+        // Webサイトも「運営団体（読み仮名）」を優先
+        return migratedRef.organizationReading || migratedRef.organization || '';
+      } else if (migratedRef.type === 'translation') {
+        // 翻訳書の場合、原著者の読み（あれば）または姓を使用
+        if (migratedRef.originalAuthors && migratedRef.originalAuthors.length > 0) {
+          return migratedRef.originalAuthors[0].reading || migratedRef.originalAuthors[0].lastName || '';
+        }
+        if (migratedRef.originalAuthorsEnglish && migratedRef.originalAuthorsEnglish.length > 0) {
+          return migratedRef.originalAuthorsEnglish[0].lastName || '';
+        }
+        return migratedRef.originalAuthorLastName || '';
+      } else {
+        return migratedRef.authors?.[0]?.reading || migratedRef.authors?.[0]?.lastName || '';
+      }
+    };
+
     // ソート処理
     filtered.sort((a, b) => {
       const migratedA = migrateReferenceData(a);
@@ -72,26 +94,23 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
       switch (sortBy) {
         case 'year':
           // use migrated values and coerce to Number to avoid string subtraction
-          compareValue = (Number(migratedA.year) || 0) - (Number(migratedB.year) || 0);
+          // website type might not have year, treating as 0 or handling appropriately
+          const yearA = Number(migratedA.year) || 0;
+          const yearB = Number(migratedB.year) || 0;
+          compareValue = yearA - yearB;
+
+          // 年が同じ場合は読み仮名で比較（第二ソートキー）
+          if (compareValue === 0) {
+            const readingA = getReading(migratedA);
+            const readingB = getReading(migratedB);
+            compareValue = readingA.localeCompare(readingB, 'ja');
+          }
           break;
         case 'reading':
-          // 筆頭著者の読み仮名または姓で比較、団体出版本の場合は団体名
-          let aReading = '';
-          let bReading = '';
-
-          if (migratedA.type === 'organization-book') {
-            aReading = migratedA.organization || '';
-          } else {
-            aReading = migratedA.authors?.[0]?.reading || migratedA.authors?.[0]?.lastName || '';
-          }
-
-          if (migratedB.type === 'organization-book') {
-            bReading = migratedB.organization || '';
-          } else {
-            bReading = migratedB.authors?.[0]?.reading || migratedB.authors?.[0]?.lastName || '';
-          }
-
-          compareValue = aReading.localeCompare(bReading, 'ja');
+          // 筆頭著者の読み仮名または姓で比較、団体出版本・Webサイトの場合は団体名
+          const readingA = getReading(migratedA);
+          const readingB = getReading(migratedB);
+          compareValue = readingA.localeCompare(readingB, 'ja');
           break;
         case 'title':
           const aTitle = a.title || '';
@@ -249,8 +268,44 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
 
               return referencesWithSuffixes.map((ref) => {
                 const migratedRef = migrateReferenceData(ref);
+
+                // 読み仮名が不足しているかチェック
+                const isMissingReading = (() => {
+                  const type = migratedRef.type;
+                  if (type.startsWith('english-')) return false; // 英語文献は対象外
+
+                  if (type === 'organization-book') {
+                    // 団体出版本は「読み仮名」を必須とする
+                    return !migratedRef.organizationReading;
+                  }
+                  if (type === 'website') {
+                    // Webサイトも「読み仮名」を必須とする
+                    return !migratedRef.organizationReading;
+                  }
+                  if (type === 'translation') {
+                    if (migratedRef.originalAuthors && migratedRef.originalAuthors.length > 0) {
+                      return !migratedRef.originalAuthors[0].reading;
+                    }
+                    // 原著者が未登録の場合はWarning
+                    return true;
+                  }
+                  if (migratedRef.authors && migratedRef.authors.length > 0) {
+                    return !migratedRef.authors[0].reading;
+                  }
+                  // 作曲者などのケース（現状のデータ構造だとauthorsがない場合もある？）
+                  // 既存ロジックでは authors がない場合 composer を表示しているが、
+                  // reading入力欄が作曲者にない場合はどうしようもないため、一旦 authors がある場合に限定するか、
+                  // 厳密にはここも修正が必要だが、まずはユーザー指摘の「読み仮名入力」にフォーカス。
+                  // authorsが空で composer がある場合、読み仮名フィールド自体がない可能性が高い。
+                  // とりあえず authors があるのに reading がないケースを拾う。
+                  return false;
+                })();
+
+                const rowStyle = isMissingReading ? { backgroundColor: '#ffe6e6' } : {};
+                const rowTitle = isMissingReading ? '読み仮名が未登録です。正しく並べ替えるために編集して読み仮名を入力してください。' : '';
+
                 return (
-                  <tr key={ref.id}>
+                  <tr key={ref.id} style={rowStyle} title={rowTitle}>
                     <td style={{ textAlign: 'center' }}>
                       <input
                         type="checkbox"
@@ -304,11 +359,14 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                               </div>
                             </div>
                           )
-                        ) : migratedRef.type === 'organization-book' ? (
+                        ) : (migratedRef.type === 'organization-book' || migratedRef.type === 'website') ? (
                           <div className="author-entry">
                             <div className="author-name-text">
                               {migratedRef.organization || '-'}
                             </div>
+                            {migratedRef.organizationReading && (
+                              <div className="author-reading">({migratedRef.organizationReading})</div>
+                            )}
                           </div>
                         ) : migratedRef.authors?.length > 0 ? (
                           migratedRef.authors.map((author, index) => (
@@ -344,7 +402,9 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                             yearDisplay = `${migratedRef.originalYear || ''}(${ref.year || ''})`;
                           }
                         } else if (migratedRef.type === 'website') {
-                          yearDisplay = `${ref.yearSuffix || '-'}`;
+                          // Webサイトは最終閲覧日とサフィックスを表示
+                          const date = ref.accessDate || '-';
+                          yearDisplay = ref.yearSuffix ? `${date} (${ref.yearSuffix})` : date;
                         } else {
                           if (ref.yearSuffix) {
                             yearDisplay = `${ref.year}${ref.yearSuffix}`;

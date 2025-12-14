@@ -137,6 +137,11 @@ export const getReferenceTypeFields = (type) => {
         example: '文部科学省'
       },
       {
+        key: 'organizationReading', label: '執筆団体（読み仮名）', required: false, type: 'text',
+        description: '執筆団体の読み仮名を入力してください（並べ替えに使用します）。',
+        example: 'もんぶかがくしょう'
+      },
+      {
         key: 'title', label: '書名', required: true, type: 'text',
         description: '書籍の正式なタイトルを入力してください。',
         example: '小学校学習指導要領音楽解説編'
@@ -284,6 +289,7 @@ export const getReferenceTypeFields = (type) => {
 
     'website': [
       { key: 'organization', label: 'ウェブサイト運営団体名', required: true, type: 'text', description: 'Webサイトの運営団体や著者名を入力してください。', example: '文部科学省ウェブサイト' },
+      { key: 'organizationReading', label: '運営団体（読み仮名）', required: false, type: 'text', description: '運営団体の読み仮名を入力してください（並べ替えに使用します）。', example: 'もんぶかがくしょう' },
       { key: 'title', label: 'ページタイトル', required: true, type: 'text', description: 'Webページの正式なタイトルを入力してください。', example: '学習指導要領「生きる力」' },
       { key: 'url', label: 'URL', required: true, type: 'url', description: 'WebページのURLを入力してください。', example: 'https://www.mext.go.jp/a_menu/shotou/new-cs/index.htm' },
       { key: 'accessDate', label: '閲覧年月日', required: true, type: 'date', description: '実際にアクセスした日付を入力してください。', example: '2020-02-11' }
@@ -355,9 +361,9 @@ export const formatCitation = (reference, page = '') => {
     authorName = reference.organization
       ? reference.organization
       : '';
-      // Webサイトは運営団体名を使用し、年は表示しない
-      //そのためここで早期にreturnして終了。
-      return `(${authorName}webページ ${yearSuffix})`;
+    // Webサイトは運営団体名を使用し、年は表示しない
+    //そのためここで早期にreturnして終了。
+    return `(${authorName}webページ ${yearSuffix})`;
 
   } else if (type === 'translation') {
     // 翻訳書の場合は筆頭原著者をカタカナで
@@ -394,48 +400,19 @@ export const addYearSuffixes = (references) => {
     return references;
   }
 
-  // Webサイトの場合は全件を登録順でサフィックス付与（1件のみは付与しない）
-  const websiteRefs = references
-    .map((ref, idx) => ({ ref: migrateReferenceData(ref), originalIndex: idx }))
-    .filter(item => item.ref.type === 'website');
+  const updatedReferences = references.map((ref, idx) => ({ ref: migrateReferenceData(ref), originalIndex: idx }));
 
-  const updatedReferences = [...references];
-
-  if (websiteRefs.length > 1) {
-    // createdAt順でソート
-    websiteRefs.sort((a, b) => {
-      const dateA = new Date(a.ref.createdAt || 0);
-      const dateB = new Date(b.ref.createdAt || 0);
-      return dateA - dateB;
-    });
-    websiteRefs.forEach((item, index) => {
-      const suffix = String.fromCharCode(97 + index); // a, b, c...
-      updatedReferences[item.originalIndex] = {
-        ...item.ref,
-        yearSuffix: suffix,
-        displayYear: suffix // WebサイトはdisplayYear未使用だが一応セット
-      };
-    });
-  } else if (websiteRefs.length === 1) {
-    // サフィックスなし
-    updatedReferences[websiteRefs[0].originalIndex] = {
-      ...websiteRefs[0].ref,
-      yearSuffix: undefined,
-      displayYear: undefined
-    };
-  }
-
-  // Webサイト以外は従来通りグループ化
-  const nonWebsiteRefs = references
-    .map((ref, idx) => ({ ref: migrateReferenceData(ref), originalIndex: idx }))
-    .filter(item => item.ref.type !== 'website');
-
-  // 著者と年でグループ化
+  // 著者（または組織）と年でグループ化
   const groups = {};
-  nonWebsiteRefs.forEach((item) => {
+  updatedReferences.forEach((item) => {
     const ref = item.ref;
     let authorKey = '';
-    if (ref.type === 'translation') {
+
+    // 著者キーの決定ロジック
+    if (ref.type === 'website') {
+      // Webサイトの場合は組織名でグルーピング
+      authorKey = ref.organization || '';
+    } else if (ref.type === 'translation') {
       if (ref.originalAuthors && ref.originalAuthors.length > 0) {
         authorKey = ref.originalAuthors[0].lastName || '';
       } else {
@@ -448,7 +425,16 @@ export const addYearSuffixes = (references) => {
     } else {
       authorKey = ref.composer || '';
     }
-    const year = ref.year;
+
+    // 年の決定ロジック
+    let year = '';
+    if (ref.type === 'website') {
+      // Webサイトは年での区別をしない（またはデータに存在しない）
+      year = '';
+    } else {
+      year = ref.year;
+    }
+
     const groupKey = `${authorKey}_${year}`;
     if (!groups[groupKey]) {
       groups[groupKey] = [];
@@ -456,26 +442,43 @@ export const addYearSuffixes = (references) => {
     groups[groupKey].push(item);
   });
 
+  const finalReferences = [...references];
+
   Object.values(groups).forEach(group => {
+    // 1件しかない場合でも、Webサイトの仕様（以前の実装）に合わせてサフィックスをつけるべきか？
+    // 以前の実装： "if (websiteRefs.length > 1) { ... } else { //サフィックスなし }"
+    // ユーザー要望：「発行団体が同じものに順番につけていくようにして」
+    // -> 複数あるなら a, b... 1つなら不要、が自然。
+
     if (group.length > 1) {
+      // 日付順などでソートして安定させる
       group.sort((a, b) => {
         const dateA = new Date(a.ref.createdAt || 0);
         const dateB = new Date(b.ref.createdAt || 0);
         return dateA - dateB;
       });
-      
+
       group.forEach((item, index) => {
         const suffix = String.fromCharCode(97 + index); // a, b, c...
-        updatedReferences[item.originalIndex] = {
+        finalReferences[item.originalIndex] = {
           ...item.ref,
           yearSuffix: suffix,
-          displayYear: `${item.ref.year}${suffix}`
+          displayYear: item.ref.type === 'website' ? suffix : `${item.ref.year}${suffix}`
+          // Webサイトの場合、 displayYear に suffix そのものを入れる運用になっている（以前のコード踏襲）
         };
       });
+    } else {
+      // 1件だけの場合、既存の yearSuffix を消す必要があるかもしれない（再計算のため）
+      // 特にWebサイトは以前のロジックでついている可能性がある
+      finalReferences[group[0].originalIndex] = {
+        ...group[0].ref,
+        yearSuffix: undefined,
+        displayYear: group[0].ref.type === 'website' ? undefined : group[0].ref.year
+      };
     }
   });
 
-  return updatedReferences;
+  return finalReferences;
 };
 
 // 参考文献一覧の形式を生成
@@ -584,16 +587,16 @@ const formatEnglishChapter = (ref) => {
 
 const formatTranslation = (ref) => {
   const { originalAuthors, originalAuthorsEnglish, translators, title, publisher, year, yearSuffix, originalTitle, originalPublisherLocation, originalPublisher, originalYear } = ref;
-  
+
   // 原著者を日本語形式でフォーマット
   const originalAuthorTextJapanese = formatAuthors(originalAuthors, true, false);
-  
+
   // 訳者を日本語形式でフォーマット（最後に「訳」を付加）
   const translatorText = formatAuthors(translators, true, false) + '訳';
-  
+
   // 原書の著者を英語形式でフォーマット
   const originalAuthorEnglish = formatAuthors(originalAuthorsEnglish, false, false);
-  
+
   const displayYear = yearSuffix ? `${year}年${yearSuffix}` : `${year}年`;
 
   return `${originalAuthorTextJapanese}、${translatorText}『${title}』、${publisher}、${displayYear}。(${originalAuthorEnglish}. *${originalTitle}*. ${originalPublisherLocation}: ${originalPublisher}, ${originalYear}.)`;
