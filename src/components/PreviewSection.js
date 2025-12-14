@@ -1,11 +1,23 @@
 import React, { useState } from 'react';
-import { formatReference, formatCitation, migrateReferenceData, addYearSuffixes } from '../utils/formatters';
+import { formatReference, formatCitation, migrateReferenceData, addYearSuffixes, REFERENCE_TYPES } from '../utils/formatters';
 
-const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, onToggleAll }) => {
+const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, onToggleAll, onBulkCheck }) => {
   const [citationPage, setCitationPage] = useState('');
   const [selectedRef, setSelectedRef] = useState('');
   const [sortBy, setSortBy] = useState('year'); // 'author', 'year', 'title'
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc', 'desc'
+
+  // 文献種別ごとの一括選択
+  const handleSelectByType = (type) => {
+    if (!type) return;
+    const idsToSelect = references
+      .filter(ref => migrateReferenceData(ref).type === type)
+      .map(ref => ref.id);
+
+    if (onBulkCheck) {
+      onBulkCheck(idsToSelect);
+    }
+  };
 
   // 複数著者の表示用ユーティリティ関数
   const getAuthorDisplayName = (migratedRef) => {
@@ -249,6 +261,25 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
             <span className="reference-count">
               {checkedReferences.size} / {references.length} 件選択
             </span>
+
+            <select
+              className="btn btn-small btn-secondary"
+              style={{ marginLeft: '10px', backgroundColor: '#f8f9fa', color: '#333', borderColor: '#ddd' }}
+              onChange={(e) => {
+                handleSelectByType(e.target.value);
+                e.target.value = ""; // Reset after selection
+              }}
+              disabled={references.length === 0}
+            >
+              <option value="">種類で一括選択...</option>
+              {Object.keys(REFERENCE_TYPES).filter(type =>
+                references.some(ref => migrateReferenceData(ref).type === type)
+              ).map(type => (
+                <option key={type} value={type}>
+                  {REFERENCE_TYPES[type]}のみ選択
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -299,6 +330,9 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
                           {migratedRef.type === 'translation' ? (
                             // 翻訳書の場合は「原著出版年(翻訳書出版年)」で表示
                             `${migratedRef.originalYear || ''}(${ref.year || ''})年`
+                          ) : migratedRef.type === 'website' ? (
+                            // Webサイトは最終閲覧日を表示
+                            ref.yearSuffix ? `${ref.accessDate || '-'} (${ref.yearSuffix})` : (ref.accessDate || '-')
                           ) : (
                             `${ref.year}年`
                           )}

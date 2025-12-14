@@ -54,17 +54,17 @@ function App() {
 
   const updateReference = (id, referenceData) => {
     setReferences(prev => {
-      const updated = prev.map(ref => 
-        ref.id === id 
+      const updated = prev.map(ref =>
+        ref.id === id
           ? { ...ref, ...referenceData, updatedAt: new Date().toISOString() }
           : ref
       );
-      
+
       // 更新後に重複チェックと除去
       const { cleaned } = validateAndCleanData(updated);
       return cleaned;
     });
-    
+
     setSelectedReference(null);
     showAlert('参考文献を更新しました', 'success');
   };
@@ -111,18 +111,18 @@ function App() {
         if (Array.isArray(importedData)) {
           // インポートデータをクリーンアップ
           const { cleaned: cleanImportedData, stats } = validateAndCleanData(importedData);
-          
+
           if (stats.duplicatesRemoved > 0 || stats.invalidDataRemoved > 0) {
             showAlert(
-              `インポートデータをクリーンアップしました: 重複${stats.duplicatesRemoved}件、無効データ${stats.invalidDataRemoved}件を除去`, 
+              `インポートデータをクリーンアップしました: 重複${stats.duplicatesRemoved}件、無効データ${stats.invalidDataRemoved}件を除去`,
               'success'
             );
           }
-          
+
           // 既存データとの重複をチェックして除外
           const newReferences = [];
           let duplicateCount = 0;
-          
+
           cleanImportedData.forEach(ref => {
             if (!isDuplicate(references, ref)) {
               // 新しいIDを生成（既存IDとの衝突を避けるため）
@@ -135,15 +135,15 @@ function App() {
               duplicateCount++;
             }
           });
-          
+
           if (newReferences.length > 0) {
             setReferences(prev => {
               const combined = [...prev, ...newReferences];
               const { cleaned } = validateAndCleanData(combined);
               return cleaned;
             });
-            
-            const message = duplicateCount > 0 
+
+            const message = duplicateCount > 0
               ? `${newReferences.length}件の参考文献をインポートしました（重複${duplicateCount}件をスキップ）`
               : `${newReferences.length}件の参考文献をインポートしました`;
             showAlert(message, 'success');
@@ -177,11 +177,11 @@ function App() {
 
   const cleanupData = () => {
     const { cleaned, stats } = validateAndCleanData(references);
-    
+
     if (stats.duplicatesRemoved > 0 || stats.invalidDataRemoved > 0) {
       setReferences(cleaned);
       showAlert(
-        `データをクリーンアップしました: 重複${stats.duplicatesRemoved}件、無効データ${stats.invalidDataRemoved}件を除去`, 
+        `データをクリーンアップしました: 重複${stats.duplicatesRemoved}件、無効データ${stats.invalidDataRemoved}件を除去`,
         'success'
       );
     } else {
@@ -210,6 +210,10 @@ function App() {
     }
   };
 
+  const bulkCheckReferences = (ids) => {
+    setCheckedReferences(new Set(ids));
+  };
+
   return (
     <div className="app">
       <header className="header">
@@ -220,7 +224,7 @@ function App() {
             <VersionInfo />
           </div>
           <div className="header-controls">
-            <button 
+            <button
               className="btn btn-guide"
               onClick={() => setShowFormatGuide(true)}
               title="参考文献の書き方を見る"
@@ -238,7 +242,7 @@ function App() {
         </div>
       )}
 
-      <FileControls 
+      <FileControls
         onExport={exportToJSON}
         onImport={importFromJSON}
         referenceCount={references.length}
@@ -251,8 +255,8 @@ function App() {
             {selectedReference ? '参考文献を編集' : '新しい参考文献を追加'}
           </h2>
           <ReferenceForm
-            onSubmit={selectedReference ? 
-              (data) => updateReference(selectedReference.id, data) : 
+            onSubmit={selectedReference ?
+              (data) => updateReference(selectedReference.id, data) :
               addReference
             }
             initialData={selectedReference}
@@ -261,12 +265,13 @@ function App() {
         </div>
 
         <div className="preview-section">
-          <PreviewSection 
+          <PreviewSection
             references={references}
             checkedReferences={checkedReferences}
             onCopy={copyToClipboard}
             onToggleCheck={toggleReferenceCheck}
             onToggleAll={toggleAllReferences}
+            onBulkCheck={bulkCheckReferences}
           />
         </div>
       </div>
@@ -280,12 +285,12 @@ function App() {
         checkedReferences={checkedReferences}
       />
 
-      <FormatGuideModal 
+      <FormatGuideModal
         isOpen={showFormatGuide}
         onClose={() => setShowFormatGuide(false)}
       />
 
-      <Toast 
+      <Toast
         message={toastMessage}
         isVisible={!!toastMessage}
         onClose={() => setToastMessage('')}
