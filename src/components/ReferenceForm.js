@@ -13,11 +13,11 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
       type: 'japanese-book',
       ...initialData
     };
-    
+
     // 著者フィールドがある文献タイプの場合のみ著者を設定
     const fields = getReferenceTypeFields(baseData.type);
     const hasAuthorsField = fields.some(field => field.key === 'authors');
-    
+
     if (hasAuthorsField && (!baseData.authors || baseData.authors.length === 0)) {
       baseData.authors = [{ lastName: '', firstName: '', reading: '' }];
     }
@@ -34,7 +34,7 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
         baseData.translators = [{ lastName: '', firstName: '', reading: '' }];
       }
     }
-    
+
     return baseData;
   };
 
@@ -47,10 +47,10 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
 
   useEffect(() => {
     if (initialData) {
-      setFormData({ 
+      setFormData({
         ...initialData,
-        authors: initialData.authors && initialData.authors.length > 0 
-          ? initialData.authors 
+        authors: initialData.authors && initialData.authors.length > 0
+          ? initialData.authors
           : [{ lastName: '', firstName: '', reading: '' }]
       });
     }
@@ -69,11 +69,11 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
     // 新しいタイプに著者フィールドがあるかチェック
     const newFields = getReferenceTypeFields(newType);
     const hasAuthorsField = newFields.some(field => field.key === 'authors');
-    
-    const newFormData = { 
+
+    const newFormData = {
       type: newType
     };
-    
+
     // 著者フィールドがある場合のみ著者を初期化
     if (hasAuthorsField) {
       newFormData.authors = [{ lastName: '', firstName: '', reading: '' }];
@@ -85,7 +85,7 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
       newFormData.originalAuthorsEnglish = [{ lastName: '', firstName: '', reading: '' }];
       newFormData.translators = [{ lastName: '', firstName: '', reading: '' }];
     }
-    
+
     setFormData(prev => ({ ...newFormData }));
     setErrors({});
   };
@@ -94,7 +94,7 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
     const updatedAuthors = [...formData.authors];
     updatedAuthors[index] = { ...updatedAuthors[index], [field]: value };
     setFormData(prev => ({ ...prev, authors: updatedAuthors }));
-    
+
     // エラーをクリア
     if (errors[`authors.${index}.${field}`]) {
       setErrors(prev => ({ ...prev, [`authors.${index}.${field}`]: null }));
@@ -106,7 +106,7 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
     const updatedAuthors = [...(formData[fieldName] || [])];
     updatedAuthors[index] = { ...updatedAuthors[index], [field]: value };
     setFormData(prev => ({ ...prev, [fieldName]: updatedAuthors }));
-    
+
     // エラーをクリア
     if (errors[`${fieldName}.${index}.${field}`]) {
       setErrors(prev => ({ ...prev, [`${fieldName}.${index}.${field}`]: null }));
@@ -202,8 +202,8 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
       if (field.required && !formData[field.key]) {
         newErrors[field.key] = `${field.label}は必須項目です`;
       }
-      if (field.type === 'url' && formData[field.key] && 
-          !formData[field.key].match(/^https?:\/\/.+/)) {
+      if (field.type === 'url' && formData[field.key] &&
+        !formData[field.key].match(/^https?:\/\/.+/)) {
         newErrors[field.key] = '有効なURLを入力してください（http://またはhttps://で始まる）';
       }
     });
@@ -219,7 +219,7 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
       const resetData = { type: 'japanese-book' };
       // 日本語書籍は著者フィールドがあるので著者を初期化
       resetData.authors = [{ lastName: '', firstName: '', reading: '' }];
-      
+
       setFormData(resetData);
       setErrors({});
     }
@@ -234,89 +234,94 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
     }
     return !!data;
   };
-  
+
   const handleCiniiSearchResult = async (query) => {
-      const results = await searchCiNiiByTitle(query);
-      setCiniiResults(results);
-      setShowResultsModal(true);
+    const results = await searchCiNiiByTitle(query);
+    setCiniiResults(results);
+    setShowResultsModal(true);
   };
-  
+
   const handleApplyMapping = (mappedData) => {
     setFormData(prev => ({ ...prev, ...mappedData }));
   };
 
   const handleSelectCiniiResult = (result) => {
-      // fetch detailed article info (authors etc.) if possible, then open mapping modal
-      (async () => {
-        try {
-          const { fetchCiNiiArticleDetails } = await import('../utils/api');
-          const details = await fetchCiNiiArticleDetails(result.seeAlso || result.link);
-          // merge details into result but do not overwrite non-empty result fields with empty values from details
-          const merged = { ...result };
-          if (details) {
-            for (const k of Object.keys(details)) {
-              const v = details[k];
-              // skip null/undefined
-              if (v === null || v === undefined) continue;
-              // skip empty strings
-              if (typeof v === 'string' && v.trim() === '') continue;
-              // skip empty arrays
-              if (Array.isArray(v) && v.length === 0) continue;
-              // otherwise use details' value
-              merged[k] = v;
-            }
+    // fetch detailed article info (authors etc.) if possible, then open mapping modal
+    (async () => {
+      try {
+        const { fetchCiNiiArticleDetails } = await import('../utils/api');
+        const details = await fetchCiNiiArticleDetails(result.seeAlso || result.link);
+        // merge details into result but do not overwrite non-empty result fields with empty values from details
+        const merged = { ...result };
+        if (details) {
+          for (const k of Object.keys(details)) {
+            const v = details[k];
+            // skip null/undefined
+            if (v === null || v === undefined) continue;
+            // skip empty strings
+            if (typeof v === 'string' && v.trim() === '') continue;
+            // skip empty arrays
+            if (Array.isArray(v) && v.length === 0) continue;
+            // otherwise use details' value
+            merged[k] = v;
           }
-
-          // if details contains explicit creators/authors, decide whether to prefer them
-          const detailAuthors = details && (details['dc:creator'] || details.creators || details.authors);
-          const resultAuthors = result['dc:creator'] || result.creators || result.authors || merged.creators || merged.authors || [];
-          if (detailAuthors) {
-            const isUrl = (s) => typeof s === 'string' && /^https?:\/\//.test(s);
-            const detailAllUrls = Array.isArray(detailAuthors) && detailAuthors.length > 0 && detailAuthors.every(a => isUrl(a));
-            const resultHasNames = Array.isArray(resultAuthors) && resultAuthors.some(a => (typeof a === 'string' && !isUrl(a)) || (a && a.name));
-
-            if (detailAllUrls && resultHasNames) {
-              // keep original human-readable authors from search result
-              merged.creators = resultAuthors;
-              merged.authors = resultAuthors;
-            } else {
-              // otherwise prefer the detailed authors (mapped already into merged by above loop)
-              // ensure creators/authors fields exist
-              if (details['dc:creator'] && Array.isArray(details['dc:creator'])) {
-                merged.creators = details['dc:creator'];
-                merged.authors = details['dc:creator'];
-              } else if (details.creators) {
-                merged.creators = details.creators;
-                merged.authors = details.creators;
-              } else if (details.authors) {
-                merged.creators = details.authors;
-                merged.authors = details.authors;
-              }
-            }
-          }
-
-          setApiData(merged);
-        } catch (e) {
-          // fallback: use the search result as-is
-          setApiData(result);
         }
-        setShowResultsModal(false);
-        setShowMappingModal(true);
-      })();
+
+        // if details contains explicit creators/authors, decide whether to prefer them
+        const detailAuthors = details && (details['dc:creator'] || details.creators || details.authors);
+        const resultAuthors = result['dc:creator'] || result.creators || result.authors || merged.creators || merged.authors || [];
+        if (detailAuthors) {
+          const isUrl = (s) => typeof s === 'string' && /^https?:\/\//.test(s);
+          const detailAllUrls = Array.isArray(detailAuthors) && detailAuthors.length > 0 && detailAuthors.every(a => isUrl(a));
+          const resultHasNames = Array.isArray(resultAuthors) && resultAuthors.some(a => (typeof a === 'string' && !isUrl(a)) || (a && a.name));
+
+          if (detailAllUrls && resultHasNames) {
+            // keep original human-readable authors from search result
+            merged.creators = resultAuthors;
+            merged.authors = resultAuthors;
+          } else {
+            // otherwise prefer the detailed authors (mapped already into merged by above loop)
+            // ensure creators/authors fields exist
+            if (details['dc:creator'] && Array.isArray(details['dc:creator'])) {
+              merged.creators = details['dc:creator'];
+              merged.authors = details['dc:creator'];
+            } else if (details.creators) {
+              merged.creators = details.creators;
+              merged.authors = details.creators;
+            } else if (details.authors) {
+              merged.creators = details.authors;
+              merged.authors = details.authors;
+            }
+          }
+        }
+
+        setApiData(merged);
+      } catch (e) {
+        // fallback: use the search result as-is
+        setApiData(result);
+      }
+      setShowResultsModal(false);
+      setShowMappingModal(true);
+    })();
   };
 
   const renderField = (field) => {
     const { key, label, required, type, description, example } = field;
-    
+
     if (key === 'authors') {
-      return renderAuthorsField();
+      // 英語文献の場合は読み仮名を非表示にする
+      const isEnglish = ['english-book', 'english-journal', 'english-chapter'].includes(formData.type);
+      return renderAuthorsField(!isEnglish);
     }
 
     // 翻訳書の特別なフィールド処理
     if (type === 'translation-authors') {
-      return renderTranslationAuthorsField(key, label);
+      // 原著者（英語）の場合は読み仮名を非表示
+      const showReading = key !== 'originalAuthorsEnglish';
+      return renderTranslationAuthorsField(key, label, showReading);
     }
-    
+
+    // 執筆団体（読み仮名）など、その他のテキストフィールド
     const value = formData[key] || '';
     const error = errors[key];
 
@@ -350,7 +355,7 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
     );
   };
 
-  const renderAuthorsField = () => {
+  const renderAuthorsField = (showReading = true) => {
     return (
       <div key="authors" className="form-group">
         <label>
@@ -385,15 +390,17 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
                   <div className="error-message">{errors[`authors.${index}.firstName`]}</div>
                 )}
               </div>
-              <div className="author-field">
-                <label>読み仮名</label>
-                <input
-                  type="text"
-                  value={author.reading}
-                  onChange={(e) => handleAuthorChange(index, 'reading', e.target.value)}
-                  placeholder="やまだ たろう"
-                />
-              </div>
+              {showReading && (
+                <div className="author-field">
+                  <label>読み仮名</label>
+                  <input
+                    type="text"
+                    value={author.reading}
+                    onChange={(e) => handleAuthorChange(index, 'reading', e.target.value)}
+                    placeholder="やまだ たろう"
+                  />
+                </div>
+              )}
               {formData.authors.length > 1 && (
                 <button
                   type="button"
@@ -418,7 +425,7 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
   };
 
   // 翻訳書用の著者フィールドレンダリング関数
-  const renderTranslationAuthorsField = (fieldName, label) => {
+  const renderTranslationAuthorsField = (fieldName, label, showReading = true) => {
     const authors = formData[fieldName] || [];
     return (
       <div key={fieldName} className="form-group">
@@ -454,15 +461,17 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
                   <div className="error-message">{errors[`${fieldName}.${index}.firstName`]}</div>
                 )}
               </div>
-              <div className="author-field">
-                <label>読み仮名</label>
-                <input
-                  type="text"
-                  value={author.reading}
-                  onChange={(e) => handleAuthorFieldChange(fieldName, index, 'reading', e.target.value)}
-                  placeholder="やまだ たろう"
-                />
-              </div>
+              {showReading && (
+                <div className="author-field">
+                  <label>読み仮名</label>
+                  <input
+                    type="text"
+                    value={author.reading}
+                    onChange={(e) => handleAuthorFieldChange(fieldName, index, 'reading', e.target.value)}
+                    placeholder="やまだ たろう"
+                  />
+                </div>
+              )}
               {authors.length > 1 && (
                 <button
                   type="button"
@@ -508,8 +517,8 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
         )}
       </div>
 
-      <APISearch 
-        type={formData.type} 
+      <APISearch
+        type={formData.type}
         onSearchResult={handleIsbnSearchResult}
         onCiniiResult={handleCiniiSearchResult}
       />
@@ -521,8 +530,8 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
           {initialData ? '更新' : '追加'}
         </button>
         {initialData && (
-          <button 
-            type="button" 
+          <button
+            type="button"
             className="btn btn-secondary"
             onClick={onCancel}
           >
@@ -530,8 +539,8 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
           </button>
         )}
       </div>
-      
-      <MappingModal 
+
+      <MappingModal
         isOpen={showMappingModal}
         onClose={() => setShowMappingModal(false)}
         apiData={apiData}
@@ -539,7 +548,7 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
         referenceType={formData.type}
       />
 
-      <SearchResultsModal 
+      <SearchResultsModal
         isOpen={showResultsModal}
         onClose={() => setShowResultsModal(false)}
         results={ciniiResults}

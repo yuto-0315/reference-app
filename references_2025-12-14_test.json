@@ -1,0 +1,646 @@
+[
+  {
+    "id": "ada72c8a-07d2-49aa-a169-884282fc56bd",
+    "type": "japanese-journal",
+    "authors": [
+      {
+        "lastName": "岡本",
+        "firstName": "千佳",
+        "reading": "おかもとちか"
+      }
+    ],
+    "title": "不登校児童生徒の課題克服における音楽の作用 : 適応指導教室における音楽活動の事例分析をもとに",
+    "editorialOrganization": "東京芸術大学音楽教育学研究会",
+    "journalName": "音楽教育研究ジャーナル",
+    "issue": "47",
+    "year": 2017,
+    "pages": "15~28",
+    "createdAt": "2025-06-28T06:54:19.388Z",
+    "updatedAt": "2025-06-28T06:54:19.392Z"
+  },
+  {
+    "id": "dfb27f5f-cec0-4b2c-a361-0a2a5959b44c",
+    "type": "organization-book",
+    "organization": "京都市教育委員会",
+    "title": "令和７年度 洛風・洛友中学校（昼間部）転入学について",
+    "year": 2024,
+    "createdAt": "2025-06-28T06:57:02.768Z",
+    "updatedAt": "2025-06-28T06:57:02.769Z"
+  },
+  {
+    "id": "e3b67981-17c9-468c-ae1f-bf34ee793b20",
+    "type": "japanese-book",
+    "authors": [
+      {
+        "lastName": "笹野",
+        "firstName": "恵理子",
+        "reading": "ささのえりこ"
+      },
+      {
+        "lastName": "杉田",
+        "firstName": "政夫",
+        "reading": "すぎたまさお"
+      },
+      {
+        "lastName": "西島",
+        "firstName": "千尋",
+        "reading": "にしじまちひろ"
+      },
+      {
+        "lastName": "多賀",
+        "firstName": "秀紀",
+        "reading": "たがひでき"
+      },
+      {
+        "lastName": "樫下",
+        "firstName": "達也",
+        "reading": "かししたたつや"
+      },
+      {
+        "lastName": "山本",
+        "firstName": "耕平",
+        "reading": "やまもとこうへい"
+      },
+      {
+        "lastName": "菅",
+        "firstName": "道子",
+        "reading": "かんみちこ"
+      }
+    ],
+    "title": "学校音楽文化論ー人・モノ・制度の諸相からコンテクストを探るー",
+    "publisher": "東信堂",
+    "year": 2024,
+    "editors": "笹野恵理子",
+    "createdAt": "2025-06-28T07:03:39.093Z",
+    "updatedAt": "2025-11-04T08:29:45.086Z",
+    "yearSuffix": "a",
+    "displayYear": "2024a"
+  },
+  {
+    "id": "c881b0ae-470b-4b53-810c-b0f77702c4a1",
+    "type": "japanese-journal",
+    "authors": [
+      {
+        "lastName": "清水",
+        "firstName": "恵",
+        "reading": "しみずめぐみ"
+      },
+      {
+        "lastName": "有吉",
+        "firstName": "由紀子",
+        "reading": "ありよしゆきこ"
+      },
+      {
+        "lastName": "権藤",
+        "firstName": "耕司",
+        "reading": "ごんどうこうじ"
+      },
+      {
+        "lastName": "三苫",
+        "firstName": "由美子",
+        "reading": "みとまゆみこ"
+      },
+      {
+        "lastName": "樽崎",
+        "firstName": "葉子",
+        "reading": ""
+      },
+      {
+        "lastName": "澤山",
+        "firstName": "愛",
+        "reading": ""
+      },
+      {
+        "lastName": "西山",
+        "firstName": "久子",
+        "reading": ""
+      },
+      {
+        "lastName": "納富",
+        "firstName": "恵子",
+        "reading": ""
+      }
+    ],
+    "title": "京都市立不登校特例校における生徒支援―ミドルリーダーの視点からの訪問調査報告―",
+    "journalName": "福岡教育大学大学院教職実践専攻年報",
+    "issue": "13",
+    "year": 2023,
+    "pages": "363~373",
+    "createdAt": "2025-06-28T07:09:51.276Z",
+    "updatedAt": "2025-06-28T07:09:51.276Z"
+  },
+  {
+    "id": "13969425-c992-4c88-a8fb-cb56af01bc08",
+    "type": "japanese-journal",
+    "authors": [
+      {
+        "lastName": "高垣",
+        "firstName": "明夫",
+        "reading": "たかがきあきお"
+      }
+    ],
+    "title": "生徒指導の視点から捉えた不登校特例校と夜間学級の生徒の相互交流の教育的価値―全国唯一の京都市洛友中学校の取り組みをもとにー",
+    "journalName": "京都女子大学教職支援センター研究紀要",
+    "issue": "5",
+    "year": 2022,
+    "pages": "33~44",
+    "createdAt": "2025-06-28T07:11:50.448Z",
+    "updatedAt": "2025-06-28T07:11:50.448Z"
+  },
+  {
+    "id": "183008a1-5a73-413c-991e-91850c442981",
+    "type": "japanese-journal",
+    "authors": [
+      {
+        "lastName": "田中",
+        "firstName": "亮",
+        "reading": "たなかりょう"
+      },
+      {
+        "lastName": "星野",
+        "firstName": "麗",
+        "reading": "ほしのれい"
+      },
+      {
+        "lastName": "奥住",
+        "firstName": "秀之",
+        "reading": "おくずみひでゆき"
+      },
+      {
+        "lastName": "小林",
+        "firstName": "巌",
+        "reading": "こばやしいわお"
+      }
+    ],
+    "title": "学びの多様化学校（不登校特例校）における教育活動の成果と課題　―教育課程編成・支援の工夫に関する聞き取り調査を通してー",
+    "journalName": "東京学芸大学紀要",
+    "volume": "75",
+    "year": 2022,
+    "pages": "35~44",
+    "createdAt": "2025-06-28T07:16:00.145Z",
+    "updatedAt": "2025-06-28T07:16:00.145Z"
+  },
+  {
+    "id": "ba65ca96-122f-4665-889b-9d10bd3abda9",
+    "type": "japanese-book",
+    "authors": [
+      {
+        "lastName": "丸山",
+        "firstName": "忠璋",
+        "reading": "まるやまただあき"
+      }
+    ],
+    "title": "療法的音楽活動のすすめ　明日の教育と福祉のために",
+    "publisher": "春秋社",
+    "year": 2002,
+    "createdAt": "2025-06-28T07:18:48.400Z",
+    "updatedAt": "2025-06-28T07:18:48.400Z"
+  },
+  {
+    "id": "57f3de8f-c53b-46ff-92ff-b57a94e93e94",
+    "type": "organization-book",
+    "organization": "文部科学省",
+    "title": "誰一人取り残されない学びの保障に向けた不登校対策(COCOLOプラン)",
+    "year": 2023,
+    "createdAt": "2025-06-28T07:22:04.921Z",
+    "updatedAt": "2025-06-28T07:22:04.922Z"
+  },
+  {
+    "id": "09cb2371-25d5-4942-9af6-5cbd16bbd0f8",
+    "type": "organization-book",
+    "organization": "文部科学省",
+    "title": "『不登校特例校』の新たな名称について（通知）",
+    "year": 2023,
+    "createdAt": "2025-06-28T07:22:45.902Z",
+    "updatedAt": "2025-06-28T07:22:45.902Z"
+  },
+  {
+    "id": "956c3d81-069a-4169-b112-3447d65bb4d7",
+    "type": "organization-book",
+    "organization": "文部科学省",
+    "title": "学びの多様化学校の設置に向けて【手引き】",
+    "year": 2024,
+    "createdAt": "2025-06-28T07:24:15.101Z",
+    "updatedAt": "2025-06-28T07:24:15.101Z"
+  },
+  {
+    "id": "b98f6ffe-819f-4007-905d-9fecd68468f2",
+    "type": "website",
+    "organization": "文部科学省",
+    "title": "不登校児童生徒の実態に配慮して特別に編成された教育課程に基づく教育を行う学校の概要",
+    "url": "https://www.mext.go.jp/a_menu/shotou/seitoshidou/1397860.htm",
+    "accessDate": "2025-11-04",
+    "createdAt": "2025-07-17T06:49:11.054Z",
+    "updatedAt": "2025-11-04T07:36:04.065Z",
+    "authors": [
+      {
+        "lastName": "",
+        "firstName": "",
+        "reading": ""
+      }
+    ],
+    "yearSuffix": "a",
+    "displayYear": "a"
+  },
+  {
+    "id": "24d14dbd-ffe5-4a36-abe6-13f2669dc9a5",
+    "type": "organization-book",
+    "organization": "文部科学省",
+    "title": "令和５年度児童生徒の問題行動・不登校等生徒指導上の諸課題に関する調査結果及びこれを踏まえた対応の充実について（通知）",
+    "year": 2024,
+    "createdAt": "2025-07-24T04:08:14.324Z",
+    "updatedAt": "2025-07-24T04:08:52.446Z",
+    "authors": [
+      {
+        "lastName": "",
+        "firstName": "",
+        "reading": ""
+      }
+    ],
+    "yearSuffix": "b",
+    "displayYear": "2024b",
+    "url": "https://www.mext.go.jp/a_menu/shotou/seitoshidou/1422178_00005.htm"
+  },
+  {
+    "id": "602dc35a-5e1e-4fa8-99bd-a97faf62628b",
+    "type": "japanese-journal",
+    "authors": [
+      {
+        "lastName": "鷲見",
+        "firstName": "佐知",
+        "reading": "わしみさち"
+      }
+    ],
+    "title": "ありのままの自分で学ぶ : 一人一人に学びを届ける : 岐阜県岐阜市立草潤中学校",
+    "editorialOrganization": "東京：学事出版",
+    "journalName": "中等教育資料/文部科学省教育課程課編",
+    "volume": "74",
+    "issue": "５",
+    "year": 2025,
+    "pages": "26~31",
+    "createdAt": "2025-07-30T14:40:36.043Z",
+    "updatedAt": "2025-07-30T14:40:36.043Z"
+  },
+  {
+    "id": "5d7bca4b-467a-4bcc-8473-b3581e977573",
+    "type": "organization-book",
+    "organization": "文部科学省",
+    "title": "不登校児童生徒への支援について",
+    "year": 2025,
+    "url": "https://www.mext.go.jp/content/20250410-mext_kyoiku01-000041658_03.pdf",
+    "createdAt": "2025-07-30T15:58:24.761Z",
+    "updatedAt": "2025-07-30T15:58:24.761Z"
+  },
+  {
+    "id": "e98016dc-0c8b-4f58-ba34-de5790a9d28d",
+    "type": "website",
+    "organization": "文部科学省",
+    "title": "フリースクール・不登校に対する取組",
+    "url": "https://www.mext.go.jp/march_lion/torikumi_futoukou.htm",
+    "accessDate": "2025-11-04",
+    "createdAt": "2025-07-31T01:42:38.151Z",
+    "updatedAt": "2025-11-04T07:33:37.935Z",
+    "authors": [
+      {
+        "lastName": "",
+        "firstName": "",
+        "reading": ""
+      }
+    ],
+    "yearSuffix": "b",
+    "displayYear": "b"
+  },
+  {
+    "id": "51eb31c9-d031-44da-a66e-95a8b7d88a57",
+    "type": "organization-book",
+    "organization": "文部科学省",
+    "title": "不登校児童生徒が欠席中に行った学習の成果に係る成績評価について（通知）",
+    "year": 2024,
+    "url": "https://www.mext.go.jp/a_menu/shotou/seitoshidou/1422155_00002.htm",
+    "createdAt": "2025-07-31T01:56:34.791Z",
+    "updatedAt": "2025-07-31T01:56:34.791Z"
+  },
+  {
+    "id": "3ae0f553-3e8c-4b06-8997-212d598b4914",
+    "type": "website",
+    "organization": "星槎もみじ中学校",
+    "title": "星槎もみじ中 News Letter",
+    "url": "http://blog.livedoor.jp/momijijh/",
+    "accessDate": "2025-11-04",
+    "createdAt": "2025-09-05T07:49:43.270Z",
+    "updatedAt": "2025-11-04T07:35:10.332Z",
+    "authors": [
+      {
+        "lastName": "",
+        "firstName": "",
+        "reading": ""
+      }
+    ],
+    "yearSuffix": "c",
+    "displayYear": "c"
+  },
+  {
+    "id": "89fbcc91-9b27-49bb-9d51-72de77220891",
+    "type": "website",
+    "organization": "西濃学園中学校",
+    "title": "学園日誌",
+    "url": "https://seino-gakuen.ed.jp/diary/",
+    "accessDate": "2025-11-04",
+    "createdAt": "2025-09-05T07:50:27.821Z",
+    "updatedAt": "2025-11-04T07:37:00.340Z",
+    "authors": [
+      {
+        "lastName": "",
+        "firstName": "",
+        "reading": ""
+      }
+    ],
+    "yearSuffix": "d",
+    "displayYear": "d"
+  },
+  {
+    "id": "1505b13c-e496-4c88-94d6-6c11b43713be",
+    "type": "website",
+    "title": "学校ブログ",
+    "accessDate": "2025-11-04",
+    "url": "https://seisa-nagoyajh.ed.jp/category/school-blog/",
+    "organization": "星槎名古屋中学校",
+    "createdAt": "2025-09-05T07:51:06.437Z",
+    "updatedAt": "2025-11-04T07:37:42.949Z",
+    "authors": [
+      {
+        "lastName": "",
+        "firstName": "",
+        "reading": ""
+      }
+    ],
+    "yearSuffix": "e",
+    "displayYear": "e"
+  },
+  {
+    "id": "eef29979-759a-45cd-a056-d38228ad9680",
+    "type": "website",
+    "organization": "三豊市立高瀬中学校",
+    "title": "高中ブログ",
+    "url": "https://mitoyo.schoolweb.ne.jp/3720004/weblog?blog_page=3",
+    "accessDate": "2025-11-04",
+    "createdAt": "2025-09-05T07:52:02.628Z",
+    "updatedAt": "2025-11-04T07:38:12.096Z",
+    "authors": [
+      {
+        "lastName": "",
+        "firstName": "",
+        "reading": ""
+      }
+    ],
+    "yearSuffix": "f",
+    "displayYear": "f"
+  },
+  {
+    "id": "38fca2f2-4aee-4c0f-b35b-23c09f46a52b",
+    "type": "website",
+    "title": "星槎中学校のブログ",
+    "url": "https://www.seisahighschool.ed.jp/jrh/blog/",
+    "organization": "星槎中学校",
+    "accessDate": "2025-11-04",
+    "createdAt": "2025-09-05T07:53:00.023Z",
+    "updatedAt": "2025-11-04T07:40:47.888Z",
+    "authors": [
+      {
+        "lastName": "",
+        "firstName": "",
+        "reading": ""
+      }
+    ],
+    "yearSuffix": "g",
+    "displayYear": "g"
+  },
+  {
+    "id": "8fa2172e-cb51-4d31-b8a9-6710033f0138",
+    "type": "website",
+    "title": "ブログ",
+    "url": "https://asu-universe.blogspot.com/search?updated-max=2024-06-17T08:30:00%2B09:00&max-results=13",
+    "accessDate": "2025-11-04",
+    "organization": "大和郡山市立郡山北小学校・郡山中学校 分教室ASU",
+    "createdAt": "2025-09-05T07:53:40.589Z",
+    "updatedAt": "2025-11-04T07:44:32.766Z",
+    "authors": [
+      {
+        "lastName": "",
+        "firstName": "",
+        "reading": ""
+      }
+    ],
+    "yearSuffix": "h",
+    "displayYear": "h"
+  },
+  {
+    "id": "26b41217-612a-468b-a7f6-d8f68b1b615c",
+    "type": "website",
+    "organization": "京都市立洛風中学校",
+    "url": "https://cms.edu.city.kyoto.jp/weblog/index.php?id=201704&date=20250331&no=6",
+    "accessDate": "2025-11-04",
+    "title": "京都市立洛風中学校",
+    "createdAt": "2025-09-05T07:57:01.194Z",
+    "updatedAt": "2025-11-04T07:45:30.045Z",
+    "authors": [
+      {
+        "lastName": "",
+        "firstName": "",
+        "reading": ""
+      }
+    ],
+    "yearSuffix": "i",
+    "displayYear": "i"
+  },
+  {
+    "id": "ee56605b-7012-4d4d-b860-25b5d2cd13fc",
+    "type": "website",
+    "organization": "岐阜市立草潤中学校",
+    "title": "ブログ",
+    "url": "https://gifu-city.schoolcms.net/soujun-j/category/sougou/page/2/",
+    "accessDate": "2025-11-04",
+    "createdAt": "2025-09-05T07:57:36.526Z",
+    "updatedAt": "2025-11-04T07:45:56.183Z",
+    "authors": [
+      {
+        "lastName": "",
+        "firstName": "",
+        "reading": ""
+      }
+    ],
+    "yearSuffix": "j",
+    "displayYear": "j"
+  },
+  {
+    "id": "79165215-e19b-42cb-ae2c-1917245312db",
+    "type": "organization-book",
+    "organization": "京都市教育委員会",
+    "title": "令和７年度京都市立洛友中学校二部学級募集要項",
+    "year": 2024,
+    "url": "https://www.city.kyoto.lg.jp/kyoiku/cmsfiles/contents/0000260/260020/R7boshuuyoukou.pdf",
+    "createdAt": "2025-10-06T06:30:53.306Z",
+    "updatedAt": "2025-10-06T06:30:53.306Z"
+  },
+  {
+    "id": "0e786fea-f04c-4cba-8d7c-cb251cba1d0f",
+    "type": "japanese-journal",
+    "authors": [
+      {
+        "lastName": "笹野",
+        "firstName": "恵理子",
+        "reading": "ささのえりこ"
+      }
+    ],
+    "title": "序章　今なぜ学校音楽文化を問うのか",
+    "editorialOrganization": "学校音楽文化研究会",
+    "journalName": "学校音楽文化論ー人・モノ・制度の諸相からコンテクストを探るー",
+    "year": 2024,
+    "pages": "3-22",
+    "createdAt": "2025-10-30T08:21:57.903Z",
+    "updatedAt": "2025-10-30T08:21:57.905Z"
+  },
+  {
+    "id": "640b9a07-030a-44be-9817-fd32c34c1935",
+    "type": "japanese-journal",
+    "authors": [
+      {
+        "lastName": "多賀",
+        "firstName": "秀紀",
+        "reading": "たがひでのり"
+      }
+    ],
+    "title": "第３章　学校音楽文化の担い手としての「子ども」ー彼/彼女らの「声」を聴くー",
+    "editorialOrganization": "学校音楽文化研究会",
+    "journalName": "学校音楽文化論ー人・モノ・制度の諸相からコンテクストを探るー",
+    "year": 2024,
+    "pages": "65-86",
+    "createdAt": "2025-10-30T08:24:37.801Z",
+    "updatedAt": "2025-11-04T08:30:33.618Z"
+  },
+  {
+    "id": "18300aac-f1f7-4dbd-b3bd-fc22305b5599",
+    "type": "japanese-journal",
+    "authors": [
+      {
+        "lastName": "菅道子",
+        "firstName": "道子",
+        "reading": "かんみちこ"
+      },
+      {
+        "lastName": "上野",
+        "firstName": "智子",
+        "reading": "うえのともこ"
+      },
+      {
+        "lastName": "山崎",
+        "firstName": "由可里",
+        "reading": "やまざきゆかり"
+      }
+    ],
+    "title": "第11章　中学校特別支援学校の「自立活動」にみる学校音楽文化",
+    "editorialOrganization": "学校音楽文化研究会",
+    "journalName": "学校音楽文化論ー人・モノ・制度の諸相からコンテクストを探るー",
+    "year": 2024,
+    "pages": "247-269",
+    "createdAt": "2025-10-30T08:29:36.430Z",
+    "updatedAt": "2025-11-04T08:30:51.643Z"
+  },
+  {
+    "id": "fee308c2-579c-479b-865d-99c82637e0de",
+    "type": "organization-book",
+    "organization": "文部科学省",
+    "title": "中学校学習指導要領（平成29年度告示）解説　音楽編",
+    "year": 2017,
+    "createdAt": "2025-11-29T08:25:34.913Z",
+    "updatedAt": "2025-11-29T08:35:28.952Z",
+    "authors": [
+      {
+        "lastName": "",
+        "firstName": "",
+        "reading": ""
+      }
+    ]
+  },
+  {
+    "id": "0c42b9cf-3aea-4e59-987c-836989ab6828",
+    "type": "japanese-journal",
+    "authors": [
+      {
+        "lastName": "笹野",
+        "firstName": "恵理子",
+        "reading": "ささのえりこ"
+      }
+    ],
+    "title": "終章　学校音楽文化論の展望",
+    "editorialOrganization": "学校音楽文化研究会",
+    "journalName": "学校音楽文化論ー人・モノ・制度の諸相からコンテクストを探るー",
+    "year": 2024,
+    "pages": "333-338",
+    "createdAt": "2025-12-03T12:43:56.015Z",
+    "updatedAt": "2025-12-03T12:43:56.015Z"
+  },
+  {
+    "id": "eb9248a8-54b3-46ff-9b98-4b8275b85ce6",
+    "type": "website",
+    "organization": "YouTube",
+    "title": "【Ado】私は最強（ウタ from ONE PIECE FILM RED)",
+    "accessDate": "2025-12-07",
+    "url": "https://www.youtube.com/watch?v=sk1Z-Hqwwog",
+    "createdAt": "2025-12-09T11:22:13.964Z",
+    "updatedAt": "2025-12-09T11:22:13.974Z"
+  },
+  {
+    "id": "82707bf0-d7ec-4c4f-8988-adeadf2199f9",
+    "type": "japanese-journal",
+    "authors": [
+      {
+        "lastName": "西島",
+        "firstName": "千尋",
+        "reading": "にしじまちひろ"
+      }
+    ],
+    "title": "第２章　学校音楽教育における文化衝突ーあたりまえの関係を問うー",
+    "editorialOrganization": "学校音楽文化研究会",
+    "journalName": "学校音楽文化論ー人・モノ・制度の諸相からコンテクストを探るー",
+    "year": 2024,
+    "pages": "44-64",
+    "createdAt": "2025-12-09T11:24:49.020Z",
+    "updatedAt": "2025-12-09T11:24:49.020Z"
+  },
+  {
+    "id": "deb05b1e-f98f-402f-9214-445839f53f17",
+    "type": "japanese-journal",
+    "authors": [
+      {
+        "lastName": "樫下",
+        "firstName": "達也",
+        "reading": "かししたたつや"
+      }
+    ],
+    "title": "第４章　学校音楽文化と校内放送",
+    "editorialOrganization": "学校音楽文化研究会",
+    "journalName": "学校音楽文化論ー人・モノ・制度の諸相からコンテクストを探るー",
+    "year": 2024,
+    "pages": "87-106",
+    "createdAt": "2025-12-09T11:26:12.799Z",
+    "updatedAt": "2025-12-09T11:26:12.799Z"
+  },
+  {
+    "id": "f9868bab-96d0-4afe-9315-9c9c8ee87b13",
+    "type": "organization-book",
+    "organization": "文部科学省",
+    "title": "「教育支援センター（適応指導教室）に関する実態調査」結果",
+    "year": 2019,
+    "url": "https://www.mext.go.jp/component/a_menu/education/detail/__icsFiles/afieldfile/2019/05/20/1416689_002.pdf",
+    "createdAt": "2025-12-13T10:06:13.416Z",
+    "updatedAt": "2025-12-13T10:06:53.945Z",
+    "authors": [
+      {
+        "lastName": "",
+        "firstName": "",
+        "reading": ""
+      }
+    ]
+  }
+]
