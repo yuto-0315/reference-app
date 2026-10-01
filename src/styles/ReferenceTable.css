@@ -111,6 +111,18 @@
   background: var(--color-surfaceHover);
 }
 
+/* 読み仮名が未登録の行。不透明な薄い赤だとダークテーマで文字が読めないため半透明にする
+   （白背景に重ねると従来の #ffe6e6 と同じ色になる） */
+.reference-table tr.row-missing-reading {
+  background: rgba(255, 0, 0, 0.1);
+}
+
+.missing-reading-note {
+  font-size: 11px;
+  color: var(--color-text-onSurface);
+  margin-top: 4px;
+}
+
 .author-cell {
   min-width: 120px;
 }

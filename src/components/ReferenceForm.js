@@ -4,7 +4,9 @@ import InfoTooltip from './InfoTooltip';
 import APISearch from './APISearch';
 import MappingModal from './MappingModal';
 import SearchResultsModal from './SearchResultsModal';
-import { fetchBookInfoByISBN, searchCiNiiByTitle } from '../utils/api';
+import { fetchBookInfoByISBN, searchCiNiiByTitle, fetchCiNiiArticleDetails } from '../utils/api';
+
+const createEmptyAuthor = () => ({ lastName: '', firstName: '', reading: '' });
 
 const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
   // 初期データの著者フィールド設定を調整
@@ -45,14 +47,12 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
   const [apiData, setApiData] = useState(null);
   const [ciniiResults, setCiniiResults] = useState([]);
 
+  // 編集をキャンセルしてもフォームの内容は残す（似た文献を複製して追加する使い方ができるように）
   useEffect(() => {
     if (initialData) {
-      setFormData({
-        ...initialData,
-        authors: initialData.authors && initialData.authors.length > 0
-          ? initialData.authors
-          : [{ lastName: '', firstName: '', reading: '' }]
-      });
+      // 著者欄のない文献種別に空の著者を持たせないよう、初期化ロジックを共通化する
+      setFormData(getInitialFormData());
+      setErrors({});
     }
   }, [initialData]);
 
@@ -66,27 +66,38 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
   };
 
   const handleTypeChange = (newType) => {
-    // 新しいタイプに著者フィールドがあるかチェック
     const newFields = getReferenceTypeFields(newType);
-    const hasAuthorsField = newFields.some(field => field.key === 'authors');
+    const currentFieldTypes = Object.fromEntries(fields.map(field => [field.key, field.type]));
+
+    // 種類を選び直しても、両方の種類にある項目（書名・出版年など）の入力内容は引き継ぐ
+    // 同じキーでも入力形式が違う項目（訳者名：文字列 / 訳者：著者リスト）は壊れるので引き継がない
+    const carriedOverData = Object.fromEntries(
+      newFields
+        .filter(field => currentFieldTypes[field.key] === field.type && formData[field.key] !== undefined)
+        .map(field => [field.key, formData[field.key]])
+    );
 
     const newFormData = {
-      type: newType
+      type: newType,
+      ...carriedOverData
     };
 
     // 著者フィールドがある場合のみ著者を初期化
-    if (hasAuthorsField) {
-      newFormData.authors = [{ lastName: '', firstName: '', reading: '' }];
+    const hasAuthorsField = newFields.some(field => field.key === 'authors');
+    if (hasAuthorsField && !newFormData.authors?.length) {
+      newFormData.authors = [createEmptyAuthor()];
     }
 
     // 翻訳書の場合は原著者と訳者フィールドを初期化
     if (newType === 'translation') {
-      newFormData.originalAuthors = [{ lastName: '', firstName: '', reading: '' }];
-      newFormData.originalAuthorsEnglish = [{ lastName: '', firstName: '', reading: '' }];
-      newFormData.translators = [{ lastName: '', firstName: '', reading: '' }];
+      ['originalAuthors', 'originalAuthorsEnglish', 'translators'].forEach(key => {
+        if (!newFormData[key]?.length) {
+          newFormData[key] = [createEmptyAuthor()];
+        }
+      });
     }
 
-    setFormData(prev => ({ ...newFormData }));
+    setFormData(newFormData);
     setErrors({});
   };
 
@@ -214,7 +225,8 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validateForm()) {
-      onSubmit(formData);
+      // 重複などで追加できなかった場合は、入力内容を消さずに修正できるようにする
+      if (onSubmit(formData) === false) return;
       // 新規追加・編集問わずフォームをリセット
       const resetData = { type: 'japanese-book' };
       // 日本語書籍は著者フィールドがあるので著者を初期化
@@ -249,7 +261,6 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
     // fetch detailed article info (authors etc.) if possible, then open mapping modal
     (async () => {
       try {
-        const { fetchCiNiiArticleDetails } = await import('../utils/api');
         const details = await fetchCiNiiArticleDetails(result.seeAlso || result.link);
         // merge details into result but do not overwrite non-empty result fields with empty values from details
         const merged = { ...result };
@@ -311,7 +322,7 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
     if (key === 'authors') {
       // 英語文献の場合は読み仮名を非表示にする
       const isEnglish = ['english-book', 'english-journal', 'english-chapter'].includes(formData.type);
-      return renderAuthorsField(!isEnglish);
+      return renderAuthorsField(label, !isEnglish);
     }
 
     // 翻訳書の特別なフィールド処理
@@ -324,10 +335,11 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
     // 執筆団体（読み仮名）など、その他のテキストフィールド
     const value = formData[key] || '';
     const error = errors[key];
+    const inputId = `reference-field-${key}`;
 
     return (
       <div key={key} className="form-group">
-        <label>
+        <label htmlFor={inputId}>
           <span className="label-text">
             {label}
             {required && <span style={{ color: 'red' }}> *</span>}
@@ -336,6 +348,7 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
         </label>
         {type === 'textarea' ? (
           <textarea
+            id={inputId}
             value={value}
             onChange={(e) => handleChange(key, e.target.value)}
             className={error ? 'error' : ''}
@@ -343,6 +356,7 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
           />
         ) : (
           <input
+            id={inputId}
             type={type}
             value={value}
             onChange={(e) => handleChange(key, e.target.value)}
@@ -355,18 +369,19 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
     );
   };
 
-  const renderAuthorsField = (showReading = true) => {
+  const renderAuthorsField = (label, showReading = true) => {
     return (
       <div key="authors" className="form-group">
         <label>
-          著者 <span style={{ color: 'red' }}>*</span>
+          {label} <span style={{ color: 'red' }}>*</span>
         </label>
         {formData.authors.map((author, index) => (
           <div key={index} className="author-input-group">
             <div className="author-fields">
               <div className="author-field">
-                <label>姓 *</label>
+                <label htmlFor={`authors-${index}-lastName`}>姓 *</label>
                 <input
+                  id={`authors-${index}-lastName`}
                   type="text"
                   value={author.lastName}
                   onChange={(e) => handleAuthorChange(index, 'lastName', e.target.value)}
@@ -378,8 +393,9 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
                 )}
               </div>
               <div className="author-field">
-                <label>名 *</label>
+                <label htmlFor={`authors-${index}-firstName`}>名 *</label>
                 <input
+                  id={`authors-${index}-firstName`}
                   type="text"
                   value={author.firstName}
                   onChange={(e) => handleAuthorChange(index, 'firstName', e.target.value)}
@@ -392,8 +408,9 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
               </div>
               {showReading && (
                 <div className="author-field">
-                  <label>読み仮名</label>
+                  <label htmlFor={`authors-${index}-reading`}>読み仮名</label>
                   <input
+                    id={`authors-${index}-reading`}
                     type="text"
                     value={author.reading}
                     onChange={(e) => handleAuthorChange(index, 'reading', e.target.value)}
@@ -436,8 +453,9 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
           <div key={index} className="author-input-group">
             <div className="author-fields">
               <div className="author-field">
-                <label>姓 *</label>
+                <label htmlFor={`${fieldName}-${index}-lastName`}>姓 *</label>
                 <input
+                  id={`${fieldName}-${index}-lastName`}
                   type="text"
                   value={author.lastName}
                   onChange={(e) => handleAuthorFieldChange(fieldName, index, 'lastName', e.target.value)}
@@ -449,8 +467,9 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
                 )}
               </div>
               <div className="author-field">
-                <label>名 *</label>
+                <label htmlFor={`${fieldName}-${index}-firstName`}>名 *</label>
                 <input
+                  id={`${fieldName}-${index}-firstName`}
                   type="text"
                   value={author.firstName}
                   onChange={(e) => handleAuthorFieldChange(fieldName, index, 'firstName', e.target.value)}
@@ -463,8 +482,9 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
               </div>
               {showReading && (
                 <div className="author-field">
-                  <label>読み仮名</label>
+                  <label htmlFor={`${fieldName}-${index}-reading`}>読み仮名</label>
                   <input
+                    id={`${fieldName}-${index}-reading`}
                     type="text"
                     value={author.reading}
                     onChange={(e) => handleAuthorFieldChange(fieldName, index, 'reading', e.target.value)}
@@ -496,50 +516,54 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div className="form-group">
-        <label>文献の種類 <span style={{ color: 'red' }}>*</span></label>
-        <select
-          value={formData.type}
-          onChange={(e) => handleTypeChange(e.target.value)}
-        >
-          {Object.entries(REFERENCE_TYPES).map(([key, label]) => (
-            <option key={key} value={key}>
-              {label}
-            </option>
-          ))}
-        </select>
-        {REFERENCE_TYPE_HINTS[formData.type] && (
-          <div className="field-hint">
-            <span className="hint-icon">💡</span>
-            {REFERENCE_TYPE_HINTS[formData.type]}
-          </div>
-        )}
-      </div>
-
-      <APISearch
-        type={formData.type}
-        onSearchResult={handleIsbnSearchResult}
-        onCiniiResult={handleCiniiSearchResult}
-      />
-
-      {fields.map(renderField)}
-
-      <div className="button-group">
-        <button type="submit" className="btn btn-primary">
-          {initialData ? '更新' : '追加'}
-        </button>
-        {initialData && (
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={onCancel}
+    <>
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="reference-type">文献の種類 <span style={{ color: 'red' }}>*</span></label>
+          <select
+            id="reference-type"
+            value={formData.type}
+            onChange={(e) => handleTypeChange(e.target.value)}
           >
-            キャンセル
-          </button>
-        )}
-      </div>
+            {Object.entries(REFERENCE_TYPES).map(([key, label]) => (
+              <option key={key} value={key}>
+                {label}
+              </option>
+            ))}
+          </select>
+          {REFERENCE_TYPE_HINTS[formData.type] && (
+            <div className="field-hint">
+              <span className="hint-icon">💡</span>
+              {REFERENCE_TYPE_HINTS[formData.type]}
+            </div>
+          )}
+        </div>
 
+        <APISearch
+          type={formData.type}
+          onSearchResult={handleIsbnSearchResult}
+          onCiniiResult={handleCiniiSearchResult}
+        />
+
+        {fields.map(renderField)}
+
+        <div className="button-group">
+          <button type="submit" className="btn btn-primary">
+            {initialData ? '更新' : '追加'}
+          </button>
+          {initialData && (
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={onCancel}
+            >
+              キャンセル
+            </button>
+          )}
+        </div>
+      </form>
+
+      {/* モーダルを<form>の外に置く：内側にあると入力欄でEnterを押したときに参考文献フォームが送信されてしまう */}
       <MappingModal
         isOpen={showMappingModal}
         onClose={() => setShowMappingModal(false)}
@@ -554,7 +578,7 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
         results={ciniiResults}
         onSelect={handleSelectCiniiResult}
       />
-    </form>
+    </>
   );
 };
 

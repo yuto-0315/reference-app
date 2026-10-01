@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import ReferenceForm from './components/ReferenceForm';
 import ReferenceTable from './components/ReferenceTable';
@@ -8,36 +8,34 @@ import ThemeToggle from './components/ThemeToggle';
 import FormatGuideModal from './components/FormatGuideModal';
 import Toast from './components/Toast';
 import VersionInfo from './components/VersionInfo';
-import { formatCitation, formatReference, getReferenceTypeFields } from './utils/formatters';
-import { loadFromStorage, saveToStorage, isDuplicate, validateAndCleanData } from './utils/dataUtils';
+import { loadFromStorage, saveToStorage, isDuplicate, validateAndCleanData, stripComputedFields } from './utils/dataUtils';
 
 const STORAGE_KEY = 'reference-app-data';
+const ALERT_DURATION_MS = 3000;
 
 function App() {
-  const [references, setReferences] = useState([]);
+  // ローカルストレージから自動読み込み（重複除去付き）
+  // 初回描画前に読み込むことで、空配列で保存データを上書きする余地をなくす
+  const [references, setReferences] = useState(() => loadFromStorage(STORAGE_KEY));
   const [selectedReference, setSelectedReference] = useState(null);
   const [alert, setAlert] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
   const [showFormatGuide, setShowFormatGuide] = useState(false);
   const [checkedReferences, setCheckedReferences] = useState(new Set());
-
-  // ローカルストレージから自動読み込み（重複除去付き）
-  useEffect(() => {
-    const cleanedData = loadFromStorage(STORAGE_KEY);
-    setReferences(cleanedData);
-  }, []);
+  const alertTimerRef = useRef(null);
 
   // 自動保存（ローカルストレージ）- 重複除去付き
+  // 0件も保存しないと、最後の1件を削除しても再読み込みで復活してしまう
   useEffect(() => {
-    if (references.length > 0) {
-      saveToStorage(STORAGE_KEY, references);
-    }
+    saveToStorage(STORAGE_KEY, references);
   }, [references]);
 
   const addReference = (referenceData) => {
+    // 編集をキャンセルしたフォームから複製として追加する場合もあるため、
+    // 元の文献のIDや作成日時は引き継がず、必ず新しい値を振る
     const newReference = {
+      ...stripComputedFields(referenceData),
       id: uuidv4(),
-      ...referenceData,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -45,11 +43,13 @@ function App() {
     // 重複チェック（内容ベース）
     if (isDuplicate(references, newReference)) {
       showAlert('同じ内容の参考文献が既に存在します', 'error');
-      return;
+      // 追加できなかったことをフォームに伝え、入力内容を残してもらう
+      return false;
     }
 
     setReferences(prev => [...prev, newReference]);
     showAlert('参考文献を追加しました', 'success');
+    return true;
   };
 
   const updateReference = (id, referenceData) => {
@@ -124,7 +124,8 @@ function App() {
           let duplicateCount = 0;
 
           cleanImportedData.forEach(ref => {
-            if (!isDuplicate(references, ref)) {
+            // 同じファイル内に同じ内容の文献が複数ある場合も1件にする
+            if (!isDuplicate([...references, ...newReferences], ref)) {
               // 新しいIDを生成（既存IDとの衝突を避けるため）
               newReferences.push({
                 ...ref,
@@ -163,9 +164,14 @@ function App() {
   };
 
   const showAlert = (message, type) => {
+    // 前のアラートのタイマーが残っていると、新しいアラートが表示途中で消えてしまう
+    clearTimeout(alertTimerRef.current);
     setAlert({ message, type });
-    setTimeout(() => setAlert(null), 3000);
+    alertTimerRef.current = setTimeout(() => setAlert(null), ALERT_DURATION_MS);
   };
+
+  // Toast側のタイマーがAppの再描画のたびにリセットされないよう、関数の同一性を保つ
+  const closeToast = useCallback(() => setToastMessage(''), []);
 
   const copyToClipboard = (text, feedbackMessage) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -237,7 +243,10 @@ function App() {
       </header>
 
       {alert && (
-        <div className={`alert alert-${alert.type}`}>
+        <div
+          className={`alert alert-${alert.type}`}
+          role={alert.type === 'error' ? 'alert' : 'status'}
+        >
           {alert.message}
         </div>
       )}
@@ -293,7 +302,7 @@ function App() {
       <Toast
         message={toastMessage}
         isVisible={!!toastMessage}
-        onClose={() => setToastMessage('')}
+        onClose={closeToast}
       />
     </div>
   );

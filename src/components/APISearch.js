@@ -94,16 +94,25 @@ const APISearch = ({ type, onSearchResult, onCiniiResult }) => {
     }
 };
 
+  // 検索欄は参考文献フォームの中にあるため、Enterで文献の追加が走らないよう検索に置き換える
+  const searchOnEnter = (search) => (e) => {
+    if (e.key !== 'Enter' || e.nativeEvent.isComposing) return;
+    e.preventDefault();
+    search();
+  };
+
   // Allow ISBN lookup for normal books and organization-published books
   if (type === 'japanese-book' || type === 'english-book' || type === 'organization-book') {
     return (
       <div className="api-search-container">
-        <label>ISBNで書籍情報を検索</label>
+        <label htmlFor="isbn-search">ISBNで書籍情報を検索</label>
         <div className="search-input-group">
           <input
+            id="isbn-search"
             type="text"
             value={isbn}
             onChange={(e) => setIsbn(e.target.value)}
+            onKeyDown={searchOnEnter(handleIsbnSearch)}
             placeholder="ISBN (10桁または13桁)"
             disabled={isLoading}
           />
@@ -130,7 +139,7 @@ const APISearch = ({ type, onSearchResult, onCiniiResult }) => {
             <div className="scanner-content" onClick={(e) => e.stopPropagation()}>
               <video ref={videoRef} style={{ width: '100%', maxHeight: '400px' }} autoPlay muted playsInline />
               <div style={{ marginTop: 8 }}>
-                <button className="btn btn-secondary" onClick={closeScanner}>閉じる</button>
+                <button type="button" className="btn btn-secondary" onClick={closeScanner}>閉じる</button>
                 {scanError && <div className="error-message">スキャンエラー: {scanError}</div>}
                 <div style={{ marginTop: 6, fontSize: 'smaller' }}>バーコードをカメラにかざしてください（EAN/UPC/ISBN）</div>
               </div>
@@ -144,12 +153,14 @@ const APISearch = ({ type, onSearchResult, onCiniiResult }) => {
   if (type === 'japanese-journal') {
       return (
           <div className="api-search-container">
-              <label>論文タイトルで検索</label>
+              <label htmlFor="cinii-search">論文タイトルで検索</label>
               <div className="search-input-group">
                   <input
+                      id="cinii-search"
                       type="text"
                       value={ciniiQuery}
                       onChange={(e) => setCiniiQuery(e.target.value)}
+                      onKeyDown={searchOnEnter(handleCiniiSearch)}
                       placeholder="論文タイトルを入力..."
                       disabled={isLoading}
                   />

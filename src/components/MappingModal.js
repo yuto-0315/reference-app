@@ -8,7 +8,8 @@ const isJapaneseText = (s) => /[\u3000-\u30FF\u4E00-\u9FFF\u3040-\u309F]/.test(s
 const toHiragana = (s) => {
     if (!s) return '';
     // normalize fullwidth spaces and standard spaces
-    let t = s.replace(/\u3000/g, ' ').replace(/\s+/g, ' ').trim();
+    // NDLの読みは「ナツメ, ソウセキ」のように姓名をカンマで区切るため、カンマも区切りとして扱う
+    let t = s.replace(/\u3000/g, ' ').replace(/[,，]/g, ' ').replace(/\s+/g, ' ').trim();
     // convert katakana characters to hiragana
     let out = '';
     for (const ch of t) {
@@ -41,6 +42,23 @@ const splitJapaneseName = (name) => {
     return [n.slice(0, 2), n.slice(2)];
 };
 
+// 氏名を姓・名に分ける（「姓, 名」はカンマ、空白があれば空白、空白のない日本語名は文字数から推定）
+const splitFullName = (fullName) => {
+    const name = fullName.replace(/\u3000/g, ' ').trim();
+    if (name.includes(',')) {
+        const parts = name.split(',').map(s => s.trim());
+        return [parts[0] || '', parts[1] || ''];
+    }
+    if (!name.includes(' ') && isJapaneseText(name)) {
+        const parts = splitJapaneseName(name);
+        return [parts[0] || '', parts[1] || ''];
+    }
+    const parts = name.split(/\s+/);
+    return [parts[0] || '', parts.slice(1).join(' ') || ''];
+};
+
+const createEmptyAuthor = () => ({ lastName: '', firstName: '', reading: '' });
+
 const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType }) => {
     // helper: extract creators/authors from a variety of possible keys
     const getCreators = (data) => {
@@ -62,6 +80,8 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType }) => {
                 // map objects with @value/@id into strings when possible
                 const mapped = v.map(x => {
                     if (typeof x === 'string') return x;
+                    // NDLの { name, reading } は読みを使うためオブジェクトのまま残す
+                    if (x && typeof x.name === 'string') return x;
                     if (x && typeof x === 'object') {
                         if (x['@value'] && typeof x['@value'] === 'string') return x['@value'];
                         if (x['@id'] && typeof x['@id'] === 'string') return x['@id'];
@@ -141,6 +161,9 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType }) => {
                 initialMapping.organization = initialMapping.organization || initialMapping.publisher || getAny(['organization', 'editorialOrganization']);
             }
             initialMapping.year = initialMapping.year || getAny(['year', 'prism:publicationDate', 'issued']);
+            // 「2013.6」「2013-06」のような日付でも出版年の欄（数値入力）に入るよう、西暦4桁だけを取り出す
+            const yearMatch = String(initialMapping.year).match(/\d{4}/);
+            if (yearMatch) initialMapping.year = yearMatch[0];
             initialMapping.journalName = initialMapping.journalName || getAny(['journal', 'prism:publicationName', 'dc:source']);
             initialMapping.volume = initialMapping.volume || getAny(['volume', 'prism:volume']);
             initialMapping.issue = initialMapping.issue || getAny(['issue', 'prism:number', 'prism:issue']);
@@ -185,68 +208,17 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType }) => {
             // initialize draftAuthors from creators and compute initial splitCounts
             const initialDraft = {};
             const initialSplits = {};
-            meta.forEach(({ creator, name }, idx) => {
-                const creatorIdx = idx; // corresponds to meta index order
+            meta.forEach(({ name, reading }, creatorIdx) => {
                 if (!name) {
                     // leave empty draft for URL-only or empty creators
-                    initialDraft[creatorIdx] = { lastName: '', firstName: '', reading: '' };
+                    initialDraft[creatorIdx] = createEmptyAuthor();
                     initialSplits[creatorIdx] = '';
                     return;
                 }
-                const display = name;
-                    if (typeof display === 'string') {
-                    const nameStr = display.trim();
-                    let last = '';
-                    let first = '';
-                    if (nameStr.includes(',')) {
-                        const parts = nameStr.split(',').map(s => s.trim());
-                        last = parts[0] || '';
-                        first = parts[1] || '';
-                    } else if (nameStr.indexOf(' ') >= 0) {
-                        // if ASCII (half-width) space exists, prefer splitting on that
-                        const parts = nameStr.split(/\s+/);
-                        last = parts[0] || '';
-                        first = parts.slice(1).join(' ') || '';
-                    } else if (isJapaneseText(nameStr)) {
-                        const parts = splitJapaneseName(nameStr);
-                        last = parts[0] || '';
-                        first = parts[1] || '';
-                    } else {
-                        const parts = nameStr.split(/\s+/);
-                        last = parts[0] || '';
-                        first = parts.slice(1).join(' ') || '';
-                    }
-                    initialDraft[creatorIdx] = { lastName: last, firstName: first, reading: '' };
-                    // set initial split count to length of last (multi-byte aware) if available
-                    initialSplits[creatorIdx] = last ? Array.from(String(last)).length : '';
-                } else {
-                    const name = (creator && creator.name) ? String(creator.name).trim() : '';
-                    let last = '';
-                    let first = '';
-                    if (name.includes(',')) {
-                        const parts = name.split(',').map(s => s.trim());
-                        last = parts[0] || '';
-                        first = parts[1] || '';
-                    } else if (name.indexOf(' ') >= 0) {
-                        // prefer splitting on ASCII space when present
-                        const parts = name.split(/\s+/);
-                        last = parts[0] || '';
-                        first = parts.slice(1).join(' ') || '';
-                    } else if (isJapaneseText(name)) {
-                        const parts = splitJapaneseName(name);
-                        last = parts[0] || '';
-                        first = parts[1] || '';
-                    } else {
-                        const parts = name.split(/\s+/);
-                        last = parts[0] || '';
-                        first = parts.slice(1).join(' ') || '';
-                    }
-                    const rawReading = (creator && creator.reading) ? creator.reading : '';
-                    const normalizedReading = toHiragana(rawReading);
-                    initialDraft[creatorIdx] = { lastName: last, firstName: first, reading: normalizedReading };
-                    // set initial split count to length of last (multi-byte aware) if available
-                    initialSplits[creatorIdx] = last ? Array.from(String(last)).length : '';
-                }
+                const [last, first] = splitFullName(name);
+                initialDraft[creatorIdx] = { lastName: last, firstName: first, reading: toHiragana(reading) };
+                // set initial split count to length of last (multi-byte aware) if available
+                initialSplits[creatorIdx] = last ? Array.from(last).length : '';
             });
             setDraftAuthors(initialDraft);
             setSplitCounts(initialSplits);
@@ -262,7 +234,6 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType }) => {
     if (!isOpen) return null;
 
     const handleApply = () => {
-        const creatorsArr = apiData?.creators || apiData?.authors || [];
         const authors = Array.from(selectedCreators)
             .sort((a, b) => a - b)
             .map(index => {
@@ -276,57 +247,12 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType }) => {
                     };
                 }
 
-                const creator = creatorsArr[index];
-                if (!creator) return { lastName: '', firstName: '', reading: '' };
-
-                if (typeof creator === 'string') {
-                    const name = creator.trim();
-                    let last = '';
-                    let first = '';
-                    if (name.includes(',')) {
-                        const parts = name.split(',').map(s => s.trim());
-                        last = parts[0] || '';
-                        first = parts[1] || '';
-                    } else if (name.indexOf(' ') >= 0) {
-                        const parts = name.split(/\s+/);
-                        last = parts[0] || '';
-                        first = parts.slice(1).join(' ') || '';
-                    } else if (isJapaneseText(name)) {
-                        const parts = splitJapaneseName(name);
-                        last = parts[0] || '';
-                        first = parts[1] || '';
-                    } else {
-                        const parts = name.split(/\s+/);
-                        last = parts[0] || '';
-                        first = parts.slice(1).join(' ') || '';
-                    }
-                    return { lastName: last, firstName: first, reading: '' };
-                }
-
-                // creator is object like {name, reading}
-                const name = (creator.name || '').trim();
-                let last = '';
-                let first = '';
-                if (name.includes(',')) {
-                    const parts = name.split(',').map(s => s.trim());
-                    last = parts[0] || '';
-                    first = parts[1] || '';
-                } else if (name.indexOf(' ') >= 0) {
-                    const parts = name.split(/\s+/);
-                    last = parts[0] || '';
-                    first = parts.slice(1).join(' ') || '';
-                } else if (isJapaneseText(name)) {
-                    const parts = splitJapaneseName(name);
-                    last = parts[0] || '';
-                    first = parts[1] || '';
-                } else {
-                    const parts = name.split(/\s+/);
-                    last = parts[0] || '';
-                    first = parts.slice(1).join(' ') || '';
-                }
-                const rawReading = creator.reading || '';
-                const normalizedReading = toHiragana(rawReading);
-                return { lastName: last, firstName: first, reading: normalizedReading };
+                // 下書きを全て消した場合は、取得した氏名から分割し直す
+                // （画面に並べた著者と同じ配列を参照しないと、別の著者の名前を拾ってしまう）
+                const meta = creatorsMeta[index];
+                if (!meta || !meta.name) return createEmptyAuthor();
+                const [last, first] = splitFullName(meta.name);
+                return { lastName: last, firstName: first, reading: toHiragana(meta.reading) };
             });
 
         // Ensure link is also provided as `url` which is the form field key
@@ -363,10 +289,8 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType }) => {
         setSplitCounts(prev => ({ ...prev, [index]: v }));
         // auto-split immediately on change
         // use timeout to allow users to type; but for now immediate
-        const creatorsArr = apiData?.creators || apiData?.authors || [];
-        const creator = creatorsArr[index];
-        if (!creator) return;
-        const name = (typeof creator === 'string') ? creator : (creator.name || '');
+        const name = creatorsMeta[index]?.name;
+        if (!name) return;
         const [last, first] = splitByFrontN(name, v);
         setDraftAuthors(prev => ({ ...prev, [index]: { ...(prev[index] || {}), lastName: last, firstName: first } }));
     };
@@ -382,10 +306,8 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType }) => {
 
     const handleSplit = (index) => {
         const n = splitCounts[index] || 0;
-        const creatorsArr = apiData?.creators || apiData?.authors || [];
-        const creator = creatorsArr[index];
-        if (!creator) return;
-        const name = (typeof creator === 'string') ? creator : (creator.name || '');
+        const name = creatorsMeta[index]?.name;
+        if (!name) return;
         const [last, first] = splitByFrontN(name, n);
         setDraftAuthors(prev => ({ ...prev, [index]: { ...(prev[index] || {}), lastName: last, firstName: first } }));
     };

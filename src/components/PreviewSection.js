@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { formatReference, formatCitation, migrateReferenceData, addYearSuffixes, REFERENCE_TYPES } from '../utils/formatters';
+import { formatReference, formatCitation, migrateReferenceData, addYearSuffixes, getAuthorDisplayName, getSortReading, getPublicationYear, REFERENCE_TYPES } from '../utils/formatters';
 
 const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, onToggleAll, onBulkCheck }) => {
   const [citationPage, setCitationPage] = useState('');
@@ -19,36 +19,6 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
     }
   };
 
-  // 複数著者の表示用ユーティリティ関数
-  const getAuthorDisplayName = (migratedRef) => {
-    if (migratedRef.type === 'translation') {
-      // 翻訳書の場合は原語表記の原著者を使用
-      if (migratedRef.originalAuthorsEnglish && migratedRef.originalAuthorsEnglish.length > 0) {
-        return migratedRef.originalAuthorsEnglish
-          .map(author => `${author.lastName}, ${author.firstName}`)
-          .join('; ');
-      }
-      // 新しい形式の翻訳書（日本語表記の原著者を使用）
-      if (migratedRef.originalAuthors && migratedRef.originalAuthors.length > 0) {
-        return migratedRef.originalAuthors
-          .map(author => `${author.lastName}${author.firstName}`)
-          .join('・');
-      }
-      // 古い形式の翻訳書（後方互換性）
-      return migratedRef.originalAuthorLastName || '';
-    }
-    if (migratedRef.type === 'organization-book') {
-      // 団体出版本の場合は執筆団体名を表示
-      return migratedRef.organization || '';
-    }
-    if (migratedRef.authors && migratedRef.authors.length > 0) {
-      return migratedRef.authors
-        .map(author => `${author.lastName}${author.firstName}`)
-        .join('・');
-    }
-    return migratedRef.composer || migratedRef.organization || '';
-  };
-
   // チェックされた参考文献のみを取得し、ソート
   const getCheckedReferences = () => {
     return references
@@ -58,53 +28,17 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
 
   const sortedReferences = [...getCheckedReferences()].sort((a, b) => {
     let compareValue = 0;
-
-    // ソート用のヘルパー関数
-    const getReading = (ref) => {
-      // already migrated data
-      if (ref.type === 'organization-book') {
-        return ref.organizationReading || ref.organization || '';
-      } else if (ref.type === 'website') {
-        return ref.organizationReading || ref.organization || '';
-      } else if (ref.type === 'translation') {
-        // 翻訳書の場合、原著者の読み（あれば）または姓を使用
-        // originalAuthors[0] があると仮定
-        if (ref.originalAuthors && ref.originalAuthors.length > 0) {
-          return ref.originalAuthors[0].reading || ref.originalAuthors[0].lastName || '';
-        }
-        if (ref.originalAuthorsEnglish && ref.originalAuthorsEnglish.length > 0) {
-          return ref.originalAuthorsEnglish[0].lastName || '';
-        }
-        return ref.originalAuthorLastName || '';
-      } else {
-        return ref.authors?.[0]?.reading || ref.authors?.[0]?.lastName || '';
-      }
-    };
+    const compareYear = () => (Number(getPublicationYear(a)) || 0) - (Number(getPublicationYear(b)) || 0);
+    const compareReading = () => getSortReading(a).localeCompare(getSortReading(b), 'ja');
 
     switch (sortBy) {
       case 'author':
-        const readingA = getReading(a);
-        const readingB = getReading(b);
-        compareValue = readingA.localeCompare(readingB, 'ja');
-
         // 著者名が同じ場合は発行年で比較（第二ソートキー）
-        if (compareValue === 0) {
-          const yearA = Number(a.year) || 0;
-          const yearB = Number(b.year) || 0;
-          compareValue = yearA - yearB;
-        }
+        compareValue = compareReading() || compareYear();
         break;
       case 'year':
-        const yearA = Number(a.year) || 0;
-        const yearB = Number(b.year) || 0;
-        compareValue = yearA - yearB;
-
         // 年が同じ場合は読み仮名で比較（第二ソートキー）
-        if (compareValue === 0) {
-          const rA = getReading(a);
-          const rB = getReading(b);
-          compareValue = rA.localeCompare(rB, 'ja');
-        }
+        compareValue = compareYear() || compareReading();
         break;
       default:
         compareValue = 0;
@@ -112,28 +46,6 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
 
     return sortOrder === 'asc' ? compareValue : -compareValue;
   });
-
-  // Debugging: Log the sorted list and reasoning to the console
-  console.log("Sorted References (Reasoning):", sortedReferences.map(ref => {
-    const getReading = (r) => {
-      if (r.type === 'organization-book') return r.organizationReading || r.organization || '';
-      if (r.type === 'website') return r.organization || '';
-      if (r.type === 'translation') {
-        if (r.originalAuthors && r.originalAuthors.length > 0) return r.originalAuthors[0].reading || r.originalAuthors[0].lastName || '';
-        if (r.originalAuthorsEnglish && r.originalAuthorsEnglish.length > 0) return r.originalAuthorsEnglish[0].lastName || '';
-        return r.originalAuthorLastName || '';
-      }
-      return r.authors?.[0]?.reading || r.authors?.[0]?.lastName || '';
-    };
-    return {
-      title: ref.title,
-      type: ref.type,
-      sortKey_Reading: getReading(ref),
-      sortKey_Year: ref.year || 0,
-      authors: ref.authors,
-      originalAuthors: ref.originalAuthors
-    };
-  }));
 
   const generateReferenceList = () => {
     // チェックされた参考文献にアルファベットサフィックスを付与
@@ -143,13 +55,14 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
       .join('\n');
   };
 
+  // 同一著者・同一年の文献に対してアルファベットサフィックスを付与（保存値ではなく毎回計算する）
+  const allReferencesWithSuffixes = addYearSuffixes(references);
+
   const generateCitation = () => {
     const ref = references.find(r => r.id === selectedRef);
     if (!ref) return '';
     const migratedRef = migrateReferenceData(ref);
 
-    // 同一著者・同一年の文献に対してアルファベットサフィックスを付与
-    const allReferencesWithSuffixes = addYearSuffixes(references);
     const refWithSuffix = allReferencesWithSuffixes.find(r => r.id === selectedRef) || migratedRef;
 
     // 引用ページが設定されていない場合は掲載ページを使用
@@ -178,13 +91,15 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
 
       {/* 本文中の引用生成 */}
       <div style={{ marginBottom: '30px' }}>
-        <h3 style={{ fontSize: '1.2rem', marginBottom: '15px', color: '#333' }}>
+        {/* 文字色をテーマ変数にしないと、ダークテーマで背景と同化して見えなくなる */}
+        <h3 style={{ fontSize: '1.2rem', marginBottom: '15px', color: 'var(--color-text-onSurface)' }}>
           📝 本文中の引用（割注）
         </h3>
 
         <div className="form-group">
-          <label>参考文献を選択</label>
+          <label htmlFor="citation-reference">参考文献を選択</label>
           <select
+            id="citation-reference"
             value={selectedRef}
             onChange={(e) => setSelectedRef(e.target.value)}
           >
@@ -203,8 +118,9 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
         </div>
 
         <div className="form-group">
-          <label>引用ページ（オプション）</label>
+          <label htmlFor="citation-page">引用ページ（オプション）</label>
           <input
+            id="citation-page"
             type="text"
             value={citationPage}
             onChange={(e) => setCitationPage(e.target.value)}
@@ -240,7 +156,7 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
       {/* 参考文献一覧 */}
       <div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px' }}>
-          <h3 style={{ fontSize: '1.2rem', margin: 0, color: '#333' }}>
+          <h3 style={{ fontSize: '1.2rem', margin: 0, color: 'var(--color-text-onSurface)' }}>
             📚 参考文献一覧
           </h3>
           <div className="reference-list-controls">
@@ -310,9 +226,9 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
           <>
             {/* 参考文献リスト（チェックボックス付き） */}
             <div className="reference-checklist">
-              {references.map(ref => {
-                const migratedRef = migrateReferenceData(ref);
-                const authorName = getAuthorDisplayName(migratedRef);
+              {/* addYearSuffixes の結果は移行済みデータで、計算したサフィックスを持つ */}
+              {allReferencesWithSuffixes.map(ref => {
+                const authorName = getAuthorDisplayName(ref);
 
                 return (
                   <div key={ref.id} className="reference-check-item">
@@ -327,14 +243,14 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
                         <div className="reference-author">{authorName}</div>
                         <div className="reference-title">{ref.title}</div>
                         <div className="reference-year">
-                          {migratedRef.type === 'translation' ? (
+                          {ref.type === 'translation' ? (
                             // 翻訳書の場合は「原著出版年(翻訳書出版年)」で表示
-                            `${migratedRef.originalYear || ''}(${ref.year || ''})年`
-                          ) : migratedRef.type === 'website' ? (
+                            `${ref.originalYear || ''}(${ref.year || ''})年`
+                          ) : ref.type === 'website' ? (
                             // Webサイトは最終閲覧日を表示
                             ref.yearSuffix ? `${ref.accessDate || '-'} (${ref.yearSuffix})` : (ref.accessDate || '-')
                           ) : (
-                            `${ref.year}年`
+                            `${getPublicationYear(ref) || ''}年`
                           )}
                         </div>
                       </div>
