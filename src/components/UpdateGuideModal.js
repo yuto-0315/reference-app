@@ -1,7 +1,11 @@
 import React from 'react';
+import { CHANGELOG, CHANGE_TYPE_LABELS } from '../utils/changelog';
 
 const UpdateGuideModal = ({ isOpen, onClose, apiExamples }) => {
     if (!isOpen) return null;
+
+    // バージョンが上がると自動で開くため、まず最新版で何が変わったかを示す
+    const latestRelease = CHANGELOG[0];
 
     return (
         <div className="modal-overlay" onClick={onClose}>
@@ -12,7 +16,14 @@ const UpdateGuideModal = ({ isOpen, onClose, apiExamples }) => {
                 </div>
 
                 <div className="modal-body">
-                    <h3>📃概要</h3>
+                    <h3>🆕 v{latestRelease.version} の変更点</h3>
+                    <ul className="changelog-changes">
+                        {latestRelease.changes.map((change, index) => (
+                            <li key={index}>{CHANGE_TYPE_LABELS[change.type]}：{change.description}</li>
+                        ))}
+                    </ul>
+
+                    <h3>📃外部データ連携について</h3>
                     <p>
                         外部の書誌データ（CiNii / 国立国会図書館）から取得したデータを元に、
                         タイトルや著者、雑誌情報、DOI、NDLリンク等を自動で入力できるようになりました。

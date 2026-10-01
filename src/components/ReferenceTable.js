@@ -200,7 +200,6 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                   title="全て選択/解除"
                 />
               </th>
-              <th className="cover-art-header">書影</th>
               <th>著者</th>
               <th>タイトル</th>
               <th>発行年</th>
@@ -259,27 +258,6 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                         onChange={() => onToggleCheck(ref.id)}
                         aria-label={`「${ref.title}」を参考文献一覧に含める`}
                       />
-                    </td>
-                    <td className="cover-art-cell">
-                      {(() => {
-                        // 書影URLはハイフンなしのISBNでないと取得できない
-                        const normalizedIsbn = migratedRef.isbn ? String(migratedRef.isbn).replace(/[^0-9Xx]/g, '') : '';
-                        const imageUrl = normalizedIsbn ? `https://ndlsearch.ndl.go.jp/thumbnail/${normalizedIsbn}.jpg` : null;
-                        if (imageUrl) {
-                          return (
-                            <>
-                              <img
-                                src={imageUrl}
-                                alt={`${ref.title}の書影`}
-                                style={{ height: '60px', width: 'auto' }}
-                                onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'inline'; }}
-                              />
-                              <span style={{ display: 'none' }}>-</span>
-                            </>
-                          );
-                        }
-                        return '-';
-                      })()}
                     </td>
                     <td className="author-cell">
                       <div className="author-name">
