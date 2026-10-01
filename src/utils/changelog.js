@@ -1,6 +1,56 @@
 // アプリケーションの変更履歴
 export const CHANGELOG = [
   {
+    version: '2.1.0',
+    date: '2026-10-01',
+    changes: [
+      {
+        type: 'fix',
+        description: '最後の1件を削除しても、再読み込みすると復活する問題を修正'
+      },
+      {
+        type: 'fix',
+        description: '編集をキャンセルしたフォームから、似た文献を複製して追加できない問題を修正'
+      },
+      {
+        type: 'fix',
+        description: '同じJSONファイルを再インポートすると文献が重複する問題を修正し、重複で追加できなかったときも入力内容が消えないように変更'
+      },
+      {
+        type: 'fix',
+        description: 'Webサイトの割注で、アルファベットが付かない場合に末尾へ空白が残る問題を修正'
+      },
+      {
+        type: 'fix',
+        description: '楽譜・視聴覚資料の割注で著者名と年が表示されない問題を修正（作曲者名・発売年を使用）'
+      },
+      {
+        type: 'fix',
+        description: 'CiNiiの論文詳細が取得できない問題、NDLの著者名に生没年が混ざる・同じ著者が二重に出る問題を修正'
+      },
+      {
+        type: 'fix',
+        description: 'ダークテーマで一部の見出しや文字が読めない問題を修正'
+      },
+      {
+        type: 'fix',
+        description: '国立国会図書館サーチの書影API提供終了（2026年3月31日）に伴い、一覧の書影列を削除'
+      },
+      {
+        type: 'improvement',
+        description: 'ISBN・論文タイトル欄でEnterキーを押すと検索するように変更'
+      },
+      {
+        type: 'improvement',
+        description: '文献の種類を変えても、書名・出版年など共通する項目の入力内容を引き継ぐように変更'
+      },
+      {
+        type: 'improvement',
+        description: 'NDLから著者の読み仮名を取り込み、一覧の検索で団体名・作曲者・原著者も探せるように改善'
+      }
+    ]
+  },
+  {
     version: '2.0.0',
     date: '2025-09-03',
     changes: [
