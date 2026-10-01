@@ -2,13 +2,18 @@
  * src/utils/api.js
  */
 
+// NDLの典拠形の人名は「夏目, 漱石, 1867-1916」のように生没年が付くため、姓名の分割前に取り除く
+const stripLifeDates = (name) => name.replace(/,?\s*\d{3,4}-(\d{3,4})?\s*$/, '').trim();
+
 /**
  * ISBNを元に国立国会図書館サーチAPIから書籍情報を取得します。
  * @param {string} isbn - ISBN（10桁または13桁）
  * @returns {Promise<object|null>} 書籍情報のオブジェクト、または見つからない場合はnull
  */
-export const fetchBookInfoByISBN = async (isbn) => {
-  const url = `https://ndlsearch.ndl.go.jp/api/sru?operation=searchRetrieve&query=isbn%3D${isbn}&recordSchema=dcndl&recordPacking=xml&onlyBib=true`;
+export const fetchBookInfoByISBN = async (rawIsbn) => {
+  // ハイフンや空白入りで入力されても検索できるよう、数字とチェックディジットXのみにする
+  const isbn = rawIsbn.replace(/[^0-9Xx]/g, '');
+  const url = `https://ndlsearch.ndl.go.jp/api/sru?operation=searchRetrieve&query=isbn%3D${encodeURIComponent(isbn)}&recordSchema=dcndl&recordPacking=xml&onlyBib=true`;
 
   try {
     const response = await fetch(url);
@@ -64,9 +69,9 @@ export const fetchBookInfoByISBN = async (isbn) => {
       if (agent) {
         const nameEl = agent.getElementsByTagNameNS(foafNS, 'name')[0];
         const transcriptionEl = agent.getElementsByTagNameNS(dcndlNS, 'transcription')[0];
-        const rawName = nameEl ? nameEl.textContent.trim() : agent.textContent.trim();
+        const rawName = stripLifeDates(nameEl ? nameEl.textContent.trim() : agent.textContent.trim());
         const normalized = rawName.replace(/,\s*/g, ' ').replace(/\s+/g, ' ').trim();
-        const reading = transcriptionEl ? transcriptionEl.textContent.trim() : '';
+        const reading = transcriptionEl ? stripLifeDates(transcriptionEl.textContent.trim()) : '';
         creators.push({ name: normalized, reading });
       } else {
         const txt = el.textContent.trim();
@@ -82,7 +87,9 @@ export const fetchBookInfoByISBN = async (isbn) => {
       const parts = txt.split(/、|,| and | 著| 編著/).map(s => s.trim()).filter(Boolean);
       parts.forEach(part => {
         const normalized = part.replace(/\s+/g, ' ').trim();
-        if (!creators.some(c => c.name === normalized)) {
+        // dcterms:creator の「橋本 毅彦」と dc:creator の「橋本毅彦」は同一人物なので、空白を無視して比べる
+        const withoutSpaces = (s) => s.replace(/\s/g, '');
+        if (!creators.some(c => withoutSpaces(c.name) === withoutSpaces(normalized))) {
           creators.push({ name: normalized, reading: '' });
         }
       });
@@ -124,6 +131,42 @@ export const fetchBookInfoByISBN = async (isbn) => {
   }
 };
 
+
+// helper: extract DOI and NDL uri from dc:identifier-like arrays
+// 検索結果と記事詳細の両方で使うため、モジュール直下に定義する
+const extractIdentifiers = (identArr) => {
+  const out = { doi: null, ndl: null, ndlBibId: null };
+  if (!identArr) return out;
+  const arr = Array.isArray(identArr) ? identArr : [identArr];
+  for (const it of arr) {
+    if (!it) continue;
+    if (typeof it === 'string') {
+      const s = it.trim();
+      if (s.startsWith('http') && s.includes('ndl')) out.ndl = out.ndl || s;
+      if (s.includes('10.')) out.doi = out.doi || s;
+      continue;
+    }
+    const type = (it['@type'] || it.type || '').toString();
+    const value = (it['@value'] || it.value || it['@id'] || it['id'] || '').toString();
+    if (!value) continue;
+    const lower = type.toLowerCase();
+    if (lower.includes('doi')) {
+      out.doi = out.doi || value;
+    }
+    if (lower.includes('uri') || value.startsWith('http')) {
+      // prefer NDL search URL if it looks like ndlsearch
+      if (value.includes('ndlsearch') || value.includes('id.ndl.go.jp')) {
+        out.ndl = out.ndl || value;
+      } else if (!out.ndl && value.startsWith('http')) {
+        out.ndl = out.ndl || value;
+      }
+    }
+    if (lower.includes('ndl_bib') || lower.includes('ndlbib') || lower.includes('ndl_bib_id')) {
+      out.ndlBibId = out.ndlBibId || value;
+    }
+  }
+  return out;
+};
 
 /**
  * 論文タイトルを元にCiNii Articles APIから論文情報を検索します。
@@ -208,41 +251,6 @@ export const searchCiNiiByTitle = async (title) => {
       return s || '';
     }
     return String(v);
-  };
-
-  // helper: extract DOI and NDL uri from dc:identifier-like arrays
-  const extractIdentifiers = (identArr) => {
-    const out = { doi: null, ndl: null, ndlBibId: null };
-    if (!identArr) return out;
-    const arr = Array.isArray(identArr) ? identArr : [identArr];
-    for (const it of arr) {
-      if (!it) continue;
-      if (typeof it === 'string') {
-        const s = it.trim();
-        if (s.startsWith('http') && s.includes('ndl')) out.ndl = out.ndl || s;
-        if (s.includes('10.')) out.doi = out.doi || s;
-        continue;
-      }
-      const type = (it['@type'] || it.type || '').toString();
-      const value = (it['@value'] || it.value || it['@id'] || it['id'] || '').toString();
-      if (!value) continue;
-      const lower = type.toLowerCase();
-      if (lower.includes('doi')) {
-        out.doi = out.doi || value;
-      }
-      if (lower.includes('uri') || value.startsWith('http')) {
-        // prefer NDL search URL if it looks like ndlsearch
-        if (value.includes('ndlsearch') || value.includes('id.ndl.go.jp')) {
-          out.ndl = out.ndl || value;
-        } else if (!out.ndl && value.startsWith('http')) {
-          out.ndl = out.ndl || value;
-        }
-      }
-      if (lower.includes('ndl_bib') || lower.includes('ndlbib') || lower.includes('ndl_bib_id')) {
-        out.ndlBibId = out.ndlBibId || value;
-      }
-    }
-    return out;
   };
 
     const mapped = rawItems.map(item => {

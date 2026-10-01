@@ -288,7 +288,7 @@ export const getReferenceTypeFields = (type) => {
     ],
 
     'website': [
-      { key: 'organization', label: 'ウェブサイト運営団体名', required: true, type: 'text', description: 'Webサイトの運営団体や著者名を入力してください。', example: '文部科学省ウェブサイト' },
+      { key: 'organization', label: 'ウェブサイト運営団体名', required: true, type: 'text', description: 'Webサイトの運営団体や著者名を入力してください。（「webサイト」は自動で付きます）', example: '文部科学省' },
       { key: 'organizationReading', label: '運営団体（読み仮名）', required: false, type: 'text', description: '運営団体の読み仮名を入力してください（並べ替えに使用します）。', example: 'もんぶかがくしょう' },
       { key: 'title', label: 'ページタイトル', required: true, type: 'text', description: 'Webページの正式なタイトルを入力してください。', example: '学習指導要領「生きる力」' },
       { key: 'url', label: 'URL', required: true, type: 'url', description: 'WebページのURLを入力してください。', example: 'https://www.mext.go.jp/a_menu/shotou/new-cs/index.htm' },
@@ -345,50 +345,122 @@ export const formatAuthors = (authors, isJapanese = true, forCitation = false) =
   }
 };
 
+// 出版年（視聴覚資料は発売年を出版年として扱う）
+export const getPublicationYear = (reference) =>
+  reference.type === 'audiovisual' ? reference.releaseYear : reference.year;
+
+// 編集時に著者欄のない文献種別へ空の著者が保存されている場合があるため、名前のある著者だけを見る
+const getNamedAuthors = (reference) =>
+  (reference.authors || []).filter(author => author.lastName || author.firstName);
+
+// 同一著者・同年の判定（a,b,c）に使う著者キー。既存の論文の表記がずれないよう、筆頭著者の姓で判定する
+const getSuffixGroupAuthorKey = (reference) => {
+  if (reference.type === 'website' || reference.type === 'organization-book') {
+    return reference.organization || '';
+  }
+  if (reference.type === 'translation') {
+    if (reference.originalAuthors && reference.originalAuthors.length > 0) {
+      return reference.originalAuthors[0].lastName || '';
+    }
+    return reference.originalAuthorLastName || '';
+  }
+  const authors = getNamedAuthors(reference);
+  return authors.length > 0 ? authors[0].lastName || '' : reference.composer || '';
+};
+
+// 本文中の引用に表示する著者名
+const getCitationAuthorName = (reference) => {
+  if (reference.type === 'website' || reference.type === 'organization-book') {
+    return reference.organization || '';
+  }
+
+  if (reference.type === 'translation') {
+    // 翻訳書の場合は原著者をカタカナで
+    if (reference.originalAuthors && reference.originalAuthors.length > 0) {
+      return reference.originalAuthors.map(author => author.lastName).join('・');
+    }
+    // 後方互換性：古い形式のデータをサポート
+    return reference.originalAuthorLastName || '';
+  }
+
+  const authors = getNamedAuthors(reference);
+  if (authors.length === 0) {
+    // 楽譜・視聴覚資料は作曲者名を使用
+    return reference.composer || '';
+  }
+  if (authors.length < 4) {
+    // 3名以下：全員を記載し、中黒でつなぐ
+    return authors.map(author => author.lastName).join('・');
+  }
+  // 4名以上：筆頭著者のみ記載し、「ほか」を付加
+  return authors[0].lastName + 'ほか';
+};
+
+// 一覧・選択肢に表示する著者名
+export const getAuthorDisplayName = (migratedRef) => {
+  if (migratedRef.type === 'translation') {
+    // 翻訳書の場合は原語表記の原著者を使用
+    if (migratedRef.originalAuthorsEnglish && migratedRef.originalAuthorsEnglish.length > 0) {
+      return migratedRef.originalAuthorsEnglish
+        .map(author => `${author.lastName}, ${author.firstName}`)
+        .join('; ');
+    }
+    // 新しい形式の翻訳書（日本語表記の原著者を使用）
+    if (migratedRef.originalAuthors && migratedRef.originalAuthors.length > 0) {
+      return migratedRef.originalAuthors
+        .map(author => `${author.lastName}${author.firstName}`)
+        .join('・');
+    }
+    // 古い形式の翻訳書（後方互換性）
+    return migratedRef.originalAuthorLastName || '';
+  }
+  if (migratedRef.type === 'organization-book') {
+    // 団体出版本の場合は執筆団体名を表示
+    return migratedRef.organization || '';
+  }
+  if (migratedRef.authors && migratedRef.authors.length > 0) {
+    return migratedRef.authors
+      .map(author => `${author.lastName}${author.firstName}`)
+      .join('・');
+  }
+  return migratedRef.composer || migratedRef.organization || '';
+};
+
+// 著者名順の並べ替えに使う読み（読み仮名がなければ表記で代用）
+export const getSortReading = (migratedRef) => {
+  if (migratedRef.type === 'organization-book' || migratedRef.type === 'website') {
+    // 団体出版本・Webサイトは「読み仮名」を優先、なければ団体名
+    return migratedRef.organizationReading || migratedRef.organization || '';
+  }
+  if (migratedRef.type === 'translation') {
+    // 翻訳書の場合、原著者の読み（あれば）または姓を使用
+    if (migratedRef.originalAuthors && migratedRef.originalAuthors.length > 0) {
+      return migratedRef.originalAuthors[0].reading || migratedRef.originalAuthors[0].lastName || '';
+    }
+    if (migratedRef.originalAuthorsEnglish && migratedRef.originalAuthorsEnglish.length > 0) {
+      return migratedRef.originalAuthorsEnglish[0].lastName || '';
+    }
+    return migratedRef.originalAuthorLastName || '';
+  }
+  return migratedRef.authors?.[0]?.reading || migratedRef.authors?.[0]?.lastName || migratedRef.composer || '';
+};
+
 // 本文中の引用形式を生成
 export const formatCitation = (reference, page = '') => {
   const type = reference.type;
-  const year = reference.year;
   const yearSuffix = reference.yearSuffix || '';
-  const displayYear = yearSuffix ? `${year}${yearSuffix}` : `${year}`;
+  const displayYear = `${getPublicationYear(reference)}${yearSuffix}`;
   const formattedPage = page ? formatCitationPageRange(page) : '';
   const pageText = formattedPage ? `:${formattedPage}` : '';
+  const authorName = getCitationAuthorName(reference);
 
-  // 著者名の取得
-  let authorName = '';
   if (type === 'website') {
-    console.log(reference);
-    authorName = reference.organization
-      ? reference.organization
-      : '';
-    // Webサイトは運営団体名を使用し、年は表示しない
-    //そのためここで早期にreturnして終了。
-    return `(${authorName}webページ ${yearSuffix})`;
+    // Webサイトは運営団体名を使用し、年は表示しない。1件だけの場合はアルファベットも付けない
+    return `(${authorName}webページ${yearSuffix ? ` ${yearSuffix}` : ''})`;
+  }
 
-  } else if (type === 'translation') {
-    // 翻訳書の場合は筆頭原著者をカタカナで
-    if (reference.originalAuthors && reference.originalAuthors.length > 0) {
-      authorName = reference.originalAuthors.map(author => author.lastName).join('・');
-    } else {
-      // 後方互換性：古い形式のデータをサポート
-      authorName = reference.originalAuthorLastName || '';
-    }
-    const originalYear = reference.originalYear;
-    return `(${authorName}　${displayYear}(${originalYear})${pageText})`;
-  } else if (type === 'organization-book') {
-    // 団体出版本の場合は団体名を使用
-    authorName = reference.organization || '';
-  } else {
-    // 複数著者の場合の処理
-    if (reference.authors && reference.authors.length > 0) {
-      if (reference.authors.length < 4) {
-        // 3名以下：全員を記載し、中黒でつなぐ
-        authorName = reference.authors.map(author => author.lastName).join('・');
-      } else {
-        // 4名以上：筆頭著者のみ記載し、「ほか」を付加
-        authorName = reference.authors[0].lastName + 'ほか';
-      }
-    }
+  if (type === 'translation') {
+    return `(${authorName}　${displayYear}(${reference.originalYear})${pageText})`;
   }
 
   return `(${authorName}　${displayYear}${pageText})`;
@@ -406,34 +478,9 @@ export const addYearSuffixes = (references) => {
   const groups = {};
   updatedReferences.forEach((item) => {
     const ref = item.ref;
-    let authorKey = '';
-
-    // 著者キーの決定ロジック
-    if (ref.type === 'website') {
-      // Webサイトの場合は組織名でグルーピング
-      authorKey = ref.organization || '';
-    } else if (ref.type === 'translation') {
-      if (ref.originalAuthors && ref.originalAuthors.length > 0) {
-        authorKey = ref.originalAuthors[0].lastName || '';
-      } else {
-        authorKey = ref.originalAuthorLastName || '';
-      }
-    } else if (ref.type === 'organization-book') {
-      authorKey = ref.organization || '';
-    } else if (ref.authors && ref.authors.length > 0) {
-      authorKey = ref.authors[0].lastName || '';
-    } else {
-      authorKey = ref.composer || '';
-    }
-
-    // 年の決定ロジック
-    let year = '';
-    if (ref.type === 'website') {
-      // Webサイトは年での区別をしない（またはデータに存在しない）
-      year = '';
-    } else {
-      year = ref.year;
-    }
+    const authorKey = getSuffixGroupAuthorKey(ref);
+    // Webサイトは年での区別をしない（またはデータに存在しない）
+    const year = ref.type === 'website' ? '' : getPublicationYear(ref);
 
     const groupKey = `${authorKey}_${year}`;
     if (!groups[groupKey]) {
@@ -463,7 +510,7 @@ export const addYearSuffixes = (references) => {
         finalReferences[item.originalIndex] = {
           ...item.ref,
           yearSuffix: suffix,
-          displayYear: item.ref.type === 'website' ? suffix : `${item.ref.year}${suffix}`
+          displayYear: item.ref.type === 'website' ? suffix : `${getPublicationYear(item.ref)}${suffix}`
           // Webサイトの場合、 displayYear に suffix そのものを入れる運用になっている（以前のコード踏襲）
         };
       });
@@ -473,7 +520,7 @@ export const addYearSuffixes = (references) => {
       finalReferences[group[0].originalIndex] = {
         ...group[0].ref,
         yearSuffix: undefined,
-        displayYear: group[0].ref.type === 'website' ? undefined : group[0].ref.year
+        displayYear: group[0].ref.type === 'website' ? undefined : getPublicationYear(group[0].ref)
       };
     }
   });
@@ -629,8 +676,13 @@ const formatScoreForeign = (ref) => {
 
 const formatWebsite = (ref) => {
   const { organization, title, url, accessDate, yearSuffix } = ref;
+  // "YYYY-MM-DD" を new Date() に渡すとUTCとして解釈され、日本より西のタイムゾーンでは前日になるため、ローカル日付として組み立てる
+  const isoDateMatch = accessDate ? accessDate.match(/^(\d{4})-(\d{2})-(\d{2})$/) : null;
+  const accessDateObj = isoDateMatch
+    ? new Date(Number(isoDateMatch[1]), Number(isoDateMatch[2]) - 1, Number(isoDateMatch[3]))
+    : new Date(accessDate);
   // アルファベットサフィックスがあれば末尾に付加
-  const formattedDate = accessDate ? new Date(accessDate).toLocaleDateString('ja-JP', {
+  const formattedDate = accessDate ? accessDateObj.toLocaleDateString('ja-JP', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
@@ -669,7 +721,8 @@ export const formatPageRange = (pages) => {
   if (!pages) return '';
 
   // ハイフンを波線に変換し、数字を適切にフォーマット
-  return pages
+  // インポートしたJSONではページが数値のこともあるため文字列化する
+  return String(pages)
     .replace(/-/g, '〜') // ハイフンを波線に変換
     .replace(/\b(\d+)\b/g, (match) => formatNumber(match)); // 数字をフォーマット
 };
@@ -679,7 +732,7 @@ export const formatCitationPageRange = (pages) => {
   if (!pages) return '';
 
   // 引用ではハイフンのまま、数字を適切にフォーマット
-  return pages
+  return String(pages)
     .replace(/\b(\d+)\b/g, (match) => formatNumber(match)); // 数字をフォーマット
 };
 
