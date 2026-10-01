@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import packageInfo from '../../package.json';
 import UpdateGuideModal from './UpdateGuideModal';
+import { CHANGELOG } from '../utils/changelog';
 
 const STORAGE_KEY = 'referenceApp:lastSeenVersion';
 
 const VersionInfo = () => {
   const [showChangelog, setShowChangelog] = useState(false);
 
-  const updateDate = new Date('2025-09-03').toLocaleDateString('ja-JP', {
+  // 更新日は変更履歴の最新版から取り、日付の書き換え忘れを防ぐ
+  // 時刻を付けないとUTCとして解釈され、日本より西のタイムゾーンでは前日になる
+  const updateDate = new Date(`${CHANGELOG[0].date}T00:00:00`).toLocaleDateString('ja-JP', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
