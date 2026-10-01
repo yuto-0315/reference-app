@@ -1,89 +1,42 @@
 import React, { useState, useMemo } from 'react';
-import { formatCitation, formatReference, migrateReferenceData, addYearSuffixes } from '../utils/formatters';
+import { formatCitation, formatReference, migrateReferenceData, addYearSuffixes, getSortReading, getPublicationYear } from '../utils/formatters';
+
+// 著者・団体・作曲者の名前と読み、書誌情報をまとめた検索対象テキスト
+const getSearchableText = (migratedRef) => {
+  const people = [
+    ...(migratedRef.authors || []),
+    ...(migratedRef.originalAuthors || []),
+    ...(migratedRef.originalAuthorsEnglish || []),
+  ];
+  return [
+    // 姓名を続けて入力しても見つかるよう、連結した氏名も含める
+    ...people.flatMap(person => [`${person.lastName || ''}${person.firstName || ''}`, person.reading]),
+    migratedRef.organization,
+    migratedRef.organizationReading,
+    migratedRef.composer,
+    migratedRef.title,
+    migratedRef.publisher,
+    migratedRef.journalName,
+    getPublicationYear(migratedRef),
+  ].filter(Boolean).join('\n').toLowerCase();
+};
 
 const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, checkedReferences }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('year'); // 'year', 'reading', 'title'
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc', 'desc'
 
-  // 複数著者の表示用ユーティリティ関数
-  const getAuthorDisplayName = (migratedRef) => {
-    if (migratedRef.type === 'translation') {
-      // 翻訳書の場合は原語表記の原著者を使用
-      if (migratedRef.originalAuthorsEnglish && migratedRef.originalAuthorsEnglish.length > 0) {
-        return migratedRef.originalAuthorsEnglish
-          .map(author => `${author.lastName}, ${author.firstName}`)
-          .join('; ');
-      }
-      // 新しい形式の翻訳書（日本語表記の原著者を使用）
-      if (migratedRef.originalAuthors && migratedRef.originalAuthors.length > 0) {
-        return migratedRef.originalAuthors
-          .map(author => `${author.lastName}${author.firstName}`)
-          .join('・');
-      }
-      // 古い形式の翻訳書（後方互換性）
-      return migratedRef.originalAuthorLastName || '';
-    }
-    if (migratedRef.type === 'organization-book') {
-      // 団体出版本の場合は執筆団体名を表示
-      return migratedRef.organization || '';
-    }
-    if (migratedRef.authors && migratedRef.authors.length > 0) {
-      return migratedRef.authors
-        .map(author => `${author.lastName}${author.firstName}`)
-        .join('・');
-    }
-    return migratedRef.composer || migratedRef.organization || '';
-  };
+  // 同一著者・同一年の文献にアルファベットサフィックスを付与
+  // 検索で絞り込んだ一覧ではなく全件で計算しないと、検索するたびにa,b,cが変わってしまう
+  const suffixedReferenceById = useMemo(
+    () => new Map(addYearSuffixes(references).map(ref => [ref.id, ref])),
+    [references]
+  );
 
   // 検索とソート機能
   const filteredAndSortedReferences = useMemo(() => {
-    let filtered = references.filter(ref => {
-      const migratedRef = migrateReferenceData(ref);
-      const searchLower = searchTerm.toLowerCase();
-
-      // 複数著者に対応した検索
-      const authorMatches = migratedRef.authors?.some(author =>
-        author.lastName?.toLowerCase().includes(searchLower) ||
-        author.firstName?.toLowerCase().includes(searchLower) ||
-        author.reading?.toLowerCase().includes(searchLower)
-      ) || false;
-
-      // 団体出版本の場合は執筆団体名も検索対象に含める
-      const organizationMatches = migratedRef.type === 'organization-book' &&
-        migratedRef.organization?.toLowerCase().includes(searchLower);
-
-      return (
-        authorMatches ||
-        organizationMatches ||
-        ref.title?.toLowerCase().includes(searchLower) ||
-        ref.publisher?.toLowerCase().includes(searchLower) ||
-        ref.journalName?.toLowerCase().includes(searchLower) ||
-        ref.year?.toString().includes(searchLower)
-      );
-    });
-
-    // ソート用のヘルパー関数
-    const getReading = (migratedRef) => {
-      if (migratedRef.type === 'organization-book') {
-        // 団体出版本は「執筆団体（読み仮名）」を優先、なければ団体名
-        return migratedRef.organizationReading || migratedRef.organization || '';
-      } else if (migratedRef.type === 'website') {
-        // Webサイトも「運営団体（読み仮名）」を優先
-        return migratedRef.organizationReading || migratedRef.organization || '';
-      } else if (migratedRef.type === 'translation') {
-        // 翻訳書の場合、原著者の読み（あれば）または姓を使用
-        if (migratedRef.originalAuthors && migratedRef.originalAuthors.length > 0) {
-          return migratedRef.originalAuthors[0].reading || migratedRef.originalAuthors[0].lastName || '';
-        }
-        if (migratedRef.originalAuthorsEnglish && migratedRef.originalAuthorsEnglish.length > 0) {
-          return migratedRef.originalAuthorsEnglish[0].lastName || '';
-        }
-        return migratedRef.originalAuthorLastName || '';
-      } else {
-        return migratedRef.authors?.[0]?.reading || migratedRef.authors?.[0]?.lastName || '';
-      }
-    };
+    const searchLower = searchTerm.toLowerCase();
+    let filtered = references.filter(ref => getSearchableText(migrateReferenceData(ref)).includes(searchLower));
 
     // ソート処理
     filtered.sort((a, b) => {
@@ -95,22 +48,18 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
         case 'year':
           // use migrated values and coerce to Number to avoid string subtraction
           // website type might not have year, treating as 0 or handling appropriately
-          const yearA = Number(migratedA.year) || 0;
-          const yearB = Number(migratedB.year) || 0;
+          const yearA = Number(getPublicationYear(migratedA)) || 0;
+          const yearB = Number(getPublicationYear(migratedB)) || 0;
           compareValue = yearA - yearB;
 
           // 年が同じ場合は読み仮名で比較（第二ソートキー）
           if (compareValue === 0) {
-            const readingA = getReading(migratedA);
-            const readingB = getReading(migratedB);
-            compareValue = readingA.localeCompare(readingB, 'ja');
+            compareValue = getSortReading(migratedA).localeCompare(getSortReading(migratedB), 'ja');
           }
           break;
         case 'reading':
           // 筆頭著者の読み仮名または姓で比較、団体出版本・Webサイトの場合は団体名
-          const readingA = getReading(migratedA);
-          const readingB = getReading(migratedB);
-          compareValue = readingA.localeCompare(readingB, 'ja');
+          compareValue = getSortReading(migratedA).localeCompare(getSortReading(migratedB), 'ja');
           break;
         case 'title':
           const aTitle = a.title || '';
@@ -160,8 +109,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
       if (pageInput === null) return;
 
       // 同一著者・同一年の文献に対してアルファベットサフィックスを付与
-      const allReferencesWithSuffixes = addYearSuffixes(references);
-      const refWithSuffix = allReferencesWithSuffixes.find(r => r.id === ref.id) || ref;
+      const refWithSuffix = suffixedReferenceById.get(ref.id) || ref;
 
       // 入力されたページまたは登録済みのページを使用
       const pageToUse = pageInput.trim() || ref.pages;
@@ -169,8 +117,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
       onCopy(text, `引用をコピーしました\n${text ? `${text}` : ''}`);
     } else {
       // 参考文献の場合もアルファベットサフィックスを付与
-      const allReferencesWithSuffixes = addYearSuffixes(references);
-      const refWithSuffix = allReferencesWithSuffixes.find(r => r.id === ref.id) || ref;
+      const refWithSuffix = suffixedReferenceById.get(ref.id) || ref;
       const text = formatReference(refWithSuffix);
       onCopy(text, '参考文献をコピーしました');
     }
@@ -193,6 +140,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
           <input
             type="text"
             placeholder="🔍 参考文献を検索..."
+            aria-label="参考文献を検索"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-input"
@@ -263,8 +211,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
           </thead>
           <tbody>
             {(() => {
-              // 同一著者・同一年の文献にアルファベットサフィックスを付与
-              const referencesWithSuffixes = addYearSuffixes(filteredAndSortedReferences);
+              const referencesWithSuffixes = filteredAndSortedReferences.map(ref => suffixedReferenceById.get(ref.id));
 
               return referencesWithSuffixes.map((ref) => {
                 const migratedRef = migrateReferenceData(ref);
@@ -301,21 +248,23 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                   return false;
                 })();
 
-                const rowStyle = isMissingReading ? { backgroundColor: '#ffe6e6' } : {};
                 const rowTitle = isMissingReading ? '読み仮名が未登録です。正しく並べ替えるために編集して読み仮名を入力してください。' : '';
 
                 return (
-                  <tr key={ref.id} style={rowStyle} title={rowTitle}>
+                  <tr key={ref.id} className={isMissingReading ? 'row-missing-reading' : ''} title={rowTitle}>
                     <td style={{ textAlign: 'center' }}>
                       <input
                         type="checkbox"
                         checked={checkedReferences.has(ref.id)}
                         onChange={() => onToggleCheck(ref.id)}
+                        aria-label={`「${ref.title}」を参考文献一覧に含める`}
                       />
                     </td>
                     <td className="cover-art-cell">
                       {(() => {
-                        const imageUrl = migratedRef.isbn ? `https://ndlsearch.ndl.go.jp/thumbnail/${migratedRef.isbn}.jpg` : null;
+                        // 書影URLはハイフンなしのISBNでないと取得できない
+                        const normalizedIsbn = migratedRef.isbn ? String(migratedRef.isbn).replace(/[^0-9Xx]/g, '') : '';
+                        const imageUrl = normalizedIsbn ? `https://ndlsearch.ndl.go.jp/thumbnail/${normalizedIsbn}.jpg` : null;
                         if (imageUrl) {
                           return (
                             <>
@@ -387,6 +336,10 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                           </div>
                         )}
                       </div>
+                      {/* 行の色だけに頼らず、文字でも未登録であることを示す */}
+                      {isMissingReading && (
+                        <div className="missing-reading-note">⚠ 読み仮名未登録</div>
+                      )}
                     </td>
                     <td className="title-cell">
                       <div className="title-text">{ref.title}</div>
@@ -406,11 +359,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                           const date = ref.accessDate || '-';
                           yearDisplay = ref.yearSuffix ? `${date} (${ref.yearSuffix})` : date;
                         } else {
-                          if (ref.yearSuffix) {
-                            yearDisplay = `${ref.year}${ref.yearSuffix}`;
-                          } else {
-                            yearDisplay = ref.year;
-                          }
+                          yearDisplay = `${getPublicationYear(ref) || ''}${ref.yearSuffix || ''}`;
                         }
                         return yearDisplay;
                       })()}
@@ -426,6 +375,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                           rel="noopener noreferrer"
                           className="external-link"
                           title={ref.doi ? `DOI: ${ref.doi}` : 'リンクを開く'}
+                          aria-label={ref.doi ? `DOI: ${ref.doi}（新しいタブで開く）` : 'リンクを新しいタブで開く'}
                         >
                           🔗
                         </a>
@@ -435,10 +385,12 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                     </td>
                     <td className="actions-cell">
                       <div className="action-buttons">
+                        {/* 絵文字だけのボタンは読み上げで意味が伝わらないため aria-label を付ける */}
                         <button
                           onClick={() => copyFormatted(migratedRef, 'citation')}
                           className="btn btn-sm btn-copy"
                           title="引用形式でコピー(割注)"
+                          aria-label="引用形式でコピー(割注)"
                         >
                           📋
                         </button>
@@ -446,6 +398,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                           onClick={() => copyFormatted(migratedRef, 'reference')}
                           className="btn btn-sm btn-copy"
                           title="参考文献形式でコピー"
+                          aria-label="参考文献形式でコピー"
                         >
                           📖
                         </button>
@@ -453,6 +406,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                           onClick={() => onEdit(migratedRef)}
                           className="btn btn-sm btn-edit"
                           title="編集"
+                          aria-label="編集"
                         >
                           ✏️
                         </button>
@@ -460,6 +414,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                           onClick={() => onDelete(ref.id)}
                           className="btn btn-sm btn-delete"
                           title="削除"
+                          aria-label="削除"
                         >
                           🗑️
                         </button>

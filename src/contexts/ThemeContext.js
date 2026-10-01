@@ -12,15 +12,12 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  const [currentTheme, setCurrentTheme] = useState('light');
-
-  useEffect(() => {
-    // ローカルストレージからテーマを読み込み
+  // ローカルストレージからテーマを読み込み
+  // 初回描画前に読むことで、一瞬だけ既定テーマが表示されるちらつきをなくす
+  const [currentTheme, setCurrentTheme] = useState(() => {
     const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
-    if (savedTheme && themes[savedTheme]) {
-      setCurrentTheme(savedTheme);
-    }
-  }, []);
+    return savedTheme && themes[savedTheme] ? savedTheme : 'light';
+  });
 
   useEffect(() => {
     // テーマが変更されたらローカルストレージに保存

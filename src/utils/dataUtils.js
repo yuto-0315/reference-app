@@ -1,4 +1,16 @@
 // データ整合性とクリーンアップユーティリティ
+import { formatReference, migrateReferenceData } from './formatters';
+
+/**
+ * 表示時に毎回計算し直す項目（a,b,cのサフィックス）を取り除く
+ * 編集画面経由で保存されると、文献の増減後も古いサフィックスが残ってしまうため
+ * @param {Object} reference - 参考文献
+ * @returns {Object} 計算項目を除いた参考文献
+ */
+export const stripComputedFields = (reference) => {
+  const { yearSuffix, displayYear, ...rest } = reference;
+  return rest;
+};
 
 /**
  * 配列から重複を除去する（IDベース）
@@ -76,7 +88,7 @@ export const validateAndCleanData = (references) => {
 
   // 3. 必須フィールドの検証と修復
   const cleanedReferences = uniqueReferences.map((ref) => {
-    const cleaned = { ...ref };
+    const cleaned = stripComputedFields(ref);
 
     // createdAtがない場合は追加
     if (!cleaned.createdAt) {
@@ -115,17 +127,14 @@ export const isDuplicate = (references, newReference) => {
     return false;
   }
 
-  // IDベースでのチェック
-  if (newReference.id) {
-    return references.some(ref => ref.id === newReference.id);
-  }
+  // 内容ベースのチェック：参考文献一覧に出力される文字列が同じなら同じ文献とみなす
+  // （インポート時は新しいIDを振るため、IDだけでは同じファイルの再インポートを検出できない）
+  const toComparableText = (ref) => formatReference(migrateReferenceData(stripComputedFields(ref)));
+  const newReferenceText = toComparableText(newReference);
 
-  // 内容ベースでのチェック（IDがない場合）
-  return references.some(ref => 
-    ref.authorLastName === newReference.authorLastName &&
-    ref.authorFirstName === newReference.authorFirstName &&
-    ref.title === newReference.title &&
-    ref.year === newReference.year
+  return references.some(ref =>
+    (newReference.id && ref.id === newReference.id) ||
+    toComparableText(ref) === newReferenceText
   );
 };
 
