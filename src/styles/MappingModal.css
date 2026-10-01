@@ -49,6 +49,8 @@
   gap: 8px;
   align-items: center;
   flex: 1 1 60%;
+  /* 中の入力欄の既定幅より縮められるようにする（著者名の列を潰さないため） */
+  min-width: 0;
 }
 
 .creator-edit-fields input[type="text"] {
@@ -58,6 +60,9 @@
   background: var(--color-surface);
   color: var(--color-text-onSurface);
   font-size: 14px;
+  /* 既定幅のままだと横にはみ出し、著者名が1文字ずつ折り返されたり分割ボタンが切れたりするため、幅を分け合う */
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .creator-split-controls {
