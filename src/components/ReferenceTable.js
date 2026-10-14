@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
+import CitationPopover from './CitationPopover';
 import { formatCitation, formatReference, migrateReferenceData, addYearSuffixes, getSortReading, getPublicationYear } from '../utils/formatters';
 import { collectReadingGroups } from '../utils/bulkEdit';
 import { ArrowDown, ArrowUp, ArrowUpDown, BookText, CopyPlus, ExternalLink, Languages, ListChecks, Pencil, Quote, TriangleAlert, Trash2 } from 'lucide-react';
@@ -23,9 +24,24 @@ const getSearchableText = (migratedRef) => {
   ].filter(Boolean).join('\n').toLowerCase();
 };
 
+// 著者名順の並べ替えに使う読み仮名が未登録か（英語文献は姓の綴りで並ぶので対象外）
+const isReadingMissing = (migratedRef) => {
+  const type = migratedRef.type;
+  if (type.startsWith('english-')) return false;
+  if (type === 'organization-book' || type === 'website') return !migratedRef.organizationReading;
+  if (type === 'translation') {
+    // 原著者が未登録の場合も、並べ替えの手がかりがないため未登録として示す
+    return !migratedRef.originalAuthors?.[0]?.reading;
+  }
+  // 作曲者だけの楽譜などは読み仮名の入力欄がないため、著者がいる場合に限って見る
+  if (migratedRef.authors && migratedRef.authors.length > 0) return !migratedRef.authors[0].reading;
+  return false;
+};
+
 const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, checkedReferences, onOpenReadingBulk, onOpenBulkEdit, onDuplicate, recentlyUpdatedId }) => {
   const missingReadingNameCount = useMemo(() => collectReadingGroups(references).filter(group => group.isMissing).length, [references]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showOnlyMissingReading, setShowOnlyMissingReading] = useState(false);
   const [sortBy, setSortBy] = useState('year'); // 'year', 'reading', 'title'
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc', 'desc'
 
@@ -39,7 +55,11 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
   // 検索とソート機能
   const filteredAndSortedReferences = useMemo(() => {
     const searchLower = searchTerm.toLowerCase();
-    let filtered = references.filter(ref => getSearchableText(migrateReferenceData(ref)).includes(searchLower));
+    let filtered = references.filter(ref => {
+      const migratedRef = migrateReferenceData(ref);
+      if (showOnlyMissingReading && !isReadingMissing(migratedRef)) return false;
+      return getSearchableText(migratedRef).includes(searchLower);
+    });
 
     // ソート処理
     filtered.sort((a, b) => {
@@ -78,7 +98,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
     });
 
     return filtered;
-  }, [references, searchTerm, sortBy, sortOrder]);
+  }, [references, searchTerm, showOnlyMissingReading, sortBy, sortOrder]);
 
   const handleSort = (field) => {
     if (sortBy === field) {
@@ -97,37 +117,29 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
       : <><ArrowDown size={14} className="sort-icon" /><span className="visually-hidden">（降順）</span></>;
   };
 
+  // ページを指定する引用は、ボタンの下に開く入力欄で完成形を確かめてからコピーする
+  const [citationTargetId, setCitationTargetId] = useState(null);
+  const closeCitationPopover = useCallback(({ restoreFocus }) => {
+    const triggerId = citationTargetId;
+    setCitationTargetId(null);
+    // キーボードで操作していた人が、押したボタンの位置を見失わないようにする
+    if (restoreFocus) document.querySelector(`[data-citation-trigger="${triggerId}"]`)?.focus();
+  }, [citationTargetId]);
+
   const copyFormatted = (ref, type) => {
+    // 同一著者・同一年の文献に対してアルファベットサフィックスを付与
+    const refWithSuffix = suffixedReferenceById.get(ref.id) || ref;
     if (type === 'citation') {
-
-      let pageInput = ""
+      // Webサイトの引用にはページがないため、そのままコピーする
       if (ref.type === 'website') {
-
-      } else {
-        // 引用の場合はページ指定のプロンプトを表示
-        pageInput = prompt(
-          'ページを指定してください（例：45、45-58、45-58, 62）\n' +
-          '空白にすると登録済みのページ情報を使用します：',
-          ref.pages || ''
-        );
+        const text = formatCitation(refWithSuffix, '');
+        onCopy(text, `引用をコピーしました\n${text}`);
+        return;
       }
-
-      // ユーザーがキャンセルした場合は処理を中止
-      if (pageInput === null) return;
-
-      // 同一著者・同一年の文献に対してアルファベットサフィックスを付与
-      const refWithSuffix = suffixedReferenceById.get(ref.id) || ref;
-
-      // 入力されたページまたは登録済みのページを使用
-      const pageToUse = pageInput.trim() || ref.pages;
-      const text = formatCitation(refWithSuffix, pageToUse);
-      onCopy(text, `引用をコピーしました\n${text ? `${text}` : ''}`);
-    } else {
-      // 参考文献の場合もアルファベットサフィックスを付与
-      const refWithSuffix = suffixedReferenceById.get(ref.id) || ref;
-      const text = formatReference(refWithSuffix);
-      onCopy(text, '参考文献をコピーしました');
+      setCitationTargetId(current => (current === ref.id ? null : ref.id));
+      return;
     }
+    onCopy(formatReference(refWithSuffix), '参考文献をコピーしました');
   };
 
   const getExternalLink = (ref) => {
@@ -178,7 +190,17 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
       </div>
 
       <div className="table-info">
-        <span>全 {references.length} 件中 {filteredAndSortedReferences.length} 件を表示</span>
+        <span className="table-filter">
+          全 {references.length} 件中 {filteredAndSortedReferences.length} 件を表示
+          <label className="table-filter-toggle">
+            <input
+              type="checkbox"
+              checked={showOnlyMissingReading}
+              onChange={(e) => setShowOnlyMissingReading(e.target.checked)}
+            />
+            読み仮名が未登録の文献だけ表示
+          </label>
+        </span>
         <div className="bulk-actions">
           <button type="button" className="btn btn-secondary btn-small" onClick={onOpenReadingBulk} disabled={references.length === 0}>
             <Languages size={14} />読み仮名をまとめて登録
@@ -239,37 +261,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
               return referencesWithSuffixes.map((ref) => {
                 const migratedRef = migrateReferenceData(ref);
 
-                // 読み仮名が不足しているかチェック
-                const isMissingReading = (() => {
-                  const type = migratedRef.type;
-                  if (type.startsWith('english-')) return false; // 英語文献は対象外
-
-                  if (type === 'organization-book') {
-                    // 団体出版本は「読み仮名」を必須とする
-                    return !migratedRef.organizationReading;
-                  }
-                  if (type === 'website') {
-                    // Webサイトも「読み仮名」を必須とする
-                    return !migratedRef.organizationReading;
-                  }
-                  if (type === 'translation') {
-                    if (migratedRef.originalAuthors && migratedRef.originalAuthors.length > 0) {
-                      return !migratedRef.originalAuthors[0].reading;
-                    }
-                    // 原著者が未登録の場合はWarning
-                    return true;
-                  }
-                  if (migratedRef.authors && migratedRef.authors.length > 0) {
-                    return !migratedRef.authors[0].reading;
-                  }
-                  // 作曲者などのケース（現状のデータ構造だとauthorsがない場合もある？）
-                  // 既存ロジックでは authors がない場合 composer を表示しているが、
-                  // reading入力欄が作曲者にない場合はどうしようもないため、一旦 authors がある場合に限定するか、
-                  // 厳密にはここも修正が必要だが、まずはユーザー指摘の「読み仮名入力」にフォーカス。
-                  // authorsが空で composer がある場合、読み仮名フィールド自体がない可能性が高い。
-                  // とりあえず authors があるのに reading がないケースを拾う。
-                  return false;
-                })();
+                const isMissingReading = isReadingMissing(migratedRef);
 
                 const rowTitle = isMissingReading ? '読み仮名が未登録です。正しく並べ替えるために編集して読み仮名を入力してください。' : '';
 
@@ -398,48 +390,61 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                       )}
                     </td>
                     <td className="actions-cell">
+                      {citationTargetId === ref.id && (
+                        <CitationPopover
+                          reference={suffixedReferenceById.get(ref.id) || migratedRef}
+                          onCopy={onCopy}
+                          onClose={closeCitationPopover}
+                        />
+                      )}
                       <div className="action-buttons">
-                        {/* アイコンだけだと意味が分からないため短い文字を添え、読み上げ用には詳しい説明を付ける */}
-                        <button
-                          onClick={() => copyFormatted(migratedRef, 'citation')}
-                          className="btn btn-sm btn-accent"
-                          title="引用形式でコピー(割注)"
-                          aria-label="引用形式でコピー(割注)"
-                        >
-                          <Quote size={14} />引用
-                        </button>
-                        <button
-                          onClick={() => copyFormatted(migratedRef, 'reference')}
-                          className="btn btn-sm btn-accent"
-                          title="参考文献形式でコピー"
-                          aria-label="参考文献形式でコピー"
-                        >
-                          <BookText size={14} />文献
-                        </button>
-                        <button
-                          onClick={() => onEdit(migratedRef)}
-                          className="btn btn-sm btn-secondary"
-                          title="編集"
-                          aria-label="編集"
-                        >
-                          <Pencil size={14} />編集
-                        </button>
-                        <button
-                          onClick={() => onDuplicate(migratedRef)}
-                          className="btn btn-sm btn-secondary"
-                          title="この文献の内容を追加フォームに入れて、似た文献を追加する"
-                          aria-label="複製して追加フォームに入れる"
-                        >
-                          <CopyPlus size={14} />複製
-                        </button>
-                        <button
-                          onClick={() => onDelete(ref.id)}
-                          className="btn btn-sm btn-danger"
-                          title="削除"
-                          aria-label="削除"
-                        >
-                          <Trash2 size={14} />削除
-                        </button>
+                        {/* よく使うコピーは文字付きで大きく、編集・複製・削除は見慣れたアイコンだけにして行の高さを抑える */}
+                        <div className="action-row">
+                          <button
+                            onClick={() => copyFormatted(migratedRef, 'citation')}
+                            className="btn btn-sm btn-accent"
+                            title="引用形式でコピー(割注)"
+                            aria-label="引用形式でコピー(割注)"
+                            aria-expanded={migratedRef.type === 'website' ? undefined : citationTargetId === ref.id}
+                            data-citation-trigger={ref.id}
+                          >
+                            <Quote size={14} />引用
+                          </button>
+                          <button
+                            onClick={() => copyFormatted(migratedRef, 'reference')}
+                            className="btn btn-sm btn-accent"
+                            title="参考文献形式でコピー"
+                            aria-label="参考文献形式でコピー"
+                          >
+                            <BookText size={14} />文献
+                          </button>
+                        </div>
+                        <div className="action-row">
+                          <button
+                            onClick={() => onEdit(migratedRef)}
+                            className="btn btn-sm btn-secondary btn-icon"
+                            title="編集"
+                            aria-label="編集"
+                          >
+                            <Pencil size={16} className="icon-alone" />
+                          </button>
+                          <button
+                            onClick={() => onDuplicate(migratedRef)}
+                            className="btn btn-sm btn-secondary btn-icon"
+                            title="複製（この文献の内容を追加フォームに入れて、似た文献を追加する）"
+                            aria-label="複製して追加フォームに入れる"
+                          >
+                            <CopyPlus size={16} className="icon-alone" />
+                          </button>
+                          <button
+                            onClick={() => onDelete(ref.id)}
+                            className="btn btn-sm btn-danger btn-icon"
+                            title="削除（あとから元に戻せます）"
+                            aria-label="削除"
+                          >
+                            <Trash2 size={16} className="icon-alone" />
+                          </button>
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -452,7 +457,9 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
 
       {filteredAndSortedReferences.length === 0 && (
         <div className="empty-table">
-          {searchTerm
+          {showOnlyMissingReading && references.length > 0
+            ? '読み仮名が未登録の文献はありません（検索語を入れている場合は、その中に未登録がありません）。'
+            : searchTerm
             ? `「${searchTerm}」に一致する参考文献はありません。著者名・タイトル・出版社・発行年などで探せます。`
             : '参考文献がまだありません。上の「新しい参考文献を追加」フォームから登録してください。'}
         </div>

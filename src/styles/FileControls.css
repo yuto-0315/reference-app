@@ -53,3 +53,23 @@
   padding-left: 20px;
   line-height: 1.7;
 }
+
+.backup-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: -8px 0 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+/* 色だけに頼らず、アイコンと文言でも「保存し直してほしい」ことを伝える */
+.backup-status.needs-backup {
+  color: var(--color-text-onSurface);
+  font-weight: 500;
+}
+
+.backup-status .lucide {
+  margin: 0.15em 0 0;
+}

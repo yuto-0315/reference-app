@@ -57,3 +57,9 @@
   margin-bottom: 15px;
   color: var(--color-text-onSurface);
 }
+
+.preview-lead {
+  margin: -8px 0 16px;
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
