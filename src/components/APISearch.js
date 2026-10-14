@@ -11,7 +11,7 @@ const isIsbnCode = (code) => /^97[89]\d{10}$/.test(code) || /^\d{9}[\dX]$/i.test
 const isScanInProgressError = (err) =>
   err instanceof NotFoundException || err instanceof ChecksumException || err instanceof FormatException;
 
-const APISearch = ({ type, onSearchResult, onCiniiResult }) => {
+const APISearch = ({ type, onSearchResult, onCiniiResult, idPrefix = '' }) => {
   const [isbn, setIsbn] = useState('');
   const [ciniiQuery, setCiniiQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -124,17 +124,17 @@ const APISearch = ({ type, onSearchResult, onCiniiResult }) => {
 
   // 検索結果のエラーは、操作した検索欄のすぐ下に出す
   const searchErrorMessage = searchError && (
-    <div id="api-search-error" className="error-message" role="alert">{searchError}</div>
+    <div id={`${idPrefix}api-search-error`} className="error-message" role="alert">{searchError}</div>
   );
 
   // Allow ISBN lookup for normal books and organization-published books
   if (type === 'japanese-book' || type === 'english-book' || type === 'organization-book') {
     return (
       <div className="api-search-container">
-        <label htmlFor="isbn-search">ISBNで書籍情報を検索</label>
+        <label htmlFor={`${idPrefix}isbn-search`}>ISBNで書籍情報を検索</label>
         <div className="search-input-group">
           <input
-            id="isbn-search"
+            id={`${idPrefix}isbn-search`}
             type="text"
             inputMode="numeric"
             value={isbn}
@@ -142,7 +142,7 @@ const APISearch = ({ type, onSearchResult, onCiniiResult }) => {
             onKeyDown={searchOnEnter(() => handleIsbnSearch())}
             placeholder="ISBN (10桁または13桁)"
             disabled={isLoading}
-            aria-describedby={searchError ? 'api-search-error' : undefined}
+            aria-describedby={searchError ? `${idPrefix}api-search-error` : undefined}
           />
           <button
             type="button"
@@ -182,17 +182,17 @@ const APISearch = ({ type, onSearchResult, onCiniiResult }) => {
   if (type === 'japanese-journal') {
     return (
       <div className="api-search-container">
-        <label htmlFor="cinii-search">論文タイトルで検索</label>
+        <label htmlFor={`${idPrefix}cinii-search`}>論文タイトルで検索</label>
         <div className="search-input-group">
           <input
-            id="cinii-search"
+            id={`${idPrefix}cinii-search`}
             type="text"
             value={ciniiQuery}
             onChange={(e) => { setCiniiQuery(e.target.value); setSearchError(''); }}
             onKeyDown={searchOnEnter(handleCiniiSearch)}
             placeholder="論文タイトルを入力..."
             disabled={isLoading}
-            aria-describedby={searchError ? 'api-search-error' : undefined}
+            aria-describedby={searchError ? `${idPrefix}api-search-error` : undefined}
           />
           <button
             type="button"

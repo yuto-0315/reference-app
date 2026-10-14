@@ -190,9 +190,10 @@
   min-width: 140px;
 }
 
+/* 「引用・文献」「編集・複製」「削除」の順に2列で並べ、取り消せない削除を他の操作から離す */
 .action-buttons {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
   gap: 4px;
   justify-content: center;
 }
@@ -213,8 +214,7 @@
   font-style: italic;
 }
 
-/* 編集中・更新した直後の行は枠で示す（行の背景色は読み仮名未登録の表示に使っているため、背景は変えない） */
-.reference-table tr.row-editing,
+/* 更新した直後の行は枠で示す（行の背景色は読み仮名未登録の表示に使っているため、背景は変えない） */
 .reference-table tr.row-recently-updated {
   outline: 2px solid var(--color-text-primary);
   outline-offset: -2px;
