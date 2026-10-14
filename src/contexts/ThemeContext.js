@@ -73,7 +73,6 @@ export const ThemeProvider = ({ children }) => {
   const value = {
     currentTheme,
     theme: themes[currentTheme],
-    currentGroup: THEME_GROUPS.find(group => group.themeKeys.includes(currentTheme)),
     themeGroups: THEME_GROUPS,
     switchTheme
   };
