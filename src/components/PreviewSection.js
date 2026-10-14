@@ -64,6 +64,13 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
   // 削除・クリーンアップで消えた文献のIDがチェック状態に残っていても、件数に数えない
   const checkedCount = references.filter(ref => checkedReferences.has(ref.id)).length;
 
+  // 登録されている文献の種類だけを一括選択の候補にする。
+  // 選んでいた種類の文献がすべて削除されたら、未選択に戻す（押すと全部のチェックが外れてしまうため）
+  const availableTypes = Object.keys(REFERENCE_TYPES).filter(type =>
+    references.some(ref => migrateReferenceData(ref).type === type)
+  );
+  const effectiveBulkSelectType = availableTypes.includes(bulkSelectType) ? bulkSelectType : '';
+
   const generateCitation = () => {
     const ref = references.find(r => r.id === selectedRef);
     if (!ref) return '';
@@ -183,14 +190,12 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
               <select
                 className="type-select"
                 aria-label="まとめて選択する文献の種類"
-                value={bulkSelectType}
+                value={effectiveBulkSelectType}
                 onChange={(e) => setBulkSelectType(e.target.value)}
                 disabled={references.length === 0}
               >
                 <option value="">種類で一括選択...</option>
-                {Object.keys(REFERENCE_TYPES).filter(type =>
-                  references.some(ref => migrateReferenceData(ref).type === type)
-                ).map(type => (
+                {availableTypes.map(type => (
                   <option key={type} value={type}>
                     {REFERENCE_TYPES[type]}
                   </option>
@@ -199,8 +204,8 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
               <button
                 type="button"
                 className="btn btn-small btn-secondary"
-                onClick={() => handleSelectByType(bulkSelectType)}
-                disabled={!bulkSelectType}
+                onClick={() => handleSelectByType(effectiveBulkSelectType)}
+                disabled={!effectiveBulkSelectType}
               >
                 のみ選択
               </button>
