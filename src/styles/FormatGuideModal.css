@@ -31,7 +31,7 @@
 
 .format-title {
   margin: 0 0 12px 0;
-  color: var(--color-primary);
+  color: var(--color-text-primary);
   font-size: 1.1rem;
   font-weight: 600;
 }

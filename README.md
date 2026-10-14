@@ -117,3 +117,12 @@ MIT License
 
 - CiNii の API 呼び出しはブラウザ側の CORS 制約により失敗することがあります。開発環境では `npm run dev` のプロキシ設定やローカルプロキシを利用してください。
 - 将来的にはサーバーサイドのプロキシやキャッシュを導入すると安定性が向上します。
+
+## テーマ（配色）
+
+- テーマは `src/utils/themes.js` に定義しています。色はすべて [Tailwind CSS v3 の標準カラーパレット](https://v3.tailwindcss.com/docs/customizing-colors) から選び、各色の横にパレット上の色名（例: `indigo-200`）を書いています。
+- すべてのテーマが WCAG 2.1 AA（文字 4.5:1、入力欄の枠線 3:1）を満たすようにしています。テーマを追加・変更したら、次のコマンドで確認してください。
+
+```bash
+node scripts/check-theme-contrast.mjs
+```

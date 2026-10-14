@@ -1,5 +1,28 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { themes, THEME_STORAGE_KEY } from '../utils/themes';
+import React, { createContext, useContext, useState, useLayoutEffect } from 'react';
+import { themes, THEME_STORAGE_KEY, DEFAULT_THEME_KEY, LEGACY_THEME_KEYS } from '../utils/themes';
+
+// 整理前の旧テーマが保存されていれば近い色のテーマに読み替え、不明なら既定のテーマにする
+const resolveThemeKey = (savedKey) => {
+  if (themes[savedKey]) return savedKey;
+  return LEGACY_THEME_KEYS[savedKey] || DEFAULT_THEME_KEY;
+};
+
+// プライベートブラウズなどでストレージが使えなくても、アプリ全体を止めない
+const readSavedThemeKey = () => {
+  try {
+    return localStorage.getItem(THEME_STORAGE_KEY);
+  } catch (error) {
+    return null;
+  }
+};
+
+const saveThemeKey = (themeKey) => {
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, themeKey);
+  } catch (error) {
+    // 保存できなくても、表示中のテーマはそのまま使える
+  }
+};
 
 const ThemeContext = createContext();
 
@@ -14,19 +37,19 @@ export const useTheme = () => {
 export const ThemeProvider = ({ children }) => {
   // ローカルストレージからテーマを読み込み
   // 初回描画前に読むことで、一瞬だけ既定テーマが表示されるちらつきをなくす
-  const [currentTheme, setCurrentTheme] = useState(() => {
-    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
-    return savedTheme && themes[savedTheme] ? savedTheme : 'light';
-  });
+  const [currentTheme, setCurrentTheme] = useState(() => resolveThemeKey(readSavedThemeKey()));
 
-  useEffect(() => {
+  // 描画前に色を反映し、一瞬だけ既定の配色が見えるちらつきを防ぐ
+  useLayoutEffect(() => {
     // テーマが変更されたらローカルストレージに保存
-    localStorage.setItem(THEME_STORAGE_KEY, currentTheme);
-    
+    saveThemeKey(currentTheme);
+
     // CSS変数を設定
     const theme = themes[currentTheme];
     const root = document.documentElement;
-    
+    // ダークテーマではセレクトの選択肢やスクロールバーなど、ブラウザ標準の部品も暗くする
+    root.style.colorScheme = theme.colorScheme || 'light';
+
     // カラーパレットをCSS変数として設定
     Object.entries(theme.colors).forEach(([key, value]) => {
       if (typeof value === 'object') {

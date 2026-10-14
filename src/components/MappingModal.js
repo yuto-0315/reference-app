@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import useEscapeKey from '../hooks/useEscapeKey';
 import '../styles/MappingModal.css';
 
 // Helpers: detect Japanese characters (kanji/kana)
@@ -231,6 +232,8 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType }) => {
         console.log('DEBUG MappingModal creatorsMeta (updated):', creatorsMeta);
     }, [creatorsMeta]);
 
+    useEscapeKey(isOpen, onClose);
+
     if (!isOpen) return null;
 
     const handleApply = () => {
@@ -253,7 +256,9 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType }) => {
                 if (!meta || !meta.name) return createEmptyAuthor();
                 const [last, first] = splitFullName(meta.name);
                 return { lastName: last, firstName: first, reading: toHiragana(meta.reading) };
-            });
+            })
+            // 名前の取れなかった著者は反映しない（空欄の著者でフォームの入力を上書きしないため）
+            .filter(author => author.lastName || author.firstName);
 
         // Ensure link is also provided as `url` which is the form field key
         const mappingForApply = { ...mapping };
@@ -329,9 +334,9 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType }) => {
 
     return (
         <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-content" role="dialog" aria-modal="true" aria-labelledby="mapping-modal-title" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
-                    <h2>取得した書誌情報をマッピング</h2>
+                    <h2 id="mapping-modal-title">取得した書誌情報をマッピング</h2>
                 </div>
                 <div className="modal-body">
                     {renderField('タイトル', mapping.title)}
@@ -372,23 +377,27 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType }) => {
 
                                     {/* editable fields for the draft author */}
                                     <div className="creator-edit-fields">
+                                        {/* 見出しの代わりにプレースホルダーしかないため、読み上げ用に誰の何の欄かを伝える */}
                                         <input
                                             type="text"
                                             value={draftAuthors[m.idx]?.lastName || ''}
                                             onChange={(e) => handleDraftChange(m.idx, 'lastName', e.target.value)}
                                             placeholder="姓"
+                                            aria-label={`${m.name}の姓`}
                                         />
                                         <input
                                             type="text"
                                             value={draftAuthors[m.idx]?.firstName || ''}
                                             onChange={(e) => handleDraftChange(m.idx, 'firstName', e.target.value)}
                                             placeholder="名"
+                                            aria-label={`${m.name}の名`}
                                         />
                                         <input
                                             type="text"
                                             value={draftAuthors[m.idx]?.reading || ''}
                                             onChange={(e) => handleDraftChange(m.idx, 'reading', e.target.value)}
                                             placeholder="読み"
+                                            aria-label={`${m.name}の読み仮名`}
                                         />
                                         <div className="creator-split-controls">
                                             <input
@@ -397,6 +406,8 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType }) => {
                                                 value={splitCounts[m.idx] === '' ? '' : splitCounts[m.idx]}
                                                 onChange={(e) => handleSplitCountChange(m.idx, e.target.value)}
                                                 placeholder="n"
+                                                aria-label={`${m.name}の姓の文字数（前から何文字を姓にするか）`}
+                                                title="姓の文字数（前から何文字を姓にするか）"
                                                 style={{ width: 60, marginLeft: 8 }}
                                             />
                                             <button type="button" onClick={() => handleSplit(m.idx)} style={{ marginLeft: 6 }}>分割</button>
@@ -408,8 +419,8 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType }) => {
                     )}
                 </div>
                 <div className="modal-footer">
-                    <button className="btn btn-secondary" onClick={onClose}>キャンセル</button>
-                    <button className="btn btn-primary" onClick={handleApply}>フォームに反映</button>
+                    <button type="button" className="btn btn-secondary" onClick={onClose}>キャンセル</button>
+                    <button type="button" className="btn btn-primary" onClick={handleApply}>フォームに反映</button>
                 </div>
             </div>
         </div>

@@ -1,7 +1,10 @@
 import React from 'react';
 import { CHANGELOG, CHANGE_TYPE_LABELS } from '../utils/changelog';
+import useEscapeKey from '../hooks/useEscapeKey';
 
-const UpdateGuideModal = ({ isOpen, onClose, apiExamples }) => {
+const UpdateGuideModal = ({ isOpen, onClose }) => {
+    useEscapeKey(isOpen, onClose);
+
     if (!isOpen) return null;
 
     // バージョンが上がると自動で開くため、まず最新版で何が変わったかを示す
@@ -9,10 +12,10 @@ const UpdateGuideModal = ({ isOpen, onClose, apiExamples }) => {
 
     return (
         <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-content update-guide-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content update-guide-modal" role="dialog" aria-modal="true" aria-labelledby="update-guide-title" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
-                    <h2>アップデートのお知らせと使い方</h2>
-                    <button className="btn btn-close" onClick={onClose}>×</button>
+                    <h2 id="update-guide-title">アップデートのお知らせと使い方</h2>
+                    <button type="button" className="modal-close" onClick={onClose} aria-label="閉じる">×</button>
                 </div>
 
                 <div className="modal-body">
@@ -40,7 +43,7 @@ const UpdateGuideModal = ({ isOpen, onClose, apiExamples }) => {
                     <h3>⚠️注意事項</h3>
                     <ul>
                         <li>
-                            <strong>団体出版本</strong>などの特殊な書誌データには<span style={{ color: 'red', fontWeight: 'bold' , textDecoration: 'underline' }}>現在未対応</span>です（今後対応予定）。
+                            <strong>団体出版本</strong>などの特殊な書誌データには<span style={{ color: 'var(--color-text-danger)', fontWeight: 'bold', textDecoration: 'underline' }}>現在未対応</span>です（今後対応予定）。
                         </li>
                     </ul>
 

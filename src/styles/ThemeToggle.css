@@ -1,12 +1,12 @@
+/* ヘッダーの色に関わらず読めるよう、テーマの背景色の上に置く */
 .theme-toggle {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--color-surface);
   border-radius: 8px;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--color-border-primary);
 }
 
 .theme-toggle-label {
@@ -18,29 +18,22 @@
 }
 
 .theme-select {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-secondary);
   border-radius: 6px;
   padding: 6px 10px;
   font-size: 14px;
-  color: var(--color-text-primary);
+  color: var(--color-text-onSurface);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.15s ease;
   min-width: 100px;
 }
 
 .theme-select:hover {
-  background: rgba(255, 255, 255, 1);
-  border-color: var(--color-primary);
-}
-
-.theme-select:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(160, 170, 219, 0.2);
+  background: var(--color-surfaceHover);
 }
 
 .theme-select option {
-  color: var(--color-text-primary);
+  color: var(--color-text-onSurface);
   background: var(--color-surface);
 }

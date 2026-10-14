@@ -11,7 +11,8 @@
   font-weight: 600;
   margin-bottom: 20px;
   color: var(--color-text-primary);
-  border-bottom: 3px solid var(--color-border-secondary);
+  /* 装飾の線なので、入力欄の枠線の灰色ではなくテーマの色にする */
+  border-bottom: 3px solid var(--color-primaryHover);
   padding-bottom: 10px;
 }
 
@@ -27,9 +28,15 @@
   color: var(--color-text-primary);
 }
 
-.label-text {
+/* ラベルと入力ガイドのボタンを横に並べる */
+.label-row {
   display: flex;
   align-items: center;
+  margin-bottom: 8px;
+}
+
+.form-group .label-row label {
+  margin-bottom: 0;
 }
 
 .form-group input,
@@ -37,10 +44,11 @@
 .form-group textarea {
   width: 100%;
   padding: 12px;
-  border: 2px solid var(--color-border-primary);
+  /* 入力欄だと分かる濃さ（背景と 3:1 以上）の枠線にする */
+  border: 1px solid var(--color-border-secondary);
   border-radius: 6px;
   font-size: 14px;
-  transition: border-color 0.3s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
   background-color: var(--color-surface);
   color: var(--color-text-onSurface);
 }
@@ -48,23 +56,24 @@
 .form-group input.error,
 .form-group select.error,
 .form-group textarea.error {
-  border-color: var(--color-danger);
-  box-shadow: 0 0 0 3px var(--color-shadowLight);
+  border-color: var(--color-text-danger);
+  box-shadow: 0 0 0 1px var(--color-text-danger);
 }
 
 .error-message {
-  color: var(--color-danger);
+  color: var(--color-text-danger);
   font-size: 12px;
   margin-top: 5px;
   display: block;
 }
 
+/* フォーカス中の入力欄を、どのテーマでも見分けられる太さと色で示す */
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: var(--color-border-secondary);
-  box-shadow: 0 0 0 3px var(--color-shadowLight);
+  border-color: var(--color-text-primary);
+  box-shadow: 0 0 0 2px var(--color-text-primary);
 }
 
 .form-group textarea {
@@ -92,62 +101,23 @@
 .author-field input {
   width: 100%;
   padding: 8px 12px;
-  border: 1px solid var(--color-border-primary);
+  border: 1px solid var(--color-border-secondary);
   border-radius: 4px;
   font-size: 14px;
   background-color: var(--color-surface);
   color: var(--color-text-onSurface);
-  transition: border-color 0.2s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .author-field input:focus {
   outline: none;
-  border-color: var(--color-primary);
+  border-color: var(--color-text-primary);
+  box-shadow: 0 0 0 2px var(--color-text-primary);
 }
 
-.author-controls {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  margin-top: 20px;
-  flex-shrink: 0;
-}
-
-.btn-add-author,
-.btn-remove-author {
-  padding: 8px 12px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-  min-width: 60px;
-}
-
-.btn-add-author {
-  background-color: var(--color-accent);
-  color: var(--color-text-onSurface);
-}
-
-.btn-add-author:hover {
-  background-color: var(--color-accentHover);
-}
-
-.btn-remove-author {
-  background-color: var(--color-danger);
-  color: var(--color-text-onSurface);
-}
-
-.btn-remove-author:hover {
-  background-color: var(--color-dangerHover);
-}
-
-.btn-remove-author:disabled {
-  background-color: var(--color-text-muted);
-  color: var(--color-text-secondary);
-  cursor: not-allowed;
+.author-field input.error {
+  border-color: var(--color-text-danger);
+  box-shadow: 0 0 0 1px var(--color-text-danger);
 }
 
 @media (max-width: 768px) {

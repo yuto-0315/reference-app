@@ -23,17 +23,18 @@
 .search-input {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid var(--color-border-primary);
+  /* 入力欄だと分かる濃さ（背景と 3:1 以上）の枠線にする */
+  border: 1px solid var(--color-border-secondary);
   border-radius: 6px;
   font-size: 14px;
   background: var(--color-surface);
-  color: var(--color-text-primary);
+  color: var(--color-text-onSurface);
 }
 
 .search-input:focus {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(162, 170, 219, 0.2);
+  border-color: var(--color-text-primary);
+  box-shadow: 0 0 0 2px var(--color-text-primary);
 }
 
 .sort-controls {
@@ -63,13 +64,14 @@
 
 .sort-btn:hover {
   background: var(--color-surfaceHover);
-  border-color: var(--color-primary);
+  border-color: var(--color-text-primary);
 }
 
 .sort-btn.active {
   background: var(--color-primary);
-  color: var(--color-text-onSurface);
+  color: var(--color-text-onPrimary);
   border-color: var(--color-primary);
+  font-weight: 600;
 }
 
 .table-info {
@@ -180,22 +182,26 @@
 
 .action-buttons {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
   justify-content: center;
 }
 
-.btn-sm {
-  padding: 4px 6px;
+/* .btn（buttons.css）の方が後に読み込まれるため、詳細度を上げて小さいボタンの余白を優先させる */
+.btn.btn-sm {
+  padding: 6px 8px;
+  gap: 4px;
   font-size: 12px;
   border-radius: 4px;
   border: none;
+  white-space: nowrap;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .btn-copy {
   background: var(--color-accent);
-  color: var(--color-text-onSurface);
+  color: var(--color-text-onPrimary);
 }
 
 .btn-copy:hover {
@@ -205,7 +211,7 @@
 
 .btn-edit {
   background: var(--color-primary);
-  color: var(--color-text-onSurface);
+  color: var(--color-text-onPrimary);
 }
 
 .btn-edit:hover {
@@ -215,32 +221,12 @@
 
 .btn-delete {
   background: var(--color-danger);
-  color: var(--color-text-onSurface);
+  color: var(--color-text-onPrimary);
 }
 
 .btn-delete:hover {
   background: var(--color-dangerHover);
   transform: translateY(-1px);
-}
-
-.btn-warning {
-  background-color: #ffa726;
-  color: white;
-  border: 1px solid #ff9800;
-}
-
-.btn-warning:hover {
-  background-color: #ff9800;
-  border-color: #e65100;
-  transform: translateY(-1px);
-}
-
-.btn-warning:disabled {
-  background-color: var(--color-text-muted);
-  border-color: var(--color-border-primary);
-  color: var(--color-text-secondary);
-  cursor: not-allowed;
-  transform: none;
 }
 
 .empty-table {

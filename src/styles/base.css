@@ -1,29 +1,72 @@
 :root {
-  /* デフォルトのライトテーマ変数（フォールバック） */
-  --color-primary: #A2AADB;
-  --color-primaryHover: #898AC4;
-  --color-secondary: #C0C9EE;
-  --color-secondaryHover: #A2AADB;
-  --color-accent: #898AC4;
-  --color-accentHover: #7A7BB8;
-  --color-danger: #E6A3A3;
-  --color-dangerHover: #D48989;
-  
-  --color-background: #FFF2E0;
+  /* JavaScript が読み込まれる前のフォールバック。src/utils/themes.js の既定テーマ（パープル）と同じ値にする */
+  --color-primary: #C7D2FE;
+  --color-primaryHover: #A5B4FC;
+  --color-secondary: #E0E7FF;
+  --color-secondaryHover: #C7D2FE;
+  --color-accent: #DDD6FE;
+  --color-accentHover: #C4B5FD;
+  --color-danger: #FECACA;
+  --color-dangerHover: #FCA5A5;
+  --color-warning: #FDE68A;
+  --color-warningHover: #FCD34D;
+
+  --color-background: #EEF2FF;
   --color-surface: #FFFFFF;
-  --color-surfaceHover: #F8F9FA;
-  
-  --color-text-primary: #898AC4;
-  --color-text-secondary: #A2AADB;
-  --color-text-muted: #C0C9EE;
-  --color-text-onSurface: #333333;
-  
-  --color-border-primary: #C0C9EE;
-  --color-border-secondary: #A2AADB;
-  --color-border-accent: #898AC4;
-  
-  --color-shadow: rgba(162, 170, 219, 0.3);
-  --color-shadowLight: rgba(162, 170, 219, 0.1);
+  --color-surfaceHover: #EEF2FF;
+
+  --color-text-primary: #3730A3;
+  --color-text-secondary: #4338CA;
+  --color-text-muted: #4B5563;
+  --color-text-onSurface: #1F2937;
+  --color-text-onPrimary: #312E81;
+  --color-text-danger: #B91C1C;
+
+  --color-border-primary: #C7D2FE;
+  --color-border-secondary: #6B7280;
+  --color-border-accent: #4338CA;
+
+  --color-shadow: rgba(165, 180, 252, 0.3);
+  --color-shadowLight: rgba(165, 180, 252, 0.12);
+}
+
+/* キーボード操作時のフォーカス位置を、どのテーマでも背景と見分けられる色で示す */
+:focus-visible {
+  outline: 2px solid var(--color-text-primary);
+  outline-offset: 2px;
+}
+
+/* チェックボックスの塗りを、どのテーマでも背景と見分けられる濃い色にそろえる */
+input[type="checkbox"] {
+  accent-color: var(--color-text-primary);
+}
+
+/* 画面には表示せず、読み上げやキーボード操作の対象としては残す */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* 必須項目の印。色だけでなく「*」の記号でも示す */
+.required-mark {
+  color: var(--color-text-danger);
+}
+
+/* 動きを減らす設定の利用者には、ホバー時の移動やフェードを控える */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }
 
 * {

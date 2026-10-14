@@ -30,6 +30,18 @@ function App() {
     saveToStorage(STORAGE_KEY, references);
   }, [references]);
 
+  // 別のタブで保存されたら読み込み直す（2つのタブで開いていると、後から保存した側が先の変更を消してしまうため）
+  // 読み込んだ内容をそのまま保存し直しても値は変わらないので、タブ同士で保存を繰り返すことはない
+  useEffect(() => {
+    const handleStorageChange = (event) => {
+      // key が null のときは、別のタブで保存データ全体が消された
+      if (event.key !== null && event.key !== STORAGE_KEY) return;
+      setReferences(loadFromStorage(STORAGE_KEY));
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   const addReference = (referenceData) => {
     // 編集をキャンセルしたフォームから複製として追加する場合もあるため、
     // 元の文献のIDや作成日時は引き継がず、必ず新しい値を振る
@@ -54,9 +66,11 @@ function App() {
 
   const updateReference = (id, referenceData) => {
     setReferences(prev => {
+      // 統合ではなく置き換える。編集中に種類を変えたとき、前の種類の項目（著者・ページなど）が
+      // 画面からは消えたのにデータに残り、引用に混ざってしまうため（フォームには元の文献の全項目が入っている）
       const updated = prev.map(ref =>
         ref.id === id
-          ? { ...ref, ...referenceData, updatedAt: new Date().toISOString() }
+          ? { ...stripComputedFields(referenceData), id, createdAt: ref.createdAt, updatedAt: new Date().toISOString() }
           : ref
       );
 
@@ -92,7 +106,12 @@ function App() {
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `references_${new Date().toISOString().split('T')[0]}.json`;
+    // toISOString() は UTC のため、日本の午前0〜9時に保存すると前日の日付になる。端末の日付で名前を付ける
+    const today = new Date();
+    const localDate = [today.getFullYear(), today.getMonth() + 1, today.getDate()]
+      .map(part => String(part).padStart(2, '0'))
+      .join('-');
+    link.download = `references_${localDate}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -109,15 +128,12 @@ function App() {
       try {
         const importedData = JSON.parse(e.target.result);
         if (Array.isArray(importedData)) {
-          // インポートデータをクリーンアップ
-          const { cleaned: cleanImportedData, stats } = validateAndCleanData(importedData);
-
-          if (stats.duplicatesRemoved > 0 || stats.invalidDataRemoved > 0) {
-            showAlert(
-              `インポートデータをクリーンアップしました: 重複${stats.duplicatesRemoved}件、無効データ${stats.invalidDataRemoved}件を除去`,
-              'success'
-            );
-          }
+          // ID のない手作りの JSON でも取り込めるよう、先に ID を振ってからクリーンアップする
+          // （取り込む文献には、どのみち下で新しい ID を振り直す）
+          const importedWithIds = importedData.map(ref =>
+            ref && typeof ref === 'object' && !ref.id ? { ...ref, id: uuidv4() } : ref
+          );
+          const { cleaned: cleanImportedData, stats } = validateAndCleanData(importedWithIds);
 
           // 既存データとの重複をチェックして除外
           const newReferences = [];
@@ -137,19 +153,22 @@ function App() {
             }
           });
 
+          // 取り込まなかった件数は、最後のお知らせ1つにまとめて伝える（途中のお知らせはすぐ上書きされて読めないため）
+          const skippedNotes = [];
+          const totalDuplicates = duplicateCount + stats.duplicatesRemoved;
+          if (totalDuplicates > 0) skippedNotes.push(`重複${totalDuplicates}件をスキップ`);
+          if (stats.invalidDataRemoved > 0) skippedNotes.push(`文献の種類がないなど読み込めないデータ${stats.invalidDataRemoved}件を除外`);
+          const skippedText = skippedNotes.length > 0 ? `（${skippedNotes.join('、')}）` : '';
+
           if (newReferences.length > 0) {
             setReferences(prev => {
               const combined = [...prev, ...newReferences];
               const { cleaned } = validateAndCleanData(combined);
               return cleaned;
             });
-
-            const message = duplicateCount > 0
-              ? `${newReferences.length}件の参考文献をインポートしました（重複${duplicateCount}件をスキップ）`
-              : `${newReferences.length}件の参考文献をインポートしました`;
-            showAlert(message, 'success');
+            showAlert(`${newReferences.length}件の参考文献をインポートしました${skippedText}`, 'success');
           } else {
-            showAlert('インポート可能な新しい参考文献がありませんでした', 'warning');
+            showAlert(`インポート可能な新しい参考文献がありませんでした${skippedText}`, 'warning');
           }
         } else {
           showAlert('無効なJSONファイルです', 'error');
@@ -167,7 +186,14 @@ function App() {
     // 前のアラートのタイマーが残っていると、新しいアラートが表示途中で消えてしまう
     clearTimeout(alertTimerRef.current);
     setAlert({ message, type });
+    // エラーは読み逃すと次に何をすればよいか分からないため、閉じるまで表示し続ける
+    if (type === 'error') return;
     alertTimerRef.current = setTimeout(() => setAlert(null), ALERT_DURATION_MS);
+  };
+
+  const closeAlert = () => {
+    clearTimeout(alertTimerRef.current);
+    setAlert(null);
   };
 
   // Toast側のタイマーがAppの再描画のたびにリセットされないよう、関数の同一性を保つ
@@ -247,7 +273,8 @@ function App() {
           className={`alert alert-${alert.type}`}
           role={alert.type === 'error' ? 'alert' : 'status'}
         >
-          {alert.message}
+          <span className="alert-message">{alert.message}</span>
+          <button type="button" className="alert-close" onClick={closeAlert} aria-label="通知を閉じる">×</button>
         </div>
       )}
 

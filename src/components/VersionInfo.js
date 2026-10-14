@@ -19,8 +19,9 @@ const VersionInfo = () => {
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
-      // force show if any query param present (e.g., ?changelog=1 or ?update)
-      const force = params.toString() !== '';
+      // ?changelog または ?update 付きで開いたときは常に表示する
+      // （SNS で共有したリンクに付く ?fbclid= などでは表示しない）
+      const force = params.has('changelog') || params.has('update');
 
       const lastSeen = localStorage.getItem(STORAGE_KEY);
       const current = packageInfo.version;
@@ -51,17 +52,18 @@ const VersionInfo = () => {
   return (
     <>
       <div className="version-info">
-        <div className="version-badge" onClick={() => setShowChangelog(true)}>
+        {/* キーボードでも開けるよう、div ではなく button にする */}
+        <button type="button" className="version-badge" onClick={() => setShowChangelog(true)}>
           <span className="version-label">v{packageInfo.version}</span>
           <span className="update-date">最終更新: {updateDate}</span>
           <span className="changelog-hint">📝 変更履歴</span>
-        </div>
+        </button>
         <div className="credits">
           <div>一部メタデータは国立国会図書館サーチ（NDL）およびCiNii APIから取得しています。</div>
           <div className="credits-links">
-            <a href="https://ndl.go.jp" target="_blank" rel="noopener noreferrer" style={{color: 'var(--color-text-onSurface, #90caf9)'}}>国立国会図書館サーチ</a>
+            <a href="https://ndlsearch.ndl.go.jp/" target="_blank" rel="noopener noreferrer">国立国会図書館サーチ</a>
             <span> ／ </span>
-            <a href="https://ci.nii.ac.jp" target="_blank" rel="noopener noreferrer" style={{color: 'var(--color-text-onSurface, #90caf9)'}}>CiNii</a>
+            <a href="https://cir.nii.ac.jp/" target="_blank" rel="noopener noreferrer">CiNii Research</a>
           </div>
           <div className="credits-license">該当データは各提供機関の利用条件（CC BY 4.0 等）に従っています。</div>
         </div>

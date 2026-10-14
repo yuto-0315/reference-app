@@ -1,49 +1,45 @@
 import React, { useState } from 'react';
+import useEscapeKey from '../hooks/useEscapeKey';
 
-const InfoTooltip = ({ description, example, className = '' }) => {
+const InfoTooltip = ({ description, example, fieldLabel = '', className = '' }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const closeModal = () => setIsModalOpen(false);
+  useEscapeKey(isModalOpen, closeModal);
 
   // 説明文も例もない場合は何も表示しない
   if (!description && !example) {
     return null;
   }
 
-  const openModal = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsModalOpen(true);
-  };
-  
-  const closeModal = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsModalOpen(false);
-  };
-
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) {
-      closeModal(e);
+      closeModal();
     }
   };
 
   return (
     <>
       <div className={`info-tooltip-container ${className}`}>
-        <div
+        {/* キーボードでも開けるよう button にする。フォーム内にあるため type="button" で送信を防ぐ */}
+        <button
+          type="button"
           className="info-icon"
-          onClick={openModal}
-          title="詳細情報を表示"
+          onClick={() => setIsModalOpen(true)}
+          title="入力ガイドを表示"
+          aria-label={fieldLabel ? `${fieldLabel}の入力ガイドを表示` : '入力ガイドを表示'}
         >
           i
-        </div>
+        </button>
       </div>
-      
+
       {isModalOpen && (
         <div className="info-modal-overlay" onClick={handleOverlayClick}>
-          <div className="info-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="info-modal" role="dialog" aria-modal="true" aria-labelledby="info-modal-title" onClick={(e) => e.stopPropagation()}>
             <div className="info-modal-header">
-              <h3 className="info-modal-title">入力ガイド</h3>
-              <button className="info-modal-close" onClick={closeModal}>
+              <h3 id="info-modal-title" className="info-modal-title">
+                {fieldLabel ? `入力ガイド：${fieldLabel}` : '入力ガイド'}
+              </h3>
+              <button type="button" className="info-modal-close" onClick={closeModal} aria-label="閉じる">
                 ×
               </button>
             </div>

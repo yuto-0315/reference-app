@@ -6,22 +6,47 @@
   border: 1px solid var(--color-border-primary);
 }
 
+.type-select {
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border-secondary);
+  background: var(--color-surface);
+  color: var(--color-text-onSurface);
+  cursor: pointer;
+}
+
+.type-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.type-select-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .main-content {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* 1fr だと長いURLなどの中身に合わせて列が広がり、ページが横にはみ出すため、最小幅を0にする */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 30px;
   margin-bottom: 30px;
 }
 
 @media (max-width: 768px) {
   .main-content {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
 .preview-area {
   max-height: 550px;
-  overflow: scroll;
+  /* 内容が短いときにもスクロールバーが常に出ていたため、必要なときだけ出す */
+  overflow: auto;
+  /* 長いURLも枠内で折り返す */
+  overflow-wrap: anywhere;
   background-color: var(--color-surface);
   border: 1px solid var(--color-border-primary);
   border-radius: 6px;

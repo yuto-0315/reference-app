@@ -39,7 +39,7 @@
 
 .changelog-changes li:before {
   content: "•";
-  color: var(--color-primary);
+  color: var(--color-text-primary);
   font-weight: bold;
   position: absolute;
   left: 0;

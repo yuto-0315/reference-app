@@ -62,8 +62,9 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
           compareValue = getSortReading(migratedA).localeCompare(getSortReading(migratedB), 'ja');
           break;
         case 'title':
-          const aTitle = a.title || '';
-          const bTitle = b.title || '';
+          // 手で編集したJSONで数値が入っていても落ちないよう、文字列にして比べる
+          const aTitle = String(a.title || '');
+          const bTitle = String(b.title || '');
           compareValue = aTitle.localeCompare(bTitle, 'ja');
           break;
         default:
@@ -181,7 +182,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
               <th style={{ width: '40px', textAlign: 'center' }}>
                 <input
                   type="checkbox"
-                  checked={checkedReferences.size > 0 && checkedReferences.size === references.length}
+                  checked={references.length > 0 && references.every(ref => checkedReferences.has(ref.id))}
                   onChange={(e) => {
                     if (e.target.checked) {
                       references.forEach(ref => {
@@ -198,6 +199,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                     }
                   }}
                   title="全て選択/解除"
+                  aria-label="すべての参考文献を一覧に含める／外す"
                 />
               </th>
               <th>著者</th>
@@ -363,14 +365,14 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                     </td>
                     <td className="actions-cell">
                       <div className="action-buttons">
-                        {/* 絵文字だけのボタンは読み上げで意味が伝わらないため aria-label を付ける */}
+                        {/* アイコンだけだと意味が分からないため短い文字を添え、読み上げ用には詳しい説明を付ける */}
                         <button
                           onClick={() => copyFormatted(migratedRef, 'citation')}
                           className="btn btn-sm btn-copy"
                           title="引用形式でコピー(割注)"
                           aria-label="引用形式でコピー(割注)"
                         >
-                          📋
+                          📋 引用
                         </button>
                         <button
                           onClick={() => copyFormatted(migratedRef, 'reference')}
@@ -378,7 +380,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                           title="参考文献形式でコピー"
                           aria-label="参考文献形式でコピー"
                         >
-                          📖
+                          📖 文献
                         </button>
                         <button
                           onClick={() => onEdit(migratedRef)}
@@ -386,7 +388,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                           title="編集"
                           aria-label="編集"
                         >
-                          ✏️
+                          ✏️ 編集
                         </button>
                         <button
                           onClick={() => onDelete(ref.id)}
@@ -394,7 +396,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                           title="削除"
                           aria-label="削除"
                         >
-                          🗑️
+                          🗑️ 削除
                         </button>
                       </div>
                     </td>
@@ -408,7 +410,9 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
 
       {filteredAndSortedReferences.length === 0 && (
         <div className="empty-table">
-          {searchTerm ? '検索条件に一致する参考文献がありません' : '参考文献がありません'}
+          {searchTerm
+            ? `「${searchTerm}」に一致する参考文献はありません。著者名・タイトル・出版社・発行年などで探せます。`
+            : '参考文献がまだありません。上の「新しい参考文献を追加」フォームから登録してください。'}
         </div>
       )}
     </div>
