@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { formatCitation, formatReference, migrateReferenceData, addYearSuffixes, getSortReading, getPublicationYear } from '../utils/formatters';
-import { ArrowDown, ArrowUp, ArrowUpDown, BookText, ExternalLink, Pencil, Quote, TriangleAlert, Trash2 } from 'lucide-react';
+import { collectReadingGroups } from '../utils/bulkEdit';
+import { ArrowDown, ArrowUp, ArrowUpDown, BookText, ExternalLink, Languages, ListChecks, Pencil, Quote, TriangleAlert, Trash2 } from 'lucide-react';
 
 // 著者・団体・作曲者の名前と読み、書誌情報をまとめた検索対象テキスト
 const getSearchableText = (migratedRef) => {
@@ -22,7 +23,8 @@ const getSearchableText = (migratedRef) => {
   ].filter(Boolean).join('\n').toLowerCase();
 };
 
-const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, checkedReferences }) => {
+const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, checkedReferences, onOpenReadingBulk, onOpenBulkEdit }) => {
+  const missingReadingNameCount = useMemo(() => collectReadingGroups(references).filter(group => group.isMissing).length, [references]);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('year'); // 'year', 'reading', 'title'
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc', 'desc'
@@ -177,6 +179,22 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
 
       <div className="table-info">
         <span>全 {references.length} 件中 {filteredAndSortedReferences.length} 件を表示</span>
+        <div className="bulk-actions">
+          <button type="button" className="btn btn-secondary btn-small" onClick={onOpenReadingBulk} disabled={references.length === 0}>
+            <Languages size={14} />読み仮名をまとめて登録
+            {missingReadingNameCount > 0 && <span className="count-badge">未登録 {missingReadingNameCount}件</span>}
+          </button>
+          {/* 「何をまとめて変えるか」より先に「どれを」を選んでもらう（チェックしてから押す） */}
+          <button
+            type="button"
+            className="btn btn-secondary btn-small"
+            onClick={onOpenBulkEdit}
+            disabled={checkedReferences.size === 0}
+            title={checkedReferences.size === 0 ? '一覧の左端のチェックで、まとめて編集する文献を選んでください' : undefined}
+          >
+            <ListChecks size={14} />チェックした文献をまとめて編集（{checkedReferences.size}件）
+          </button>
+        </div>
       </div>
 
       <div className="table-wrapper">
@@ -322,7 +340,11 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                       </div>
                       {/* 行の色だけに頼らず、文字でも未登録であることを示す */}
                       {isMissingReading && (
-                        <div className="missing-reading-note"><TriangleAlert size={14} />読み仮名未登録</div>
+                        <div className="missing-reading-note">
+                          <TriangleAlert size={14} />読み仮名未登録
+                          {/* 未登録に気づいたその場から、同じ名前の文献ごとまとめて登録できるようにする */}
+                          <button type="button" className="missing-reading-action" onClick={onOpenReadingBulk}>まとめて登録</button>
+                        </div>
                       )}
                     </td>
                     <td className="title-cell">

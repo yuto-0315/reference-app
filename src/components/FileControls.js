@@ -47,6 +47,7 @@ const FileControls = ({ onExport, onImport, onCleanup, referenceCount }) => {
           <li><strong>エクスポート:</strong> データをJSONファイルとしてバックアップできます</li>
           <li><strong>インポート:</strong> JSONファイルから文献データを追加で読み込めます（重複は自動除去）</li>
           <li><strong>クリーンアップ:</strong> 重複データや不正なデータを自動で除去・整理します</li>
+          <li><strong>まとめて登録・編集:</strong> 一覧の上の「読み仮名をまとめて登録」で、同じ団体名・著者名の読み仮名を1回の入力で登録できます。一覧でチェックした文献は「チェックした文献をまとめて編集」で、出版社や発行年などをまとめて同じ値にできます</li>
           <li><strong>コピー機能:</strong> 一覧の「引用」で本文中の引用（割注）、「文献」で参考文献の形式をクリップボードにコピーできます</li>
         </ul>
       </details>

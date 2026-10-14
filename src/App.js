@@ -5,6 +5,9 @@ import ReferenceTable from './components/ReferenceTable';
 import PreviewSection from './components/PreviewSection';
 import FileControls from './components/FileControls';
 import ThemeToggle from './components/ThemeToggle';
+import ReadingBulkModal from './components/ReadingBulkModal';
+import BulkEditModal from './components/BulkEditModal';
+import { applyReadings, applyFieldValue } from './utils/bulkEdit';
 import FormatGuideModal from './components/FormatGuideModal';
 import Toast from './components/Toast';
 import VersionInfo from './components/VersionInfo';
@@ -24,6 +27,8 @@ function App() {
   const [toast, setToast] = useState(null);
   const [showFormatGuide, setShowFormatGuide] = useState(false);
   const [checkedReferences, setCheckedReferences] = useState(new Set());
+  // 'reading'（読み仮名をまとめて登録）か 'fields'（チェックした文献をまとめて編集）
+  const [bulkDialog, setBulkDialog] = useState(null);
   const alertTimerRef = useRef(null);
 
   // 自動保存（ローカルストレージ）- 重複除去付き
@@ -184,12 +189,13 @@ function App() {
     event.target.value = ''; // ファイル選択をリセット
   };
 
-  const showAlert = (message, type) => {
+  const showAlert = (message, type, action = null) => {
     // 前のアラートのタイマーが残っていると、新しいアラートが表示途中で消えてしまう
     clearTimeout(alertTimerRef.current);
-    setAlert({ message, type });
+    setAlert({ message, type, action });
     // エラーは読み逃すと次に何をすればよいか分からないため、閉じるまで表示し続ける
-    if (type === 'error') return;
+    // 「元に戻す」などの操作が付いたお知らせも、押す前に消えないようにする
+    if (type === 'error' || action) return;
     alertTimerRef.current = setTimeout(() => setAlert(null), ALERT_DURATION_MS);
   };
 
@@ -221,6 +227,34 @@ function App() {
     } else {
       showAlert('クリーンアップが必要なデータはありませんでした', 'info');
     }
+  };
+
+  // まとめて書き換えたあとも「元に戻す」で前の状態に戻せるようにする（確認ダイアログの代わりに取り消せる安心感を出す）
+  const replaceReferencesWithUndo = (nextReferences, message) => {
+    const previousReferences = references;
+    setReferences(nextReferences);
+    setBulkDialog(null);
+    showAlert(message, 'success', {
+      label: '元に戻す',
+      onClick: () => {
+        setReferences(previousReferences);
+        showAlert('まとめて変更する前に戻しました', 'info');
+      }
+    });
+  };
+
+  const saveBulkReadings = (readingByKey, { nameCount, referenceCount }) => {
+    replaceReferencesWithUndo(
+      applyReadings(references, readingByKey, new Date().toISOString()),
+      `${nameCount}件の名前の読み仮名を、${referenceCount}件の文献に登録しました`
+    );
+  };
+
+  const saveBulkField = (field, value, referenceIds) => {
+    replaceReferencesWithUndo(
+      applyFieldValue(references, referenceIds, field, value, new Date().toISOString()),
+      `${referenceIds.length}件の文献の「${field.label}」を「${value}」にしました`
+    );
   };
 
   // チェック状態の管理
@@ -276,6 +310,11 @@ function App() {
           role={alert.type === 'error' ? 'alert' : 'status'}
         >
           <span className="alert-message">{alert.message}</span>
+          {alert.action && (
+            <button type="button" className="btn btn-secondary btn-small" onClick={alert.action.onClick}>
+              {alert.action.label}
+            </button>
+          )}
           <button type="button" className="alert-close" onClick={closeAlert} aria-label="通知を閉じる"><X size={18} /></button>
         </div>
       )}
@@ -321,7 +360,20 @@ function App() {
         onCopy={copyToClipboard}
         onToggleCheck={toggleReferenceCheck}
         checkedReferences={checkedReferences}
+        onOpenReadingBulk={() => setBulkDialog('reading')}
+        onOpenBulkEdit={() => setBulkDialog('fields')}
       />
+
+      {bulkDialog === 'reading' && (
+        <ReadingBulkModal references={references} onSave={saveBulkReadings} onClose={() => setBulkDialog(null)} />
+      )}
+      {bulkDialog === 'fields' && (
+        <BulkEditModal
+          references={references.filter(ref => checkedReferences.has(ref.id))}
+          onSave={saveBulkField}
+          onClose={() => setBulkDialog(null)}
+        />
+      )}
 
       <FormatGuideModal
         isOpen={showFormatGuide}
