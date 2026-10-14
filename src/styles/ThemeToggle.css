@@ -1,16 +1,23 @@
 /* ヘッダーの色に関わらず読めるよう、テーマの背景色の上に置く */
 .theme-toggle {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 8px 12px;
   padding: 8px 12px;
   background: var(--color-surface);
   border-radius: 8px;
   border: 1px solid var(--color-border-primary);
 }
 
+.theme-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 100%;
+}
+
 .theme-toggle-label {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--color-text-onSurface);
   margin: 0;
@@ -26,7 +33,12 @@
   color: var(--color-text-onSurface);
   cursor: pointer;
   transition: background-color 0.15s ease;
-  min-width: 100px;
+  max-width: 100%;
+}
+
+/* 配色名の長さで幅が変わると、系統の選択欄まで左右に動いてしまうため、いちばん長い配色名に合わせて固定する */
+.theme-select-palette {
+  width: 16em;
 }
 
 .theme-select:hover {
