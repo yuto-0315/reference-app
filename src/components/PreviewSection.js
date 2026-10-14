@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { formatReference, formatCitation, migrateReferenceData, addYearSuffixes, getAuthorDisplayName, getSortReading, getPublicationYear, REFERENCE_TYPES } from '../utils/formatters';
+import { ArrowDown, ArrowUp, ArrowUpDown, Copy } from 'lucide-react';
 
 const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, onToggleAll, onBulkCheck }) => {
   const [citationPage, setCitationPage] = useState('');
@@ -94,8 +95,11 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
   };
 
   const getSortIcon = (field) => {
-    if (sortBy !== field) return '↕️';
-    return sortOrder === 'asc' ? '↑' : '↓';
+    // 矢印は読み上げないため、並び順は文字でも伝える
+    if (sortBy !== field) return <ArrowUpDown size={14} className="sort-icon" />;
+    return sortOrder === 'asc'
+      ? <><ArrowUp size={14} className="sort-icon" /><span className="visually-hidden">（昇順）</span></>
+      : <><ArrowDown size={14} className="sort-icon" /><span className="visually-hidden">（降順）</span></>;
   };
 
   return (
@@ -106,7 +110,7 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
       <div style={{ marginBottom: '30px' }}>
         {/* 文字色をテーマ変数にしないと、ダークテーマで背景と同化して見えなくなる */}
         <h3 style={{ fontSize: '1.2rem', marginBottom: '15px', color: 'var(--color-text-onSurface)' }}>
-          📝 本文中の引用（割注）
+          本文中の引用（割注）
         </h3>
 
         <div className="form-group">
@@ -154,7 +158,7 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
             className="btn btn-info"
             onClick={() => onCopy(generateCitation(), 'インライン引用をコピーしました')}
           >
-            📝 引用をコピー
+            <Copy size={16} />引用をコピー
           </button>
         )}
       </div>
@@ -164,7 +168,7 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
         {/* 幅が足りないときは操作ボタンを次の行に回し、見出しが途中で折り返されないようにする */}
         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '15px', marginBottom: '15px' }}>
           <h3 style={{ fontSize: '1.2rem', margin: 0, color: 'var(--color-text-onSurface)', whiteSpace: 'nowrap' }}>
-            📚 参考文献一覧
+            参考文献一覧
           </h3>
           <div className="reference-list-controls">
             <button
@@ -221,13 +225,13 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
               className={`sort-btn ${sortBy === 'author' ? 'active' : ''}`}
               onClick={() => handleSort('author')}
             >
-              著者名 {getSortIcon('author')}
+              著者名{getSortIcon('author')}
             </button>
             <button
               className={`sort-btn ${sortBy === 'year' ? 'active' : ''}`}
               onClick={() => handleSort('year')}
             >
-              発行年 {getSortIcon('year')}
+              発行年{getSortIcon('year')}
             </button>
           </div>
         )}
@@ -284,7 +288,7 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
                   className="btn btn-success"
                   onClick={() => onCopy(generateReferenceList(), '参考文献一覧をコピーしました')}
                 >
-                  📋 選択した参考文献一覧をコピー ({checkedCount}件)
+                  <Copy size={16} />選択した参考文献一覧をコピー ({checkedCount}件)
                 </button>
               </>
             ) : (

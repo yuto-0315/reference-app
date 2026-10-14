@@ -7,6 +7,10 @@ export const CHANGELOG = [
       {
         type: 'improvement',
         description: 'テーマ選択を、系統ごとに並んだ配色のカードから、使われる色（背景・ヘッダー・ボタン・見出し）を見比べながら選べる画面に変更'
+      },
+      {
+        type: 'improvement',
+        description: '画面の絵文字を、見た目のそろったアイコンに変更'
       }
     ]
   },

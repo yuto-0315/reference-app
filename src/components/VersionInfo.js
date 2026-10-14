@@ -3,6 +3,7 @@ import packageInfo from '../../package.json';
 import UpdateGuideModal from './UpdateGuideModal';
 import { CHANGELOG } from '../utils/changelog';
 import { PALETTE_SOURCE } from '../utils/themes';
+import { History } from 'lucide-react';
 
 const STORAGE_KEY = 'referenceApp:lastSeenVersion';
 
@@ -57,7 +58,7 @@ const VersionInfo = () => {
         <button type="button" className="version-badge" onClick={() => setShowChangelog(true)}>
           <span className="version-label">v{packageInfo.version}</span>
           <span className="update-date">最終更新: {updateDate}</span>
-          <span className="changelog-hint">📝 変更履歴</span>
+          <span className="changelog-hint"><History size={14} />変更履歴</span>
         </button>
         <div className="credits">
           <div>一部メタデータは国立国会図書館サーチ（NDL）およびCiNii APIから取得しています。</div>

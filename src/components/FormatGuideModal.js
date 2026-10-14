@@ -1,5 +1,6 @@
 import React from 'react';
 import useEscapeKey from '../hooks/useEscapeKey';
+import { X } from 'lucide-react';
 
 const FormatGuideModal = ({ isOpen, onClose }) => {
   useEscapeKey(isOpen, onClose);
@@ -96,8 +97,8 @@ const FormatGuideModal = ({ isOpen, onClose }) => {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content format-guide-modal" role="dialog" aria-modal="true" aria-labelledby="format-guide-title" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2 id="format-guide-title">📖 引用・参考文献の書き方ガイド</h2>
-          <button type="button" className="modal-close" onClick={onClose} aria-label="閉じる">×</button>
+          <h2 id="format-guide-title">引用・参考文献の書き方ガイド</h2>
+          <button type="button" className="modal-close" onClick={onClose} aria-label="閉じる"><X size={20} /></button>
         </div>
         
         <div className="modal-body">
@@ -106,7 +107,7 @@ const FormatGuideModal = ({ isOpen, onClose }) => {
           </div>
 
           <section className="citation-section">
-            <h3>📝 1. 本文中の引用（割注）</h3>
+            <h3>1. 本文中の引用（割注）</h3>
             <div className="format-examples">
               {Object.entries(citationExamples).map(([key, item]) => (
                 <div key={key} className="format-item">
@@ -122,7 +123,7 @@ const FormatGuideModal = ({ isOpen, onClose }) => {
             </div>
             
             <div className="citation-notes">
-              <h4>📌 引用時のルール</h4>
+              <h4>引用時のルール</h4>
               <ul>
                 <li>著者の姓と発行年の間には全角スペースを入れる</li>
                 <li>発行年と引用ページ数の間はコロン「:」を使用</li>
@@ -133,7 +134,7 @@ const FormatGuideModal = ({ isOpen, onClose }) => {
           </section>
 
           <section className="reference-section">
-            <h3>📚 2. 参考文献一覧</h3>
+            <h3>2. 参考文献一覧</h3>
             <div className="format-examples">
               {Object.entries(referenceExamples).map(([key, item]) => (
                 <div key={key} className="format-item">
@@ -149,7 +150,7 @@ const FormatGuideModal = ({ isOpen, onClose }) => {
             </div>
 
             <div className="reference-notes">
-              <h4>📌 参考文献一覧のルール</h4>
+              <h4>参考文献一覧のルール</h4>
               <ul>
                 <li>著者の姓のアルファベット順または五十音順で配列</li>
                 <li>2行目以降は1マス字下げ（インデント）</li>

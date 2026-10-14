@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { CircleCheck, X } from 'lucide-react';
 
 const Toast = ({ message, isVisible, onClose }) => {
   const [show, setShow] = useState(false);
@@ -29,7 +30,7 @@ const Toast = ({ message, isVisible, onClose }) => {
   return (
     <div className={`toast ${show ? 'toast-show' : ''}`} role="status">
       <div className="toast-content">
-        <span className="toast-icon">✅</span>
+        <CircleCheck size={20} className="toast-icon" />
         <span className="toast-message">
           {message.split('\n').map((line, i) => (
             <React.Fragment key={i}>
@@ -44,7 +45,7 @@ const Toast = ({ message, isVisible, onClose }) => {
           onClick={hideAfterFade}
           aria-label="閉じる"
         >
-          ×
+          <X size={18} />
         </button>
       </div>
     </div>
