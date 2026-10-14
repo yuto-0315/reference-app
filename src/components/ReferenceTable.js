@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { formatCitation, formatReference, migrateReferenceData, addYearSuffixes, getSortReading, getPublicationYear } from '../utils/formatters';
 import { collectReadingGroups } from '../utils/bulkEdit';
-import { ArrowDown, ArrowUp, ArrowUpDown, BookText, ExternalLink, Languages, ListChecks, Pencil, Quote, TriangleAlert, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, BookText, CopyPlus, ExternalLink, Languages, ListChecks, Pencil, Quote, TriangleAlert, Trash2 } from 'lucide-react';
 
 // 著者・団体・作曲者の名前と読み、書誌情報をまとめた検索対象テキスト
 const getSearchableText = (migratedRef) => {
@@ -23,7 +23,7 @@ const getSearchableText = (migratedRef) => {
   ].filter(Boolean).join('\n').toLowerCase();
 };
 
-const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, checkedReferences, onOpenReadingBulk, onOpenBulkEdit, editingId, recentlyUpdatedId }) => {
+const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, checkedReferences, onOpenReadingBulk, onOpenBulkEdit, onDuplicate, recentlyUpdatedId }) => {
   const missingReadingNameCount = useMemo(() => collectReadingGroups(references).filter(group => group.isMissing).length, [references]);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('year'); // 'year', 'reading', 'title'
@@ -279,7 +279,6 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                     id={`reference-row-${ref.id}`}
                     className={[
                       isMissingReading && 'row-missing-reading',
-                      ref.id === editingId && 'row-editing',
                       ref.id === recentlyUpdatedId && 'row-recently-updated'
                     ].filter(Boolean).join(' ')}
                     title={rowTitle}
@@ -420,10 +419,18 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                         <button
                           onClick={() => onEdit(migratedRef)}
                           className="btn btn-sm btn-secondary"
-                          title={ref.id === editingId ? '編集中（押すとフォームへ移動）' : '編集'}
-                          aria-label={ref.id === editingId ? '編集中（フォームへ移動）' : '編集'}
+                          title="編集"
+                          aria-label="編集"
                         >
-                          <Pencil size={14} />{ref.id === editingId ? '編集中' : '編集'}
+                          <Pencil size={14} />編集
+                        </button>
+                        <button
+                          onClick={() => onDuplicate(migratedRef)}
+                          className="btn btn-sm btn-secondary"
+                          title="この文献の内容を追加フォームに入れて、似た文献を追加する"
+                          aria-label="複製して追加フォームに入れる"
+                        >
+                          <CopyPlus size={14} />複製
                         </button>
                         <button
                           onClick={() => onDelete(ref.id)}

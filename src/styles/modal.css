@@ -71,3 +71,29 @@
   display: flex;
   justify-content: flex-end;
 }
+
+/* --- 参考文献の編集画面 --- */
+.edit-modal-heading {
+  min-width: 0;
+}
+
+.edit-modal-heading h2:focus {
+  outline: none;
+}
+
+.edit-modal-target {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+/* 項目が多くてもスクロールせずに「更新」「キャンセル」を押せるよう、下端に固定する */
+.edit-modal .button-group {
+  position: sticky;
+  bottom: -24px;
+  margin: 0 -24px -24px;
+  padding: 16px 24px;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border-primary);
+}

@@ -12,7 +12,9 @@ const createEmptyAuthor = () => ({ lastName: '', firstName: '', reading: '' });
 // 空白だけの入力も未入力として扱う
 const isBlank = (value) => value === undefined || value === null || String(value).trim() === '';
 
-const ReferenceForm = ({ onSubmit, initialData, onCancel, onDirtyChange }) => {
+// initialData：読み込む文献（編集する文献、または複製元）。isEditing：「更新」「キャンセル」を出す編集モードか
+// idPrefix：編集画面と追加フォームが同時に開いても、入力欄のIDが重ならないようにする（ラベルや読み上げが別の欄を指さないように）
+const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onDirtyChange, idPrefix = '' }) => {
   // 初期データの著者フィールド設定を調整
   const getInitialFormData = () => {
     const baseData = {
@@ -53,7 +55,7 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel, onDirtyChange }) => {
   const [apiData, setApiData] = useState(null);
   const [ciniiResults, setCiniiResults] = useState([]);
 
-  // 編集をキャンセルしてもフォームの内容は残す（似た文献を複製して追加する使い方ができるように）
+  // 編集する文献や複製元を渡されたら、その内容をフォームに読み込む
   useEffect(() => {
     if (initialData) {
       // 著者欄のない文献種別に空の著者を持たせないよう、初期化ロジックを共通化する
@@ -341,7 +343,7 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel, onDirtyChange }) => {
     // 執筆団体（読み仮名）など、その他のテキストフィールド
     const value = formData[key] || '';
     const error = errors[key];
-    const inputId = `reference-field-${key}`;
+    const inputId = `${idPrefix}reference-field-${key}`;
 
     const errorId = `${inputId}-error`;
     // 読み上げでも必須・エラーの状態と内容が伝わるようにする
@@ -397,9 +399,9 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel, onDirtyChange }) => {
           <div key={index} className="author-input-group">
             <div className="author-fields">
               <div className="author-field">
-                <label htmlFor={`authors-${index}-lastName`}>姓 *</label>
+                <label htmlFor={`${idPrefix}authors-${index}-lastName`}>姓 *</label>
                 <input
-                  id={`authors-${index}-lastName`}
+                  id={`${idPrefix}authors-${index}-lastName`}
                   type="text"
                   value={author.lastName}
                   onChange={(e) => handleAuthorChange(index, 'lastName', e.target.value)}
@@ -413,9 +415,9 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel, onDirtyChange }) => {
                 )}
               </div>
               <div className="author-field">
-                <label htmlFor={`authors-${index}-firstName`}>名 *</label>
+                <label htmlFor={`${idPrefix}authors-${index}-firstName`}>名 *</label>
                 <input
-                  id={`authors-${index}-firstName`}
+                  id={`${idPrefix}authors-${index}-firstName`}
                   type="text"
                   value={author.firstName}
                   onChange={(e) => handleAuthorChange(index, 'firstName', e.target.value)}
@@ -430,9 +432,9 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel, onDirtyChange }) => {
               </div>
               {showReading && (
                 <div className="author-field">
-                  <label htmlFor={`authors-${index}-reading`}>読み仮名</label>
+                  <label htmlFor={`${idPrefix}authors-${index}-reading`}>読み仮名</label>
                   <input
-                    id={`authors-${index}-reading`}
+                    id={`${idPrefix}authors-${index}-reading`}
                     type="text"
                     value={author.reading}
                     onChange={(e) => handleAuthorChange(index, 'reading', e.target.value)}
@@ -476,9 +478,9 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel, onDirtyChange }) => {
           <div key={index} className="author-input-group">
             <div className="author-fields">
               <div className="author-field">
-                <label htmlFor={`${fieldName}-${index}-lastName`}>姓 *</label>
+                <label htmlFor={`${idPrefix}${fieldName}-${index}-lastName`}>姓 *</label>
                 <input
-                  id={`${fieldName}-${index}-lastName`}
+                  id={`${idPrefix}${fieldName}-${index}-lastName`}
                   type="text"
                   value={author.lastName}
                   onChange={(e) => handleAuthorFieldChange(fieldName, index, 'lastName', e.target.value)}
@@ -492,9 +494,9 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel, onDirtyChange }) => {
                 )}
               </div>
               <div className="author-field">
-                <label htmlFor={`${fieldName}-${index}-firstName`}>名 *</label>
+                <label htmlFor={`${idPrefix}${fieldName}-${index}-firstName`}>名 *</label>
                 <input
-                  id={`${fieldName}-${index}-firstName`}
+                  id={`${idPrefix}${fieldName}-${index}-firstName`}
                   type="text"
                   value={author.firstName}
                   onChange={(e) => handleAuthorFieldChange(fieldName, index, 'firstName', e.target.value)}
@@ -509,9 +511,9 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel, onDirtyChange }) => {
               </div>
               {showReading && (
                 <div className="author-field">
-                  <label htmlFor={`${fieldName}-${index}-reading`}>読み仮名</label>
+                  <label htmlFor={`${idPrefix}${fieldName}-${index}-reading`}>読み仮名</label>
                   <input
-                    id={`${fieldName}-${index}-reading`}
+                    id={`${idPrefix}${fieldName}-${index}-reading`}
                     type="text"
                     value={author.reading}
                     onChange={(e) => handleAuthorFieldChange(fieldName, index, 'reading', e.target.value)}
@@ -546,9 +548,9 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel, onDirtyChange }) => {
     <>
       <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <label htmlFor="reference-type">文献の種類 <span className="required-mark">*</span></label>
+          <label htmlFor={`${idPrefix}reference-type`}>文献の種類 <span className="required-mark">*</span></label>
           <select
-            id="reference-type"
+            id={`${idPrefix}reference-type`}
             value={formData.type}
             onChange={(e) => handleTypeChange(e.target.value)}
           >
@@ -567,6 +569,7 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel, onDirtyChange }) => {
         </div>
 
         <APISearch
+          idPrefix={idPrefix}
           type={formData.type}
           onSearchResult={handleIsbnSearchResult}
           onCiniiResult={handleCiniiSearchResult}
@@ -576,9 +579,9 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel, onDirtyChange }) => {
 
         <div className="button-group">
           <button type="submit" className="btn btn-primary">
-            {initialData ? '更新' : '追加'}
+            {isEditing ? '更新' : '追加'}
           </button>
-          {initialData && (
+          {isEditing && (
             <button
               type="button"
               className="btn btn-secondary"

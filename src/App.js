@@ -6,6 +6,7 @@ import PreviewSection from './components/PreviewSection';
 import FileControls from './components/FileControls';
 import ThemeToggle from './components/ThemeToggle';
 import ReadingBulkModal from './components/ReadingBulkModal';
+import EditReferenceModal from './components/EditReferenceModal';
 import BulkEditModal from './components/BulkEditModal';
 import { applyReadings, applyFieldValue } from './utils/bulkEdit';
 import FormatGuideModal from './components/FormatGuideModal';
@@ -34,6 +35,8 @@ function App() {
   const alertTimerRef = useRef(null);
   const formSectionRef = useRef(null);
   const isFormDirtyRef = useRef(false);
+  // 一覧の「複製」で追加フォームに読み込む文献
+  const [duplicateSource, setDuplicateSource] = useState(null);
   // 更新した直後の行を少しの間だけ目立たせ、一覧のどこが変わったかを分かるようにする
   const [recentlyUpdatedId, setRecentlyUpdatedId] = useState(null);
 
@@ -56,7 +59,7 @@ function App() {
   }, []);
 
   const addReference = (referenceData) => {
-    // 編集をキャンセルしたフォームから複製として追加する場合もあるため、
+    // 「複製」で読み込んだ文献から追加する場合もあるため、
     // 元の文献のIDや作成日時は引き継がず、必ず新しい値を振る
     const newReference = {
       ...stripComputedFields(referenceData),
@@ -97,29 +100,30 @@ function App() {
     returnToRow(id);
   };
 
-  // 一覧の下の方で「編集」を押しても、フォームが画面外のままだと何も起きていないように見えるため、フォームまで移動する
-  const startEditing = (reference) => {
-    const isSwitchingAway = selectedReference?.id !== reference.id;
-    if (isSwitchingAway && isFormDirtyRef.current
-      && !window.confirm('入力中の内容があります。破棄して、この文献の編集に切り替えますか？')) {
+  // 似た文献（同じ本の別の巻など）を、元の文献の内容から作り始められるようにする
+  const duplicateReference = (reference) => {
+    if (isFormDirtyRef.current
+      && !window.confirm('追加フォームに入力中の内容があります。複製する文献の内容に置き換えますか？')) {
       return;
     }
-    setSelectedReference(reference);
+    const { id, createdAt, updatedAt, ...copiedFields } = stripComputedFields(reference);
+    setDuplicateSource(copiedFields);
+    showAlert(`「${reference.title || '（タイトルなし）'}」の内容を追加フォームに入れました。違うところを直して「追加」してください`, 'info');
+    // 追加フォームは一覧から離れた画面上部にあるため、入った内容が見えるところまで移動する
     requestAnimationFrame(() => {
       const section = formSectionRef.current;
       if (!section) return;
       section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      // 読み上げでも編集が始まったことが分かるよう、見出しにフォーカスを移す
       section.querySelector('.section-title')?.focus({ preventScroll: true });
     });
   };
 
-  // 更新後は、編集した行まで一覧を戻す（さっき見ていた場所を探し直さなくて済むように）
+  // 更新した行を少しの間だけ枠で示す。編集画面は行の上で開いていたので、閉じれば同じ位置に戻っている
   const returnToRow = (id) => {
     setRecentlyUpdatedId(id);
     setTimeout(() => setRecentlyUpdatedId(current => (current === id ? null : current)), RECENT_HIGHLIGHT_MS);
     requestAnimationFrame(() => {
-      document.getElementById(`reference-row-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.getElementById(`reference-row-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     });
   };
 
@@ -363,19 +367,10 @@ function App() {
 
       <div className="main-content">
         <div className="input-section" ref={formSectionRef}>
-          <h2 className="section-title" tabIndex={-1}>
-            {selectedReference ? '参考文献を編集' : '新しい参考文献を追加'}
-          </h2>
-          {selectedReference && (
-            <p className="editing-target">編集中：{selectedReference.title || '（タイトルなし）'}</p>
-          )}
+          <h2 className="section-title" tabIndex={-1}>新しい参考文献を追加</h2>
           <ReferenceForm
-            onSubmit={selectedReference ?
-              (data) => updateReference(selectedReference.id, data) :
-              addReference
-            }
-            initialData={selectedReference}
-            onCancel={() => setSelectedReference(null)}
+            onSubmit={addReference}
+            initialData={duplicateSource}
             onDirtyChange={handleDirtyChange}
           />
         </div>
@@ -394,8 +389,8 @@ function App() {
 
       <ReferenceTable
         references={references}
-        onEdit={startEditing}
-        editingId={selectedReference?.id}
+        onEdit={setSelectedReference}
+        onDuplicate={duplicateReference}
         recentlyUpdatedId={recentlyUpdatedId}
         onDelete={deleteReference}
         onCopy={copyToClipboard}
@@ -405,6 +400,13 @@ function App() {
         onOpenBulkEdit={() => setBulkDialog('fields')}
       />
 
+      {selectedReference && (
+        <EditReferenceModal
+          reference={selectedReference}
+          onSubmit={(data) => updateReference(selectedReference.id, data)}
+          onClose={() => setSelectedReference(null)}
+        />
+      )}
       {bulkDialog === 'reading' && (
         <ReadingBulkModal references={references} onSave={saveBulkReadings} onClose={() => setBulkDialog(null)} />
       )}
