@@ -18,6 +18,7 @@
 @import './styles/FileControls.css';
 @import './styles/FormatGuideModal.css';
 @import './styles/ChangelogModal.css';
+@import './styles/BulkEdit.css';
 
 /* Shared styles */
 @import './styles/modal.css';
