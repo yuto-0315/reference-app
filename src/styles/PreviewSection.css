@@ -1,8 +1,7 @@
 .preview-section {
   background: var(--color-surface);
   padding: 25px;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px var(--color-shadowLight);
+  border-radius: 8px;
   border: 1px solid var(--color-border-primary);
 }
 

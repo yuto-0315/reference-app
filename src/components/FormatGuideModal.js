@@ -163,7 +163,7 @@ const FormatGuideModal = ({ isOpen, onClose }) => {
         </div>
 
         <div className="modal-footer">
-          <button className="btn btn-primary" onClick={onClose}>
+          <button className="btn btn-secondary" onClick={onClose}>
             閉じる
           </button>
         </div>

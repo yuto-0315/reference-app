@@ -9,7 +9,7 @@ const FileControls = ({ onExport, onImport, onCleanup, referenceCount }) => {
       <div className="button-group">
         <button
           type="button"
-          className="btn btn-success"
+          className="btn btn-secondary"
           onClick={onExport}
           disabled={referenceCount === 0}
           title={referenceCount === 0 ? '参考文献がありません' : 'JSONファイルとしてエクスポート'}
@@ -30,7 +30,7 @@ const FileControls = ({ onExport, onImport, onCleanup, referenceCount }) => {
 
         <button
           type="button"
-          className="btn btn-warning"
+          className="btn btn-secondary"
           onClick={onCleanup}
           disabled={referenceCount === 0}
           title={referenceCount === 0 ? '参考文献がありません' : '重複データを除去して整理'}

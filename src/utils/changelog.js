@@ -11,6 +11,10 @@ export const CHANGELOG = [
       {
         type: 'improvement',
         description: '画面の絵文字を、見た目のそろったアイコンに変更'
+      },
+      {
+        type: 'improvement',
+        description: 'デザインを整理：ヘッダーを単色にし、色付きのボタンを「追加・検索などの主な操作」と「コピー」だけにして、ほかは白地に枠線のボタンに変更（飾りの影・動き・下線も控えめに）'
       }
     ]
   },

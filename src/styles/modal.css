@@ -10,30 +10,23 @@
   align-items: center;
   z-index: 2000;
   padding: 20px;
-  backdrop-filter: blur(4px);
 }
 
 .modal-content {
   background: var(--color-surface);
-  border-radius: 12px;
-  box-shadow: 0 20px 40px var(--color-shadow);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px var(--color-shadow);
   max-width: 800px;
   max-height: 90vh;
   width: 100%;
   display: flex;
   flex-direction: column;
-  animation: modalSlideIn 0.3s ease;
+  animation: modalFadeIn 0.15s ease;
 }
 
-@keyframes modalSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-20px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .modal-header {
@@ -58,7 +51,7 @@
   color: var(--color-text-secondary);
   padding: 4px;
   border-radius: 4px;
-  transition: all 0.2s ease;
+  transition: background-color 0.15s ease;
 }
 
 .modal-close:hover {
