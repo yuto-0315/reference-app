@@ -259,7 +259,7 @@ function App() {
           </div>
           <div className="header-controls">
             <button
-              className="btn btn-guide"
+              className="btn btn-secondary"
               onClick={() => setShowFormatGuide(true)}
               title="参考文献の書き方を見る"
             >

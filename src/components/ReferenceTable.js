@@ -372,7 +372,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                         {/* アイコンだけだと意味が分からないため短い文字を添え、読み上げ用には詳しい説明を付ける */}
                         <button
                           onClick={() => copyFormatted(migratedRef, 'citation')}
-                          className="btn btn-sm btn-copy"
+                          className="btn btn-sm btn-accent"
                           title="引用形式でコピー(割注)"
                           aria-label="引用形式でコピー(割注)"
                         >
@@ -380,7 +380,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                         </button>
                         <button
                           onClick={() => copyFormatted(migratedRef, 'reference')}
-                          className="btn btn-sm btn-copy"
+                          className="btn btn-sm btn-accent"
                           title="参考文献形式でコピー"
                           aria-label="参考文献形式でコピー"
                         >
@@ -388,7 +388,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                         </button>
                         <button
                           onClick={() => onEdit(migratedRef)}
-                          className="btn btn-sm btn-edit"
+                          className="btn btn-sm btn-secondary"
                           title="編集"
                           aria-label="編集"
                         >
@@ -396,7 +396,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                         </button>
                         <button
                           onClick={() => onDelete(ref.id)}
-                          className="btn btn-sm btn-delete"
+                          className="btn btn-sm btn-danger"
                           title="削除"
                           aria-label="削除"
                         >

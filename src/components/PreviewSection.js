@@ -155,7 +155,7 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
 
         {selectedReference && (
           <button
-            className="btn btn-info"
+            className="btn btn-accent"
             onClick={() => onCopy(generateCitation(), 'インライン引用をコピーしました')}
           >
             <Copy size={16} />引用をコピー
@@ -285,7 +285,7 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
                   {generateReferenceList()}
                 </div>
                 <button
-                  className="btn btn-success"
+                  className="btn btn-accent"
                   onClick={() => onCopy(generateReferenceList(), '参考文献一覧をコピーしました')}
                 >
                   <Copy size={16} />選択した参考文献一覧をコピー ({checkedCount}件)

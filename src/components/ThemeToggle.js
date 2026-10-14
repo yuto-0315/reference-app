@@ -9,7 +9,7 @@ const SWATCH_ROLES = [
   { label: '背景', pick: colors => colors.background },
   { label: 'ヘッダー', pick: colors => colors.secondary },
   { label: 'メインのボタン', pick: colors => colors.primary },
-  { label: 'サブのボタン', pick: colors => colors.accent },
+  { label: 'コピーのボタン', pick: colors => colors.accent },
   { label: '見出しの文字', pick: colors => colors.text.primary }
 ];
 
@@ -96,7 +96,7 @@ const ThemePickerModal = ({ onClose }) => {
         </div>
 
         <div className="modal-footer">
-          <button type="button" className="btn btn-primary" onClick={onClose}>閉じる</button>
+          <button type="button" className="btn btn-secondary" onClick={onClose}>閉じる</button>
         </div>
       </div>
     </div>

@@ -1,8 +1,8 @@
 .reference-table-container {
   background: var(--color-surface);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 20px;
-  box-shadow: 0 4px 6px var(--color-shadow);
+  border: 1px solid var(--color-border-primary);
   margin-top: 30px;
 }
 
@@ -58,7 +58,7 @@
   border-radius: 4px;
   cursor: pointer;
   font-size: 12px;
-  transition: all 0.2s ease;
+  transition: background-color 0.15s ease;
   white-space: nowrap;
 }
 
@@ -164,12 +164,11 @@
   padding: 4px 8px;
   text-decoration: none;
   border-radius: 4px;
-  transition: all 0.2s ease;
+  transition: background-color 0.15s ease;
 }
 
 .external-link:hover {
   background: var(--color-surfaceHover);
-  transform: scale(1.1);
 }
 
 .no-link {
@@ -193,40 +192,7 @@
   gap: 4px;
   font-size: 12px;
   border-radius: 4px;
-  border: none;
   white-space: nowrap;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-copy {
-  background: var(--color-accent);
-  color: var(--color-text-onPrimary);
-}
-
-.btn-copy:hover {
-  background: var(--color-accentHover);
-  transform: translateY(-1px);
-}
-
-.btn-edit {
-  background: var(--color-primary);
-  color: var(--color-text-onPrimary);
-}
-
-.btn-edit:hover {
-  background: var(--color-primaryHover);
-  transform: translateY(-1px);
-}
-
-.btn-delete {
-  background: var(--color-danger);
-  color: var(--color-text-onPrimary);
-}
-
-.btn-delete:hover {
-  background: var(--color-dangerHover);
-  transform: translateY(-1px);
 }
 
 .empty-table {

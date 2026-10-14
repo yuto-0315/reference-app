@@ -5,22 +5,20 @@
   flex-wrap: wrap;
 }
 
+/* 色の意味をそろえる：塗りは「追加・検索などの主な操作（primary）」と「コピー（accent）」だけ。
+   それ以外は白地に枠線にして、どれが大事な操作かを見分けやすくする */
 .btn {
-  padding: 12px 20px;
-  border: none;
+  padding: 10px 18px;
+  border: 1px solid transparent;
   border-radius: 6px;
+  font: inherit;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-}
-
-.btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 /* 押せない状態であることを、どのボタンでも同じ見た目で示す */
@@ -34,75 +32,41 @@
   color: var(--color-text-onPrimary);
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
   background-color: var(--color-primaryHover);
 }
 
-.btn-secondary {
-  background-color: var(--color-secondary);
-  color: var(--color-text-primary);
-}
-
-.btn-secondary:hover {
-  background-color: var(--color-secondaryHover);
-  color: var(--color-text-onSurface);
-}
-
-.btn-success {
+.btn-accent {
   background-color: var(--color-accent);
   color: var(--color-text-onPrimary);
 }
 
-.btn-success:hover {
+.btn-accent:hover:not(:disabled) {
   background-color: var(--color-accentHover);
 }
 
+.btn-secondary {
+  background-color: var(--color-surface);
+  color: var(--color-text-onSurface);
+  border-color: var(--color-border-secondary);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--color-surfaceHover);
+}
+
+/* 取り消せない操作は、塗りではなく赤い文字と枠で控えめに示す */
 .btn-danger {
-  background-color: var(--color-danger);
-  color: var(--color-text-onPrimary);
+  background-color: var(--color-surface);
+  color: var(--color-text-danger);
+  border-color: var(--color-border-secondary);
 }
 
-.btn-danger:hover {
-  background-color: var(--color-dangerHover);
-}
-
-.btn-warning {
-  background-color: var(--color-warning);
-  color: var(--color-text-onPrimary);
-}
-
-.btn-warning:hover:not(:disabled) {
-  background-color: var(--color-warningHover);
-}
-
-.btn-info {
-  background-color: var(--color-primary);
-  color: var(--color-text-onPrimary);
-}
-
-.btn-info:hover {
-  background-color: var(--color-primaryHover);
+.btn-danger:hover:not(:disabled) {
+  background-color: var(--color-surfaceHover);
 }
 
 .btn-small {
   padding: 6px 10px;
   font-size: 12px;
-}
-
-/* 半透明の白だとダークテーマで文字色と背景が近づくため、テーマの背景色を使う */
-.btn-guide {
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border-primary);
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-guide:hover {
-  background: var(--color-surfaceHover);
-  border-color: var(--color-text-primary);
-  transform: translateY(-1px);
 }
