@@ -5,8 +5,9 @@
 /* 押すと変更履歴が開くボタン。ヘッダーの色に関わらず読めるよう、テーマの背景色の上に置く */
 .version-badge {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 2px 10px;
   padding: 4px 12px;
   background: var(--color-surface);
   border: 1px solid var(--color-border-primary);
@@ -16,6 +17,11 @@
   color: var(--color-text-onSurface);
   cursor: pointer;
   transition: background-color 0.15s ease;
+}
+
+/* 狭い画面では「変更履歴」などの途中で改行せず、項目ごとに次の行へ回す */
+.version-badge > span {
+  white-space: nowrap;
 }
 
 .version-badge:hover {
@@ -42,7 +48,8 @@
   line-height: 1.4;
 }
 
-.credits-links a {
+.credits-links a,
+.credits-license a {
   color: var(--color-text-onSurface);
   text-decoration: underline;
 }

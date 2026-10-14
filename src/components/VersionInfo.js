@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import packageInfo from '../../package.json';
 import UpdateGuideModal from './UpdateGuideModal';
 import { CHANGELOG } from '../utils/changelog';
+import { PALETTE_SOURCE } from '../utils/themes';
 
 const STORAGE_KEY = 'referenceApp:lastSeenVersion';
 
@@ -66,6 +67,9 @@ const VersionInfo = () => {
             <a href="https://cir.nii.ac.jp/" target="_blank" rel="noopener noreferrer">CiNii Research</a>
           </div>
           <div className="credits-license">該当データは各提供機関の利用条件（CC BY 4.0 等）に従っています。</div>
+          <div className="credits-license">
+            配色テーマの一部は<a href={PALETTE_SOURCE.url} target="_blank" rel="noopener noreferrer">{PALETTE_SOURCE.name}</a>をもとにしています。
+          </div>
         </div>
       </div>
       

@@ -120,7 +120,9 @@ MIT License
 
 ## テーマ（配色）
 
-- テーマは `src/utils/themes.js` に定義しています。色はすべて [Tailwind CSS v3 の標準カラーパレット](https://v3.tailwindcss.com/docs/customizing-colors) から選び、各色の横にパレット上の色名（例: `indigo-200`）を書いています。
+- テーマは `src/utils/themes.js` に定義しています。画面右上で「テーマの系統」→「配色」の順に選びます。
+- 「基本」の8種類は [Tailwind CSS v3 の標準カラーパレット](https://v3.tailwindcss.com/docs/customizing-colors) から色を選び、各色の横にパレット上の色名（例: `indigo-200`）を書いています。
+- それ以外の117種類は [色彩101®「4色の配色パターン」](https://shikisai101.com/color-scheme/colors/4/) の配色をもとにしています。配色名は出典のままで、メインの色の色味で系統に分けています。4色から文字・ボタン・背景の色を自動で作り、黒に近い文字が読めないほど濃い色は、色味を保ったまま明るくしています。配色を追加するときは `PALETTES` に1行足してください。
 - すべてのテーマが WCAG 2.1 AA（文字 4.5:1、入力欄の枠線 3:1）を満たすようにしています。テーマを追加・変更したら、次のコマンドで確認してください。
 
 ```bash

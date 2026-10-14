@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useLayoutEffect } from 'react';
-import { themes, THEME_STORAGE_KEY, DEFAULT_THEME_KEY, LEGACY_THEME_KEYS } from '../utils/themes';
+import { themes, THEME_GROUPS, THEME_STORAGE_KEY, DEFAULT_THEME_KEY, LEGACY_THEME_KEYS } from '../utils/themes';
 
 // 整理前の旧テーマが保存されていれば近い色のテーマに読み替え、不明なら既定のテーマにする
 const resolveThemeKey = (savedKey) => {
@@ -73,10 +73,8 @@ export const ThemeProvider = ({ children }) => {
   const value = {
     currentTheme,
     theme: themes[currentTheme],
-    availableThemes: Object.keys(themes).map(key => ({
-      key,
-      name: themes[key].name
-    })),
+    currentGroup: THEME_GROUPS.find(group => group.themeKeys.includes(currentTheme)),
+    themeGroups: THEME_GROUPS,
     switchTheme
   };
 
