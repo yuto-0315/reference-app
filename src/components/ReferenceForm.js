@@ -173,7 +173,10 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
           newErrors[`${fieldName}.${index}.lastName`] = `${messagePrefix}姓は必須項目です`;
         }
         if (isBlank(person.firstName)) {
-          newErrors[`${fieldName}.${index}.firstName`] = `${messagePrefix}名は必須項目です`;
+          // 以前の形式のデータ（訳者など）は氏名がまとめて姓の欄に入っているため、分け方を案内する
+          newErrors[`${fieldName}.${index}.firstName`] = isBlank(person.lastName)
+            ? `${messagePrefix}名は必須項目です`
+            : `${messagePrefix}名は必須項目です。姓の欄に氏名がまとめて入っている場合は、姓と名に分けて入力してください`;
         }
       });
     };

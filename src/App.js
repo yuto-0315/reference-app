@@ -19,7 +19,8 @@ function App() {
   const [references, setReferences] = useState(() => loadFromStorage(STORAGE_KEY));
   const [selectedReference, setSelectedReference] = useState(null);
   const [alert, setAlert] = useState(null);
-  const [toastMessage, setToastMessage] = useState('');
+  // 同じ文言のコピーが続いても毎回表示し直せるよう、表示ごとに id を振る
+  const [toast, setToast] = useState(null);
   const [showFormatGuide, setShowFormatGuide] = useState(false);
   const [checkedReferences, setCheckedReferences] = useState(new Set());
   const alertTimerRef = useRef(null);
@@ -197,11 +198,11 @@ function App() {
   };
 
   // Toast側のタイマーがAppの再描画のたびにリセットされないよう、関数の同一性を保つ
-  const closeToast = useCallback(() => setToastMessage(''), []);
+  const closeToast = useCallback(() => setToast(null), []);
 
   const copyToClipboard = (text, feedbackMessage) => {
     navigator.clipboard.writeText(text).then(() => {
-      setToastMessage(feedbackMessage);
+      setToast({ message: feedbackMessage, id: Date.now() });
     }).catch(() => {
       showAlert('コピーに失敗しました', 'error');
     });
@@ -326,9 +327,11 @@ function App() {
         onClose={() => setShowFormatGuide(false)}
       />
 
+      {/* key が変わると作り直されるので、前のトーストのフェードアウト用タイマーも残らない */}
       <Toast
-        message={toastMessage}
-        isVisible={!!toastMessage}
+        key={toast?.id}
+        message={toast?.message || ''}
+        isVisible={!!toast}
         onClose={closeToast}
       />
     </div>
