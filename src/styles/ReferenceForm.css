@@ -12,6 +12,18 @@
   color: var(--color-text-onSurface);
 }
 
+/* 見出しへのフォーカスは読み上げのためだけなので、枠は出さない */
+.section-title:focus {
+  outline: none;
+}
+
+.editing-target {
+  margin: -12px 0 20px;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+
 .form-group {
   margin-bottom: 20px;
 }
