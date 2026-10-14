@@ -4,31 +4,37 @@
   margin-top: 18px;
 }
 
+.mapping-lead {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+/* 編集できない値なので、入力欄に見える枠や背景は付けず「項目名：値」の表として見せる */
 .mapping-row {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 12px;
+  display: grid;
+  grid-template-columns: 6em minmax(0, 1fr);
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border-primary);
 }
 
 .mapping-label {
   font-size: 0.9rem;
-  color: var(--color-text-secondary);
+  color: var(--color-text-muted);
   font-weight: 600;
 }
 
 .mapping-value {
-  padding: 10px 12px;
-  background: var(--color-surfaceHover);
-  border: 1px solid var(--color-border-primary);
-  border-radius: 8px;
-  color: var(--color-text-primary);
+  color: var(--color-text-onSurface);
+  overflow-wrap: anywhere;
 }
 
 .creator-row {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
   padding: 10px;
   border: 1px solid var(--color-border-primary);
   border-radius: 8px;
@@ -37,7 +43,6 @@
 }
 
 .creator-row label {
-  flex: 1 1 40%;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -46,33 +51,37 @@
 
 .creator-edit-fields {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
-  flex: 1 1 60%;
   /* 中の入力欄の既定幅より縮められるようにする（著者名の列を潰さないため） */
   min-width: 0;
 }
 
 .creator-edit-fields input[type="text"] {
   padding: 8px 10px;
-  border: 1px solid var(--color-border-primary);
+  border: 1px solid var(--color-border-secondary);
   border-radius: 6px;
   background: var(--color-surface);
   color: var(--color-text-onSurface);
   font-size: 14px;
   /* 既定幅のままだと横にはみ出し、著者名が1文字ずつ折り返されたり分割ボタンが切れたりするため、幅を分け合う */
-  flex: 1 1 0;
+  flex: 1 1 120px;
   min-width: 0;
 }
 
 .creator-split-controls {
   display: flex;
   align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-text-onSurface);
 }
 
 .creator-split-controls input[type="number"] {
+  width: 4em;
   padding: 6px 8px;
-  border: 1px solid var(--color-border-primary);
+  border: 1px solid var(--color-border-secondary);
   border-radius: 6px;
   background: var(--color-surface);
   color: var(--color-text-onSurface);
