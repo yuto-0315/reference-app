@@ -1,6 +1,36 @@
 // アプリケーションの変更履歴
 export const CHANGELOG = [
   {
+    version: '2.7.0',
+    date: '2026-10-14',
+    changes: [
+      {
+        type: 'improvement',
+        description: '一覧の「引用」を押すと、ボタンのすぐ下でページを入力でき、出来上がる引用の形を確かめてからコピーできるように変更（Enter でもコピーできます）'
+      },
+      {
+        type: 'feature',
+        description: '「ファイル操作」に最後のバックアップ（JSONエクスポート）の日と、そのあと変更があるかを表示'
+      },
+      {
+        type: 'improvement',
+        description: '削除の確認ダイアログをやめ、削除後のお知らせの「元に戻す」で取り消せるように変更'
+      },
+      {
+        type: 'improvement',
+        description: 'プレビュー欄を「参考文献一覧の出力」に整理：文献は一覧のチェックで選び、本文中の引用は一覧の「引用」から作る形にまとめました'
+      },
+      {
+        type: 'improvement',
+        description: '読み仮名が未登録の行を赤い背景で塗るのをやめ、一覧に「読み仮名が未登録の文献だけ表示」を追加'
+      },
+      {
+        type: 'improvement',
+        description: '一覧の編集・複製・削除をアイコンのボタンにして行の高さを抑え、日付が途中で改行されないように変更。出典の表示はページ下部に移動'
+      }
+    ]
+  },
+  {
     version: '2.6.0',
     date: '2026-10-14',
     changes: [

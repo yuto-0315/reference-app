@@ -113,15 +113,11 @@
   background: var(--color-surfaceHover);
 }
 
-/* 読み仮名が未登録の行。不透明な薄い赤だとダークテーマで文字が読めないため半透明にする
-   （白背景に重ねると従来の #ffe6e6 と同じ色になる） */
-.reference-table tr.row-missing-reading {
-  background: rgba(255, 0, 0, 0.1);
-}
 
+/* 行全体を赤くすると、未登録が多いときに一覧が赤だらけで警告として目立たなくなるため、この表示だけで示す */
 .missing-reading-note {
   font-size: 11px;
-  color: var(--color-text-onSurface);
+  color: var(--color-text-danger);
   margin-top: 4px;
 }
 
@@ -129,7 +125,7 @@
   margin-left: 8px;
   padding: 0;
   font: inherit;
-  color: var(--color-text-onSurface);
+  color: var(--color-text-danger);
   text-decoration: underline;
   background: none;
   border: none;
@@ -190,12 +186,24 @@
   min-width: 140px;
 }
 
-/* 「引用・文献」「編集・複製」「削除」の順に2列で並べ、取り消せない削除を他の操作から離す */
 .action-buttons {
-  display: grid;
-  grid-template-columns: repeat(2, max-content);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
   gap: 4px;
+}
+
+.action-row {
+  display: flex;
+  gap: 4px;
+}
+
+/* アイコンだけのボタンも、押しやすい大きさ（約7mm角）を保つ */
+.btn.btn-sm.btn-icon {
+  min-width: 30px;
+  min-height: 28px;
   justify-content: center;
+  padding: 4px 6px;
 }
 
 /* .btn（buttons.css）の方が後に読み込まれるため、詳細度を上げて小さいボタンの余白を優先させる */
@@ -218,4 +226,56 @@
 .reference-table tr.row-recently-updated {
   outline: 2px solid var(--color-text-primary);
   outline-offset: -2px;
+}
+
+/* --- 引用のページ入力（「引用」ボタンの下に開く） --- */
+.citation-popover {
+  position: fixed;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 280px;
+  padding: 12px;
+  text-align: left;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px var(--color-shadow);
+}
+
+.citation-popover-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-onSurface);
+}
+
+.citation-popover-input {
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--color-text-onSurface);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: 6px;
+}
+
+.citation-popover-preview {
+  padding: 8px 10px;
+  font-size: 14px;
+  color: var(--color-text-onSurface);
+  background: var(--color-background);
+  border-radius: 6px;
+  overflow-wrap: anywhere;
+}
+
+.citation-popover-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* 「2025-12-07」が途中で改行されないようにする */
+.year-cell {
+  white-space: nowrap;
 }

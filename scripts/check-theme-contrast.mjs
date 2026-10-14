@@ -11,16 +11,13 @@ const { themes } = await import(`data:text/javascript,${encodeURIComponent(theme
 const TEXT_MIN_RATIO = 4.5; // 通常サイズの文字（WCAG 1.4.3）
 const UI_MIN_RATIO = 3; // 入力欄の枠線など、操作部品の見分けに必要な線（WCAG 1.4.11）
 
-// 一覧で読み仮名が未登録の行は、表の背景（surface）に半透明の赤を重ねる（ReferenceTable.css の .row-missing-reading）
-const MISSING_READING_TINT = { rgb: [255, 0, 0], alpha: 0.1 };
-
 // [前景の色, 重なる背景の色, 必要な比, 画面での使われ方]
 // CSS でその組み合わせが実際に使われている箇所に合わせて定義している
 const COLOR_PAIRS = [
-  ['text.onSurface', ['background', 'surface', 'surfaceHover', 'secondary', 'secondaryHover', 'primary', 'missingReadingRow'], TEXT_MIN_RATIO, '本文・ヘッダーの文字'],
-  ['text.primary', ['background', 'surface', 'surfaceHover', 'secondary', 'secondaryHover', 'missingReadingRow'], TEXT_MIN_RATIO, '見出し・ラベル・サブボタンの文字、フォーカス枠'],
-  ['text.secondary', ['background', 'surface', 'surfaceHover', 'missingReadingRow'], TEXT_MIN_RATIO, '補足の文字'],
-  ['text.muted', ['background', 'surface', 'surfaceHover', 'missingReadingRow'], TEXT_MIN_RATIO, '読み仮名・日付などの控えめな文字'],
+  ['text.onSurface', ['background', 'surface', 'surfaceHover', 'secondary', 'secondaryHover', 'primary'], TEXT_MIN_RATIO, '本文・ヘッダーの文字'],
+  ['text.primary', ['background', 'surface', 'surfaceHover', 'secondary', 'secondaryHover'], TEXT_MIN_RATIO, '見出し・ラベル・サブボタンの文字、フォーカス枠'],
+  ['text.secondary', ['background', 'surface', 'surfaceHover'], TEXT_MIN_RATIO, '補足の文字'],
+  ['text.muted', ['background', 'surface', 'surfaceHover'], TEXT_MIN_RATIO, '読み仮名・日付などの控えめな文字'],
   ['text.danger', ['background', 'surface', 'surfaceHover'], TEXT_MIN_RATIO, 'エラー・必須マーク'],
   ['text.onPrimary', ['primary', 'primaryHover', 'accent', 'accentHover', 'danger', 'dangerHover', 'warning', 'warningHover'], TEXT_MIN_RATIO, '塗りつぶしボタンの文字'],
   ['border.secondary', ['surface', 'surfaceHover'], UI_MIN_RATIO, '入力欄の枠線'],
@@ -49,12 +46,6 @@ const contrastRatio = (hexA, hexB) => {
 
 const isHexColor = (value) => /^#[0-9a-fA-F]{6}$/.test(value);
 
-// 重ねた色は端数（例: 229.5）になるため切り下げる。明るい背景のテーマでは、文字が読みにくくなる側で判定することになる
-const blendOver = (hex, { rgb, alpha }) => '#' + [1, 3, 5]
-  .map((start, index) => Math.floor(rgb[index] * alpha + parseInt(hex.slice(start, start + 2), 16) * (1 - alpha)))
-  .map(channel => channel.toString(16).padStart(2, '0'))
-  .join('');
-
 let failureCount = 0;
 for (const [themeKey, theme] of Object.entries(themes)) {
   const failures = [];
@@ -62,13 +53,10 @@ for (const [themeKey, theme] of Object.entries(themes)) {
   REQUIRED_TOKENS.filter(token => getToken(theme.colors, token) === undefined)
     .forEach(token => failures.push(`  未定義: ${token}`));
 
-  // テーマに直接は定義していない、CSS で重ねてできる背景色
-  const colors = { ...theme.colors, missingReadingRow: blendOver(theme.colors.surface, MISSING_READING_TINT) };
-
   for (const [foreground, backgrounds, minRatio, usage] of COLOR_PAIRS) {
     for (const background of backgrounds) {
-      const fgColor = getToken(colors, foreground);
-      const bgColor = getToken(colors, background);
+      const fgColor = getToken(theme.colors, foreground);
+      const bgColor = getToken(theme.colors, background);
       if (!isHexColor(fgColor) || !isHexColor(bgColor)) {
         failures.push(`  ${foreground} / ${background}: 6桁の16進数で指定してください`);
         continue;

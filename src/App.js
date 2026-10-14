@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import ReferenceForm from './components/ReferenceForm';
 import ReferenceTable from './components/ReferenceTable';
@@ -9,6 +9,8 @@ import ReadingBulkModal from './components/ReadingBulkModal';
 import EditReferenceModal from './components/EditReferenceModal';
 import BulkEditModal from './components/BulkEditModal';
 import { applyReadings, applyFieldValue } from './utils/bulkEdit';
+import { PALETTE_SOURCE } from './utils/themes';
+import { readLastBackup, saveLastBackup, fingerprintReferences } from './utils/backupStatus';
 import FormatGuideModal from './components/FormatGuideModal';
 import Toast from './components/Toast';
 import VersionInfo from './components/VersionInfo';
@@ -37,6 +39,9 @@ function App() {
   const isFormDirtyRef = useRef(false);
   // 一覧の「複製」で追加フォームに読み込む文献
   const [duplicateSource, setDuplicateSource] = useState(null);
+  const [lastBackup, setLastBackup] = useState(readLastBackup);
+  // エクスポートと同じ整え方をした内容で比べ、前回のバックアップから変わったかを判定する
+  const currentFingerprint = useMemo(() => fingerprintReferences(validateAndCleanData(references).cleaned), [references]);
   // 更新した直後の行を少しの間だけ目立たせ、一覧のどこが変わったかを分かるようにする
   const [recentlyUpdatedId, setRecentlyUpdatedId] = useState(null);
 
@@ -127,19 +132,35 @@ function App() {
     });
   };
 
+  // 確認ダイアログを挟まずに削除し、間違えたときは「元に戻す」で同じ位置に戻せるようにする
   const deleteReference = (id) => {
-    if (window.confirm('この参考文献を削除しますか？')) {
-      setReferences(prev => prev.filter(ref => ref.id !== id));
-      setCheckedReferences(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(id);
-        return newSet;
-      });
-      if (selectedReference && selectedReference.id === id) {
-        setSelectedReference(null);
-      }
-      showAlert('参考文献を削除しました', 'success');
+    const deletedIndex = references.findIndex(ref => ref.id === id);
+    if (deletedIndex === -1) return;
+    const deletedReference = references[deletedIndex];
+    const wasChecked = checkedReferences.has(id);
+
+    setReferences(prev => prev.filter(ref => ref.id !== id));
+    setCheckedReferences(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(id);
+      return newSet;
+    });
+    if (selectedReference && selectedReference.id === id) {
+      setSelectedReference(null);
     }
+    showAlert(`「${deletedReference.title || '（タイトルなし）'}」を削除しました`, 'success', {
+      label: '元に戻す',
+      onClick: () => {
+        setReferences(prev => {
+          if (prev.some(ref => ref.id === id)) return prev;
+          const restored = [...prev];
+          restored.splice(Math.min(deletedIndex, restored.length), 0, deletedReference);
+          return restored;
+        });
+        if (wasChecked) setCheckedReferences(prev => new Set(prev).add(id));
+        showAlert('削除を取り消しました', 'info');
+      }
+    });
   };
 
   const exportToJSON = () => {
@@ -160,6 +181,7 @@ function App() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+    setLastBackup(saveLastBackup(cleaned));
     showAlert('JSONファイルをダウンロードしました', 'success');
   };
 
@@ -363,6 +385,8 @@ function App() {
         onImport={importFromJSON}
         referenceCount={references.length}
         onCleanup={cleanupData}
+        lastBackup={lastBackup}
+        hasChangesSinceBackup={!lastBackup || lastBackup.fingerprint !== currentFingerprint}
       />
 
       <div className="main-content">
@@ -380,7 +404,6 @@ function App() {
             references={references}
             checkedReferences={checkedReferences}
             onCopy={copyToClipboard}
-            onToggleCheck={toggleReferenceCheck}
             onToggleAll={toggleAllReferences}
             onBulkCheck={bulkCheckReferences}
           />
@@ -417,6 +440,18 @@ function App() {
           onClose={() => setBulkDialog(null)}
         />
       )}
+
+      {/* 出典は毎回読む情報ではないため、ヘッダーではなくページの下にまとめる */}
+      <footer className="app-footer">
+        <p>
+          一部メタデータは<a href="https://ndlsearch.ndl.go.jp/" target="_blank" rel="noopener noreferrer">国立国会図書館サーチ</a>
+          および<a href="https://cir.nii.ac.jp/" target="_blank" rel="noopener noreferrer">CiNii Research</a>
+          から取得しています。該当データは各提供機関の利用条件（CC BY 4.0 等）に従っています。
+        </p>
+        <p>
+          配色テーマの一部は<a href={PALETTE_SOURCE.url} target="_blank" rel="noopener noreferrer">{PALETTE_SOURCE.name}</a>をもとにしています。
+        </p>
+      </footer>
 
       <FormatGuideModal
         isOpen={showFormatGuide}

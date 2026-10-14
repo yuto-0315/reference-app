@@ -514,9 +514,6 @@ const PALETTE_SHARED_COLORS = {
 };
 const TEXT_MIN_RATIO = 4.5;
 const HEADING_MIN_RATIO = 7; // 見出しは白地で 7:1 以上にして、淡いボタンの上でも読めるようにする
-// 一覧で読み仮名が未登録の行の背景（ReferenceTable.css の rgba(255, 0, 0, 0.1) を白に重ねた色）。出版社などの補足の文字が載る
-// 重ねた色は 229.5 と端数になるため、暗い側に切り下げて判定する
-const MISSING_READING_ROW = '#FFE5E5';
 
 const hexToRgb = (hex) => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
 
@@ -599,7 +596,7 @@ const buildPaletteColors = (paletteColors) => {
   );
   const textSecondary = adjustLightness(
     withLightness(textPrimary, hexToHsl(textPrimary)[2] + 8),
-    (hex) => ['#FFFFFF', background, MISSING_READING_ROW].every(bg => contrastRatio(hex, bg) >= TEXT_MIN_RATIO),
+    (hex) => ['#FFFFFF', background].every(bg => contrastRatio(hex, bg) >= TEXT_MIN_RATIO),
     -1
   );
 

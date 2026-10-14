@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import packageInfo from '../../package.json';
 import UpdateGuideModal from './UpdateGuideModal';
 import { CHANGELOG } from '../utils/changelog';
-import { PALETTE_SOURCE } from '../utils/themes';
 import { History } from 'lucide-react';
 
 const STORAGE_KEY = 'referenceApp:lastSeenVersion';
@@ -60,18 +59,6 @@ const VersionInfo = () => {
           <span className="update-date">最終更新: {updateDate}</span>
           <span className="changelog-hint"><History size={14} />変更履歴</span>
         </button>
-        <div className="credits">
-          <div>一部メタデータは国立国会図書館サーチ（NDL）およびCiNii APIから取得しています。</div>
-          <div className="credits-links">
-            <a href="https://ndlsearch.ndl.go.jp/" target="_blank" rel="noopener noreferrer">国立国会図書館サーチ</a>
-            <span> ／ </span>
-            <a href="https://cir.nii.ac.jp/" target="_blank" rel="noopener noreferrer">CiNii Research</a>
-          </div>
-          <div className="credits-license">該当データは各提供機関の利用条件（CC BY 4.0 等）に従っています。</div>
-          <div className="credits-license">
-            配色テーマの一部は<a href={PALETTE_SOURCE.url} target="_blank" rel="noopener noreferrer">{PALETTE_SOURCE.name}</a>をもとにしています。
-          </div>
-        </div>
       </div>
       
       <UpdateGuideModal

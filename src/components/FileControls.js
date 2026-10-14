@@ -1,7 +1,33 @@
 import React from 'react';
-import { Download, Eraser, Lightbulb, Upload } from 'lucide-react';
+import { CircleCheck, Download, Eraser, Lightbulb, TriangleAlert, Upload } from 'lucide-react';
+import { describeElapsedDays } from '../utils/backupStatus';
 
-const FileControls = ({ onExport, onImport, onCleanup, referenceCount }) => {
+// データはこのブラウザの中にしかないため、バックアップの状態を常に見えるところに出す
+const BackupStatus = ({ lastBackup, hasChangesSinceBackup, referenceCount }) => {
+  if (referenceCount === 0) return null;
+  if (!lastBackup) {
+    return (
+      <p className="backup-status needs-backup">
+        <TriangleAlert size={16} />まだバックアップしていません。データはこのブラウザの中だけにあるため、「JSONエクスポート」で保存しておくと安心です
+      </p>
+    );
+  }
+  const elapsed = describeElapsedDays(lastBackup.exportedAt);
+  if (hasChangesSinceBackup) {
+    return (
+      <p className="backup-status needs-backup">
+        <TriangleAlert size={16} />最後のバックアップ：{elapsed}（そのあと変更があります。「JSONエクスポート」で保存し直してください）
+      </p>
+    );
+  }
+  return (
+    <p className="backup-status">
+      <CircleCheck size={16} />最後のバックアップ：{elapsed}（今の内容と同じです）
+    </p>
+  );
+};
+
+const FileControls = ({ onExport, onImport, onCleanup, referenceCount, lastBackup, hasChangesSinceBackup }) => {
   return (
     <div className="file-controls">
       <h2 className="section-title">ファイル操作</h2>
@@ -38,6 +64,8 @@ const FileControls = ({ onExport, onImport, onCleanup, referenceCount }) => {
           <Eraser size={16} />データクリーンアップ
         </button>
       </div>
+
+      <BackupStatus lastBackup={lastBackup} hasChangesSinceBackup={hasChangesSinceBackup} referenceCount={referenceCount} />
 
       {/* 初めての人向けの説明は、必要なときに開けるようにして普段は画面を広く使う */}
       <details className="usage-tips">

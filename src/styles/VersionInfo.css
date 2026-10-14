@@ -40,20 +40,22 @@
   color: var(--color-text-primary);
 }
 
-/* 文字を半透明にするとコントラスト比が下がるため、不透明のまま使う */
-.credits {
-  margin-top: 6px;
-  font-size: 0.75rem;
-  color: var(--color-text-onSurface);
-  line-height: 1.4;
+/* ページ下部の出典 */
+.app-footer {
+  margin-top: 40px;
+  padding: 20px 0;
+  border-top: 1px solid var(--color-border-primary);
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--color-text-muted);
 }
 
-.credits-links a,
-.credits-license a {
+.app-footer p {
+  margin: 0 0 4px;
+}
+
+.app-footer a {
+  margin: 0 0.25em;
   color: var(--color-text-onSurface);
   text-decoration: underline;
-}
-
-.credits-license {
-  margin-top: 2px;
 }
