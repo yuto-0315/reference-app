@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { themes } from '../utils/themes';
 import useEscapeKey from '../hooks/useEscapeKey';
+import { Check, Palette, X } from 'lucide-react';
 
 // 画面のどこにどの色が使われるかを、カードの色見本で左から順に示す
 const SWATCH_ROLES = [
@@ -48,8 +49,8 @@ const ThemePickerModal = ({ onClose }) => {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-header">
-          <h2 id="theme-picker-title">🎨 テーマを選ぶ</h2>
-          <button type="button" className="modal-close" onClick={onClose} aria-label="閉じる">×</button>
+          <h2 id="theme-picker-title">テーマを選ぶ</h2>
+          <button type="button" className="modal-close" onClick={onClose} aria-label="閉じる"><X size={20} /></button>
         </div>
 
         <nav className="theme-group-nav" aria-label="系統へ移動">
@@ -85,7 +86,7 @@ const ThemePickerModal = ({ onClose }) => {
                       />
                       <ThemeSwatches colors={themes[themeKey].colors} />
                       <span className="theme-card-name">{themes[themeKey].name}</span>
-                      {isSelected && <span className="theme-card-current">✓ 選択中</span>}
+                      {isSelected && <span className="theme-card-current"><Check size={14} />選択中</span>}
                     </label>
                   );
                 })}
@@ -122,7 +123,7 @@ const ThemeToggle = () => {
         onClick={() => setIsPickerOpen(true)}
         aria-haspopup="dialog"
       >
-        <span className="theme-toggle-label">🎨 テーマ</span>
+        <span className="theme-toggle-label"><Palette size={14} />テーマ</span>
         <span className="theme-toggle-current">
           <ThemeSwatches colors={theme.colors} />
           <span className="theme-toggle-name">{theme.name}</span>

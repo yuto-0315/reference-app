@@ -9,6 +9,7 @@ import FormatGuideModal from './components/FormatGuideModal';
 import Toast from './components/Toast';
 import VersionInfo from './components/VersionInfo';
 import { loadFromStorage, saveToStorage, isDuplicate, validateAndCleanData, stripComputedFields } from './utils/dataUtils';
+import { BookOpenText, Library, X } from 'lucide-react';
 
 const STORAGE_KEY = 'reference-app-data';
 const ALERT_DURATION_MS = 3000;
@@ -252,7 +253,7 @@ function App() {
       <header className="header">
         <div className="header-content">
           <div className="header-main">
-            <h1>📚 参考文献管理アプリ</h1>
+            <h1><Library size={36} className="title-icon" />参考文献管理アプリ</h1>
             <p>音楽領域-卒業論文の参考文献と引用を正しい形式で管理・生成</p>
             <VersionInfo />
           </div>
@@ -262,7 +263,7 @@ function App() {
               onClick={() => setShowFormatGuide(true)}
               title="参考文献の書き方を見る"
             >
-              📖 書き方ガイド
+              <BookOpenText size={16} />書き方ガイド
             </button>
             <ThemeToggle />
           </div>
@@ -275,7 +276,7 @@ function App() {
           role={alert.type === 'error' ? 'alert' : 'status'}
         >
           <span className="alert-message">{alert.message}</span>
-          <button type="button" className="alert-close" onClick={closeAlert} aria-label="通知を閉じる">×</button>
+          <button type="button" className="alert-close" onClick={closeAlert} aria-label="通知を閉じる"><X size={18} /></button>
         </div>
       )}
 

@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { formatCitation, formatReference, migrateReferenceData, addYearSuffixes, getSortReading, getPublicationYear } from '../utils/formatters';
+import { ArrowDown, ArrowUp, ArrowUpDown, BookText, ExternalLink, Pencil, Quote, TriangleAlert, Trash2 } from 'lucide-react';
 
 // 著者・団体・作曲者の名前と読み、書誌情報をまとめた検索対象テキスト
 const getSearchableText = (migratedRef) => {
@@ -87,8 +88,11 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
   };
 
   const getSortIcon = (field) => {
-    if (sortBy !== field) return '↕️';
-    return sortOrder === 'asc' ? '↑' : '↓';
+    // 矢印は読み上げないため、並び順は文字でも伝える
+    if (sortBy !== field) return <ArrowUpDown size={14} className="sort-icon" />;
+    return sortOrder === 'asc'
+      ? <><ArrowUp size={14} className="sort-icon" /><span className="visually-hidden">（昇順）</span></>
+      : <><ArrowDown size={14} className="sort-icon" /><span className="visually-hidden">（降順）</span></>;
   };
 
   const copyFormatted = (ref, type) => {
@@ -140,7 +144,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
         <div className="search-container">
           <input
             type="text"
-            placeholder="🔍 参考文献を検索..."
+            placeholder="参考文献を検索..."
             aria-label="参考文献を検索"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -154,19 +158,19 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
             className={`sort-btn ${sortBy === 'year' ? 'active' : ''}`}
             onClick={() => handleSort('year')}
           >
-            発行年 {getSortIcon('year')}
+            発行年{getSortIcon('year')}
           </button>
           <button
             className={`sort-btn ${sortBy === 'reading' ? 'active' : ''}`}
             onClick={() => handleSort('reading')}
           >
-            著者名 {getSortIcon('reading')}
+            著者名{getSortIcon('reading')}
           </button>
           <button
             className={`sort-btn ${sortBy === 'title' ? 'active' : ''}`}
             onClick={() => handleSort('title')}
           >
-            タイトル {getSortIcon('title')}
+            タイトル{getSortIcon('title')}
           </button>
         </div>
       </div>
@@ -318,7 +322,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                       </div>
                       {/* 行の色だけに頼らず、文字でも未登録であることを示す */}
                       {isMissingReading && (
-                        <div className="missing-reading-note">⚠ 読み仮名未登録</div>
+                        <div className="missing-reading-note"><TriangleAlert size={14} />読み仮名未登録</div>
                       )}
                     </td>
                     <td className="title-cell">
@@ -357,7 +361,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                           title={ref.doi ? `DOI: ${ref.doi}` : 'リンクを開く'}
                           aria-label={ref.doi ? `DOI: ${ref.doi}（新しいタブで開く）` : 'リンクを新しいタブで開く'}
                         >
-                          🔗
+                          <ExternalLink size={16} className="icon-alone" />
                         </a>
                       ) : (
                         <span className="no-link">-</span>
@@ -372,7 +376,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                           title="引用形式でコピー(割注)"
                           aria-label="引用形式でコピー(割注)"
                         >
-                          📋 引用
+                          <Quote size={14} />引用
                         </button>
                         <button
                           onClick={() => copyFormatted(migratedRef, 'reference')}
@@ -380,7 +384,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                           title="参考文献形式でコピー"
                           aria-label="参考文献形式でコピー"
                         >
-                          📖 文献
+                          <BookText size={14} />文献
                         </button>
                         <button
                           onClick={() => onEdit(migratedRef)}
@@ -388,7 +392,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                           title="編集"
                           aria-label="編集"
                         >
-                          ✏️ 編集
+                          <Pencil size={14} />編集
                         </button>
                         <button
                           onClick={() => onDelete(ref.id)}
@@ -396,7 +400,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                           title="削除"
                           aria-label="削除"
                         >
-                          🗑️ 削除
+                          <Trash2 size={14} />削除
                         </button>
                       </div>
                     </td>

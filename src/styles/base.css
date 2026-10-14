@@ -91,3 +91,34 @@ body {
   margin: 0 auto;
   padding: 20px;
 }
+
+/* lucide のアイコン。文字の前に置き、文字の中心と高さをそろえる */
+.lucide {
+  flex-shrink: 0;
+  vertical-align: -0.15em;
+  margin-right: 0.4em;
+}
+
+/* アイコンだけのボタン（閉じる・外部リンク）では、余白を付けず中央に置く */
+.modal-close .lucide,
+.alert-close .lucide,
+.toast-close .lucide,
+.info-modal-close .lucide,
+.lucide.icon-alone {
+  margin-right: 0;
+  vertical-align: middle;
+}
+
+/* gap で間隔を取っているボタンでは、アイコン側の余白を付けない */
+.btn .lucide,
+.file-input-label .lucide {
+  margin-right: 0;
+}
+
+.lucide.sort-icon {
+  margin: 0 0 0 0.3em;
+}
+
+.title-icon {
+  margin-right: 0.3em;
+}

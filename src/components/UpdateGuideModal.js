@@ -1,6 +1,7 @@
 import React from 'react';
 import { CHANGELOG, CHANGE_TYPE_LABELS } from '../utils/changelog';
 import useEscapeKey from '../hooks/useEscapeKey';
+import { X } from 'lucide-react';
 
 const UpdateGuideModal = ({ isOpen, onClose }) => {
     useEscapeKey(isOpen, onClose);
@@ -15,24 +16,24 @@ const UpdateGuideModal = ({ isOpen, onClose }) => {
             <div className="modal-content update-guide-modal" role="dialog" aria-modal="true" aria-labelledby="update-guide-title" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                     <h2 id="update-guide-title">アップデートのお知らせと使い方</h2>
-                    <button type="button" className="modal-close" onClick={onClose} aria-label="閉じる">×</button>
+                    <button type="button" className="modal-close" onClick={onClose} aria-label="閉じる"><X size={20} /></button>
                 </div>
 
                 <div className="modal-body">
-                    <h3>🆕 v{latestRelease.version} の変更点</h3>
+                    <h3>v{latestRelease.version} の変更点</h3>
                     <ul className="changelog-changes">
                         {latestRelease.changes.map((change, index) => (
                             <li key={index}>{CHANGE_TYPE_LABELS[change.type]}：{change.description}</li>
                         ))}
                     </ul>
 
-                    <h3>📃外部データ連携について</h3>
+                    <h3>外部データ連携について</h3>
                     <p>
                         外部の書誌データ（CiNii / 国立国会図書館）から取得したデータを元に、
                         タイトルや著者、雑誌情報、DOI、NDLリンク等を自動で入力できるようになりました。
                     </p>
 
-                    <h3>🎯主なポイント</h3>
+                    <h3>主なポイント</h3>
                     <ul>
                         <li><strong>国立国会図書館との連携</strong>により、ISBNからの自動入力が可能になりました。</li>
                         <li><strong>CiNiiとの連携</strong>により、論文情報の自動入力が可能になりました。</li>
@@ -40,14 +41,14 @@ const UpdateGuideModal = ({ isOpen, onClose }) => {
                         <li><strong>DOI は別フィールド</strong>で保持され、モーダル上で DOI へのリンク（doi.org）を表示します。</li>
                         <li><strong>著者の分割</strong>は姓・名・読みを編集可能で、日本語名に対しては前から N 文字で分割する補助入力があります。ある程度は自動で認識されますが、日本人の姓名は難解なため、手動での調整が必要になる場合があります。</li>
                     </ul>
-                    <h3>⚠️注意事項</h3>
+                    <h3>注意事項</h3>
                     <ul>
                         <li>
                             <strong>団体出版本</strong>などの特殊な書誌データには<span style={{ color: 'var(--color-text-danger)', fontWeight: 'bold', textDecoration: 'underline' }}>現在未対応</span>です（今後対応予定）。
                         </li>
                     </ul>
 
-                    <h3>💡使い方のヒント</h3>
+                    <h3>使い方のヒント</h3>
                     <ol>
                         <li>キーワード(論文)または ISBN(書籍) を入力して検索します。</li>
                         <li>検索結果から該当レコードを選択すると、詳細を取得してモーダルが開きます。</li>

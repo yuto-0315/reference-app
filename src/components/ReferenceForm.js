@@ -5,6 +5,7 @@ import APISearch from './APISearch';
 import MappingModal from './MappingModal';
 import SearchResultsModal from './SearchResultsModal';
 import { fetchBookInfoByISBN, searchCiNiiByTitle, fetchCiNiiArticleDetails } from '../utils/api';
+import { Lightbulb } from 'lucide-react';
 
 const createEmptyAuthor = () => ({ lastName: '', firstName: '', reading: '' });
 
@@ -549,7 +550,7 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
           </select>
           {REFERENCE_TYPE_HINTS[formData.type] && (
             <div className="field-hint">
-              <span className="hint-icon">💡</span>
+              <Lightbulb size={16} className="hint-icon" />
               {REFERENCE_TYPE_HINTS[formData.type]}
             </div>
           )}

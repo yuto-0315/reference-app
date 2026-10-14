@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import useEscapeKey from '../hooks/useEscapeKey';
+import { X } from 'lucide-react';
 
 const InfoTooltip = ({ description, example, fieldLabel = '', className = '' }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -40,7 +41,7 @@ const InfoTooltip = ({ description, example, fieldLabel = '', className = '' }) 
                 {fieldLabel ? `入力ガイド：${fieldLabel}` : '入力ガイド'}
               </h3>
               <button type="button" className="info-modal-close" onClick={closeModal} aria-label="閉じる">
-                ×
+                <X size={20} />
               </button>
             </div>
             <div className="info-modal-content">
