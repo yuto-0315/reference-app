@@ -1,0 +1,148 @@
+/* --- 一覧の上の「まとめて」操作 --- */
+.table-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.bulk-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* 件数は色だけでなく文字でも示す */
+.count-badge {
+  padding: 1px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-danger);
+  border: 1px solid currentColor;
+  border-radius: 4px;
+}
+
+/* --- まとめて登録・編集の画面 --- */
+.bulk-modal {
+  max-width: 720px;
+}
+
+.bulk-lead {
+  margin: 0 0 12px;
+  color: var(--color-text-onSurface);
+  line-height: 1.6;
+}
+
+.bulk-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: var(--color-text-onSurface);
+  cursor: pointer;
+}
+
+.bulk-empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--color-text-muted);
+  border: 1px dashed var(--color-border-secondary);
+  border-radius: 8px;
+}
+
+.reading-group-list,
+.bulk-preview-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--color-border-primary);
+  border-radius: 8px;
+}
+
+.reading-group {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(160px, 240px);
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+}
+
+.reading-group + .reading-group,
+.bulk-preview-item + .bulk-preview-item {
+  border-top: 1px solid var(--color-border-primary);
+}
+
+.reading-group-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.reading-group-name label {
+  font-weight: 600;
+  color: var(--color-text-onSurface);
+  overflow-wrap: anywhere;
+}
+
+.reading-group-meta {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.reading-group-input {
+  width: 100%;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--color-text-onSurface);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: 6px;
+}
+
+.bulk-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0 16px;
+}
+
+.bulk-preview-title {
+  margin: 8px 0 8px;
+  font-size: 1rem;
+  color: var(--color-text-onSurface);
+}
+
+.bulk-preview-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 16px;
+}
+
+.bulk-preview-ref {
+  color: var(--color-text-onSurface);
+  overflow-wrap: anywhere;
+}
+
+.bulk-preview-change {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.bulk-preview-item.is-skipped .bulk-preview-change {
+  color: var(--color-text-muted);
+}
+
+.bulk-footer {
+  align-items: center;
+  gap: 8px;
+}
+
+.bulk-summary {
+  margin-right: auto;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
