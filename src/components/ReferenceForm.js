@@ -12,7 +12,7 @@ const createEmptyAuthor = () => ({ lastName: '', firstName: '', reading: '' });
 // 空白だけの入力も未入力として扱う
 const isBlank = (value) => value === undefined || value === null || String(value).trim() === '';
 
-const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
+const ReferenceForm = ({ onSubmit, initialData, onCancel, onDirtyChange }) => {
   // 初期データの著者フィールド設定を調整
   const getInitialFormData = () => {
     const baseData = {
@@ -45,6 +45,8 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
   };
 
   const [formData, setFormData] = useState(getInitialFormData());
+  // 読み込んだ直後（または追加・更新直後）の内容。これと違えば「入力途中」とみなす
+  const [baselineData, setBaselineData] = useState(formData);
   const [errors, setErrors] = useState({});
   const [showMappingModal, setShowMappingModal] = useState(false);
   const [showResultsModal, setShowResultsModal] = useState(false);
@@ -55,10 +57,17 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
   useEffect(() => {
     if (initialData) {
       // 著者欄のない文献種別に空の著者を持たせないよう、初期化ロジックを共通化する
-      setFormData(getInitialFormData());
+      const loadedData = getInitialFormData();
+      setFormData(loadedData);
+      setBaselineData(loadedData);
       setErrors({});
     }
   }, [initialData]);
+
+  // 別の文献の編集に切り替えるとき、書きかけの内容を黙って消さないよう、入力途中かどうかを親に伝える
+  useEffect(() => {
+    onDirtyChange?.(JSON.stringify(formData) !== JSON.stringify(baselineData));
+  }, [formData, baselineData, onDirtyChange]);
 
   const fields = getReferenceTypeFields(formData.type);
 
@@ -221,6 +230,7 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
       resetData.authors = [{ lastName: '', firstName: '', reading: '' }];
 
       setFormData(resetData);
+      setBaselineData(resetData);
       setErrors({});
     }
   };

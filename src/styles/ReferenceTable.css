@@ -212,3 +212,10 @@
   color: var(--color-text-secondary);
   font-style: italic;
 }
+
+/* 編集中・更新した直後の行は枠で示す（行の背景色は読み仮名未登録の表示に使っているため、背景は変えない） */
+.reference-table tr.row-editing,
+.reference-table tr.row-recently-updated {
+  outline: 2px solid var(--color-text-primary);
+  outline-offset: -2px;
+}

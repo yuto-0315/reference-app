@@ -23,7 +23,7 @@ const getSearchableText = (migratedRef) => {
   ].filter(Boolean).join('\n').toLowerCase();
 };
 
-const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, checkedReferences, onOpenReadingBulk, onOpenBulkEdit }) => {
+const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, checkedReferences, onOpenReadingBulk, onOpenBulkEdit, editingId, recentlyUpdatedId }) => {
   const missingReadingNameCount = useMemo(() => collectReadingGroups(references).filter(group => group.isMissing).length, [references]);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('year'); // 'year', 'reading', 'title'
@@ -274,7 +274,16 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                 const rowTitle = isMissingReading ? '読み仮名が未登録です。正しく並べ替えるために編集して読み仮名を入力してください。' : '';
 
                 return (
-                  <tr key={ref.id} className={isMissingReading ? 'row-missing-reading' : ''} title={rowTitle}>
+                  <tr
+                    key={ref.id}
+                    id={`reference-row-${ref.id}`}
+                    className={[
+                      isMissingReading && 'row-missing-reading',
+                      ref.id === editingId && 'row-editing',
+                      ref.id === recentlyUpdatedId && 'row-recently-updated'
+                    ].filter(Boolean).join(' ')}
+                    title={rowTitle}
+                  >
                     <td style={{ textAlign: 'center' }}>
                       <input
                         type="checkbox"
@@ -411,10 +420,10 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                         <button
                           onClick={() => onEdit(migratedRef)}
                           className="btn btn-sm btn-secondary"
-                          title="編集"
-                          aria-label="編集"
+                          title={ref.id === editingId ? '編集中（押すとフォームへ移動）' : '編集'}
+                          aria-label={ref.id === editingId ? '編集中（フォームへ移動）' : '編集'}
                         >
-                          <Pencil size={14} />編集
+                          <Pencil size={14} />{ref.id === editingId ? '編集中' : '編集'}
                         </button>
                         <button
                           onClick={() => onDelete(ref.id)}

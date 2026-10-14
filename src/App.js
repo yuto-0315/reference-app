@@ -16,6 +16,8 @@ import { BookOpenText, Library, X } from 'lucide-react';
 
 const STORAGE_KEY = 'reference-app-data';
 const ALERT_DURATION_MS = 3000;
+// 更新した行の強調は、移動して目で探し当てるのに十分で、作業の邪魔にならない長さにする
+const RECENT_HIGHLIGHT_MS = 2500;
 
 function App() {
   // ローカルストレージから自動読み込み（重複除去付き）
@@ -30,6 +32,10 @@ function App() {
   // 'reading'（読み仮名をまとめて登録）か 'fields'（チェックした文献をまとめて編集）
   const [bulkDialog, setBulkDialog] = useState(null);
   const alertTimerRef = useRef(null);
+  const formSectionRef = useRef(null);
+  const isFormDirtyRef = useRef(false);
+  // 更新した直後の行を少しの間だけ目立たせ、一覧のどこが変わったかを分かるようにする
+  const [recentlyUpdatedId, setRecentlyUpdatedId] = useState(null);
 
   // 自動保存（ローカルストレージ）- 重複除去付き
   // 0件も保存しないと、最後の1件を削除しても再読み込みで復活してしまう
@@ -88,6 +94,33 @@ function App() {
 
     setSelectedReference(null);
     showAlert('参考文献を更新しました', 'success');
+    returnToRow(id);
+  };
+
+  // 一覧の下の方で「編集」を押しても、フォームが画面外のままだと何も起きていないように見えるため、フォームまで移動する
+  const startEditing = (reference) => {
+    const isSwitchingAway = selectedReference?.id !== reference.id;
+    if (isSwitchingAway && isFormDirtyRef.current
+      && !window.confirm('入力中の内容があります。破棄して、この文献の編集に切り替えますか？')) {
+      return;
+    }
+    setSelectedReference(reference);
+    requestAnimationFrame(() => {
+      const section = formSectionRef.current;
+      if (!section) return;
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // 読み上げでも編集が始まったことが分かるよう、見出しにフォーカスを移す
+      section.querySelector('.section-title')?.focus({ preventScroll: true });
+    });
+  };
+
+  // 更新後は、編集した行まで一覧を戻す（さっき見ていた場所を探し直さなくて済むように）
+  const returnToRow = (id) => {
+    setRecentlyUpdatedId(id);
+    setTimeout(() => setRecentlyUpdatedId(current => (current === id ? null : current)), RECENT_HIGHLIGHT_MS);
+    requestAnimationFrame(() => {
+      document.getElementById(`reference-row-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
   };
 
   const deleteReference = (id) => {
@@ -203,6 +236,8 @@ function App() {
     clearTimeout(alertTimerRef.current);
     setAlert(null);
   };
+
+  const handleDirtyChange = useCallback((isDirty) => { isFormDirtyRef.current = isDirty; }, []);
 
   // Toast側のタイマーがAppの再描画のたびにリセットされないよう、関数の同一性を保つ
   const closeToast = useCallback(() => setToast(null), []);
@@ -327,10 +362,13 @@ function App() {
       />
 
       <div className="main-content">
-        <div className="input-section">
-          <h2 className="section-title">
+        <div className="input-section" ref={formSectionRef}>
+          <h2 className="section-title" tabIndex={-1}>
             {selectedReference ? '参考文献を編集' : '新しい参考文献を追加'}
           </h2>
+          {selectedReference && (
+            <p className="editing-target">編集中：{selectedReference.title || '（タイトルなし）'}</p>
+          )}
           <ReferenceForm
             onSubmit={selectedReference ?
               (data) => updateReference(selectedReference.id, data) :
@@ -338,6 +376,7 @@ function App() {
             }
             initialData={selectedReference}
             onCancel={() => setSelectedReference(null)}
+            onDirtyChange={handleDirtyChange}
           />
         </div>
 
@@ -355,7 +394,9 @@ function App() {
 
       <ReferenceTable
         references={references}
-        onEdit={setSelectedReference}
+        onEdit={startEditing}
+        editingId={selectedReference?.id}
+        recentlyUpdatedId={recentlyUpdatedId}
         onDelete={deleteReference}
         onCopy={copyToClipboard}
         onToggleCheck={toggleReferenceCheck}
