@@ -1,6 +1,16 @@
 // アプリケーションの変更履歴
 export const CHANGELOG = [
   {
+    version: '2.4.0',
+    date: '2026-10-14',
+    changes: [
+      {
+        type: 'improvement',
+        description: 'テーマ選択を、系統ごとに並んだ配色のカードから、使われる色（背景・ヘッダー・ボタン・見出し）を見比べながら選べる画面に変更'
+      }
+    ]
+  },
+  {
     version: '2.3.0',
     date: '2026-10-14',
     changes: [
