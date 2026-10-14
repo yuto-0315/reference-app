@@ -8,6 +8,9 @@ import { fetchBookInfoByISBN, searchCiNiiByTitle, fetchCiNiiArticleDetails } fro
 
 const createEmptyAuthor = () => ({ lastName: '', firstName: '', reading: '' });
 
+// 空白だけの入力も未入力として扱う
+const isBlank = (value) => value === undefined || value === null || String(value).trim() === '';
+
 const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
   // 初期データの著者フィールド設定を調整
   const getInitialFormData = () => {
@@ -127,15 +130,17 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
   const addAuthor = () => {
     setFormData(prev => ({
       ...prev,
-      authors: [...prev.authors, { lastName: '', firstName: '', reading: '' }]
+      authors: [...(prev.authors || []), createEmptyAuthor()]
     }));
+    setErrors(prev => ({ ...prev, authors: null }));
   };
 
   const addAuthorField = (fieldName) => {
     setFormData(prev => ({
       ...prev,
-      [fieldName]: [...(prev[fieldName] || []), { lastName: '', firstName: '', reading: '' }]
+      [fieldName]: [...(prev[fieldName] || []), createEmptyAuthor()]
     }));
+    setErrors(prev => ({ ...prev, [fieldName]: null }));
   };
 
   const removeAuthor = (index) => {
@@ -155,66 +160,45 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
 
   const validateForm = () => {
     const newErrors = {};
-    // 著者フィールドがある文献タイプの場合のみ著者の検証を行う
-    const hasAuthorsField = fields.some(field => field.key === 'authors');
-    if (hasAuthorsField) {
-      formData.authors.forEach((author, index) => {
-        if (!author.lastName) {
-          newErrors[`authors.${index}.lastName`] = '姓は必須項目です';
+
+    // 著者・原著者・訳者の一覧を検証する。書誌情報の取り込みなどで1人もいなくなった場合も未入力として扱う
+    const validatePeople = (fieldName, listLabel, messagePrefix) => {
+      const people = formData[fieldName];
+      if (!Array.isArray(people) || people.length === 0) {
+        newErrors[fieldName] = `${listLabel}を1人以上入力してください`;
+        return;
+      }
+      people.forEach((person, index) => {
+        if (isBlank(person.lastName)) {
+          newErrors[`${fieldName}.${index}.lastName`] = `${messagePrefix}姓は必須項目です`;
         }
-        if (!author.firstName) {
-          newErrors[`authors.${index}.firstName`] = '名は必須項目です';
+        if (isBlank(person.firstName)) {
+          newErrors[`${fieldName}.${index}.firstName`] = `${messagePrefix}名は必須項目です`;
         }
       });
+    };
+
+    // 著者フィールドがある文献タイプの場合のみ著者の検証を行う
+    const authorsField = fields.find(field => field.key === 'authors');
+    if (authorsField) {
+      validatePeople('authors', authorsField.label, '');
     }
     // 翻訳書の場合は原著者と訳者の検証を行う
     if (formData.type === 'translation') {
-      // 原著者（日本語）の検証
-      if (formData.originalAuthors) {
-        formData.originalAuthors.forEach((author, index) => {
-          if (!author.lastName) {
-            newErrors[`originalAuthors.${index}.lastName`] = '原著者（日本語）の姓は必須項目です';
-          }
-          if (!author.firstName) {
-            newErrors[`originalAuthors.${index}.firstName`] = '原著者（日本語）の名は必須項目です';
-          }
-        });
-      }
-
-      // 原著者（英語）の検証
-      if (formData.originalAuthorsEnglish) {
-        formData.originalAuthorsEnglish.forEach((author, index) => {
-          if (!author.lastName) {
-            newErrors[`originalAuthorsEnglish.${index}.lastName`] = '原著者（原語）の姓は必須項目です';
-          }
-          if (!author.firstName) {
-            newErrors[`originalAuthorsEnglish.${index}.firstName`] = '原著者（原語）の名は必須項目です';
-          }
-        });
-      }
-
-      // 訳者の検証
-      if (formData.translators) {
-        formData.translators.forEach((translator, index) => {
-          if (!translator.lastName) {
-            newErrors[`translators.${index}.lastName`] = '訳者の姓は必須項目です';
-          }
-          if (!translator.firstName) {
-            newErrors[`translators.${index}.firstName`] = '訳者の名は必須項目です';
-          }
-        });
-      }
+      validatePeople('originalAuthors', '原著者（日本語表記）', '原著者（日本語）の');
+      validatePeople('originalAuthorsEnglish', '原著者（原語表記）', '原著者（原語）の');
+      validatePeople('translators', '訳者', '訳者の');
     }
     // Webサイトの場合は「出版年」「ページ」不要なのでバリデーション不要
     // その他のフィールドの検証
     fields.forEach(field => {
-      if (field.key === 'authors') return; // 著者は上で処理済み
+      if (field.type === 'authors' || field.type === 'translation-authors') return; // 上で処理済み
       if (formData.type === 'website' && (field.key === 'year' || field.key === 'pages')) return;
-      if (field.required && !formData[field.key]) {
+      const value = formData[field.key];
+      if (field.required && isBlank(value)) {
         newErrors[field.key] = `${field.label}は必須項目です`;
       }
-      if (field.type === 'url' && formData[field.key] &&
-        !formData[field.key].match(/^https?:\/\/.+/)) {
+      if (field.type === 'url' && !isBlank(value) && !/^https?:\/\/.+/.test(String(value))) {
         newErrors[field.key] = '有効なURLを入力してください（http://またはhttps://で始まる）';
       }
     });
@@ -253,8 +237,16 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
     setShowResultsModal(true);
   };
 
+  // 取得できなかった項目（空文字・空の配列）で、入力済みの著者や巻号を消さない
   const handleApplyMapping = (mappedData) => {
-    setFormData(prev => ({ ...prev, ...mappedData }));
+    const filledData = Object.fromEntries(
+      Object.entries(mappedData).filter(([, value]) => {
+        if (value === null || value === undefined) return false;
+        if (Array.isArray(value)) return value.length > 0;
+        return String(value).trim() !== '';
+      })
+    );
+    setFormData(prev => ({ ...prev, ...filledData }));
   };
 
   const handleSelectCiniiResult = (result) => {
@@ -337,15 +329,24 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
     const error = errors[key];
     const inputId = `reference-field-${key}`;
 
+    const errorId = `${inputId}-error`;
+    // 読み上げでも必須・エラーの状態と内容が伝わるようにする
+    const accessibilityProps = {
+      'aria-required': required || undefined,
+      'aria-invalid': error ? true : undefined,
+      'aria-describedby': error ? errorId : undefined,
+    };
+
     return (
       <div key={key} className="form-group">
-        <label htmlFor={inputId}>
-          <span className="label-text">
+        {/* 入力ガイドのボタンを label の中に入れると、ラベルのクリックと競合するため横に並べる */}
+        <div className="label-row">
+          <label htmlFor={inputId}>
             {label}
-            {required && <span style={{ color: 'red' }}> *</span>}
-            <InfoTooltip description={description} example={example} />
-          </span>
-        </label>
+            {required && <span className="required-mark"> *</span>}
+          </label>
+          <InfoTooltip description={description} example={example} fieldLabel={label} />
+        </div>
         {type === 'textarea' ? (
           <textarea
             id={inputId}
@@ -353,6 +354,7 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
             onChange={(e) => handleChange(key, e.target.value)}
             className={error ? 'error' : ''}
             rows={3}
+            {...accessibilityProps}
           />
         ) : (
           <input
@@ -362,9 +364,10 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
             onChange={(e) => handleChange(key, e.target.value)}
             className={error ? 'error' : ''}
             placeholder={field.placeholder || ''}
+            {...accessibilityProps}
           />
         )}
-        {error && <div className="error-message">{error}</div>}
+        {error && <div id={errorId} className="error-message">{error}</div>}
       </div>
     );
   };
@@ -373,9 +376,10 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
     return (
       <div key="authors" className="form-group">
         <label>
-          {label} <span style={{ color: 'red' }}>*</span>
+          {label} <span className="required-mark">*</span>
         </label>
-        {formData.authors.map((author, index) => (
+        {errors.authors && <div className="error-message" role="alert">{errors.authors}</div>}
+        {(formData.authors || []).map((author, index) => (
           <div key={index} className="author-input-group">
             <div className="author-fields">
               <div className="author-field">
@@ -386,6 +390,8 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
                   value={author.lastName}
                   onChange={(e) => handleAuthorChange(index, 'lastName', e.target.value)}
                   className={errors[`authors.${index}.lastName`] ? 'error' : ''}
+                  aria-required="true"
+                  aria-invalid={errors[`authors.${index}.lastName`] ? true : undefined}
                   placeholder="山田"
                 />
                 {errors[`authors.${index}.lastName`] && (
@@ -400,6 +406,8 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
                   value={author.firstName}
                   onChange={(e) => handleAuthorChange(index, 'firstName', e.target.value)}
                   className={errors[`authors.${index}.firstName`] ? 'error' : ''}
+                  aria-required="true"
+                  aria-invalid={errors[`authors.${index}.firstName`] ? true : undefined}
                   placeholder="太郎"
                 />
                 {errors[`authors.${index}.firstName`] && (
@@ -418,7 +426,7 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
                   />
                 </div>
               )}
-              {formData.authors.length > 1 && (
+              {(formData.authors || []).length > 1 && (
                 <button
                   type="button"
                   className="btn btn-danger btn-small"
@@ -447,8 +455,9 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
     return (
       <div key={fieldName} className="form-group">
         <label>
-          {label} <span style={{ color: 'red' }}>*</span>
+          {label} <span className="required-mark">*</span>
         </label>
+        {errors[fieldName] && <div className="error-message" role="alert">{errors[fieldName]}</div>}
         {authors.map((author, index) => (
           <div key={index} className="author-input-group">
             <div className="author-fields">
@@ -460,6 +469,8 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
                   value={author.lastName}
                   onChange={(e) => handleAuthorFieldChange(fieldName, index, 'lastName', e.target.value)}
                   className={errors[`${fieldName}.${index}.lastName`] ? 'error' : ''}
+                  aria-required="true"
+                  aria-invalid={errors[`${fieldName}.${index}.lastName`] ? true : undefined}
                   placeholder="山田"
                 />
                 {errors[`${fieldName}.${index}.lastName`] && (
@@ -474,6 +485,8 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
                   value={author.firstName}
                   onChange={(e) => handleAuthorFieldChange(fieldName, index, 'firstName', e.target.value)}
                   className={errors[`${fieldName}.${index}.firstName`] ? 'error' : ''}
+                  aria-required="true"
+                  aria-invalid={errors[`${fieldName}.${index}.firstName`] ? true : undefined}
                   placeholder="太郎"
                 />
                 {errors[`${fieldName}.${index}.firstName`] && (
@@ -519,7 +532,7 @@ const ReferenceForm = ({ onSubmit, initialData, onCancel }) => {
     <>
       <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <label htmlFor="reference-type">文献の種類 <span style={{ color: 'red' }}>*</span></label>
+          <label htmlFor="reference-type">文献の種類 <span className="required-mark">*</span></label>
           <select
             id="reference-type"
             value={formData.type}

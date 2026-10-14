@@ -6,10 +6,11 @@ const ThemeToggle = () => {
 
   return (
     <div className="theme-toggle">
-      <label className="theme-toggle-label">
+      <label htmlFor="theme-select" className="theme-toggle-label">
         🎨 テーマ:
       </label>
       <select
+        id="theme-select"
         value={currentTheme}
         onChange={(e) => switchTheme(e.target.value)}
         className="theme-select"

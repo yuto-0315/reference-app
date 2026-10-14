@@ -14,26 +14,61 @@
   color: var(--color-text-secondary);
 }
 
+/* 狭い画面ではボタンを次の行に回し、バーコードスキャンのボタンが画面外に出ないようにする */
 .search-input-group {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
 .search-input-group input {
-  flex-grow: 1;
+  flex: 1 1 12em;
+  min-width: 0;
   padding: 10px;
-  border: 1px solid var(--color-border-primary);
+  /* 入力欄だと分かる濃さ（背景と 3:1 以上）の枠線にする */
+  border: 1px solid var(--color-border-secondary);
   border-radius: 4px;
+  background: var(--color-surface);
+  color: var(--color-text-onSurface);
+}
+
+.search-input-group input:focus {
+  outline: none;
+  border-color: var(--color-text-primary);
+  box-shadow: 0 0 0 2px var(--color-text-primary);
 }
 
 .mapping-creators {
     margin-top: 1rem;
 }
-.search-result-item {
-    cursor: pointer;
-    padding: 0.5rem;
-    border-bottom: 1px solid #eee;
+
+.search-results-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
+
+/* 検索結果はキーボードでも選べるよう button にしているため、一覧の行として見せる */
+.search-result-item {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  text-align: left;
+  font: inherit;
+  color: var(--color-text-onSurface);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--color-border-primary);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
 .search-result-item:hover {
-    background-color: #f0f0f0;
+  background-color: var(--color-surfaceHover);
+}
+
+.search-result-meta {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--color-text-secondary);
 }

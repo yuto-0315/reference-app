@@ -18,14 +18,20 @@
   gap: 8px;
 }
 
-.btn:hover {
+.btn:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
+/* 押せない状態であることを、どのボタンでも同じ見た目で示す */
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .btn-primary {
   background-color: var(--color-primary);
-  color: var(--color-text-onSurface);
+  color: var(--color-text-onPrimary);
 }
 
 .btn-primary:hover {
@@ -44,7 +50,7 @@
 
 .btn-success {
   background-color: var(--color-accent);
-  color: var(--color-text-onSurface);
+  color: var(--color-text-onPrimary);
 }
 
 .btn-success:hover {
@@ -53,16 +59,25 @@
 
 .btn-danger {
   background-color: var(--color-danger);
-  color: var(--color-text-onSurface);
+  color: var(--color-text-onPrimary);
 }
 
 .btn-danger:hover {
   background-color: var(--color-dangerHover);
 }
 
+.btn-warning {
+  background-color: var(--color-warning);
+  color: var(--color-text-onPrimary);
+}
+
+.btn-warning:hover:not(:disabled) {
+  background-color: var(--color-warningHover);
+}
+
 .btn-info {
   background-color: var(--color-primary);
-  color: var(--color-text-onSurface);
+  color: var(--color-text-onPrimary);
 }
 
 .btn-info:hover {
@@ -74,10 +89,11 @@
   font-size: 12px;
 }
 
+/* 半透明の白だとダークテーマで文字色と背景が近づくため、テーマの背景色を使う */
 .btn-guide {
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--color-surface);
   color: var(--color-text-primary);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid var(--color-border-primary);
   padding: 8px 16px;
   border-radius: 6px;
   font-size: 14px;
@@ -87,7 +103,7 @@
 }
 
 .btn-guide:hover {
-  background: rgba(255, 255, 255, 1);
-  border-color: var(--color-primary);
+  background: var(--color-surfaceHover);
+  border-color: var(--color-text-primary);
   transform: translateY(-1px);
 }

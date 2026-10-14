@@ -8,8 +8,11 @@
   position: relative;
 }
 
+/* 狭い画面ではテーマ選択などを次の行に回し、画面外に出ないようにする */
 .header-content {
   display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
   justify-content: space-between;
   align-items: center;
   max-width: 1200px;
@@ -31,7 +34,7 @@
   font-weight: 600;
 }
 
+/* 文字を半透明にするとコントラスト比が下がるため、不透明のまま使う */
 .header p {
   margin: 10px 0 0 0;
-  opacity: 0.9;
 }

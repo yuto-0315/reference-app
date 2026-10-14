@@ -7,17 +7,14 @@
   border: 1px solid var(--color-border-primary);
 }
 
-.file-input {
-  display: none;
-}
-
 .file-input-label {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 12px 20px;
   background-color: var(--color-primary);
-  color: var(--color-text-onSurface);
+  color: var(--color-text-onPrimary);
   border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
@@ -29,4 +26,32 @@
   background-color: var(--color-primaryHover);
   transform: translateY(-1px);
   box-shadow: 0 4px 8px var(--color-shadow);
+}
+
+/* 中のファイル選択欄は見えないため、フォーカスが当たっていることをラベル側で示す */
+.file-input-label:focus-within {
+  outline: 2px solid var(--color-text-primary);
+  outline-offset: 2px;
+}
+
+.usage-tips {
+  margin-top: 15px;
+  padding: 12px 15px;
+  font-size: 14px;
+  color: var(--color-text-onSurface);
+  background-color: var(--color-surfaceHover);
+  border: 1px solid var(--color-border-primary);
+  border-radius: 6px;
+}
+
+.usage-tips summary {
+  font-weight: 600;
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.usage-tips ul {
+  margin: 10px 0 0;
+  padding-left: 20px;
+  line-height: 1.7;
 }

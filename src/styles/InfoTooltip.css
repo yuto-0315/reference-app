@@ -4,21 +4,34 @@
   margin-left: 8px;
 }
 
+/* キーボードでも開けるよう button 要素にしているため、ブラウザ標準のボタンの見た目を打ち消す */
 .info-icon {
+  position: relative;
   width: 18px;
   height: 18px;
+  padding: 0;
+  border: none;
   border-radius: 50%;
   background: var(--color-primary);
-  color: white;
+  color: var(--color-text-onPrimary);
   display: flex;
   align-items: center;
   justify-content: center;
+  font-family: inherit;
   font-size: 12px;
   font-weight: bold;
+  line-height: 1;
   cursor: pointer;
   transition: all 0.2s ease;
   vertical-align: middle;
   user-select: none;
+}
+
+/* 見た目は小さいまま、押せる範囲だけ広げる（指でも押しやすくするため） */
+.info-icon::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
 }
 
 .info-icon:hover {

@@ -2,41 +2,51 @@
   margin-top: 10px;
 }
 
+/* 押すと変更履歴が開くボタン。ヘッダーの色に関わらず読めるよう、テーマの背景色の上に置く */
 .version-badge {
   display: inline-flex;
   align-items: center;
   gap: 10px;
   padding: 4px 12px;
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-primary);
   border-radius: 20px;
+  font: inherit;
   font-size: 0.8rem;
-  backdrop-filter: blur(10px);
+  color: var(--color-text-onSurface);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.version-badge:hover {
+  background: var(--color-surfaceHover);
 }
 
 .version-label {
   font-weight: 600;
-  color: var(--color-text-onSurface);
 }
 
 .update-date {
-  color: var(--color-text-onSurface);
-  opacity: 0.8;
+  color: var(--color-text-secondary);
 }
 
+.changelog-hint {
+  color: var(--color-text-primary);
+}
+
+/* 文字を半透明にするとコントラスト比が下がるため、不透明のまま使う */
 .credits {
   margin-top: 6px;
   font-size: 0.75rem;
   color: var(--color-text-onSurface);
-  opacity: 0.9;
-  line-height: 1.2;
+  line-height: 1.4;
 }
 
 .credits-links a {
-  color: var(--color-link, #90caf9);
+  color: var(--color-text-onSurface);
   text-decoration: underline;
 }
 
 .credits-license {
   margin-top: 2px;
-  opacity: 0.8;
 }

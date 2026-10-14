@@ -427,7 +427,7 @@ export const getAuthorDisplayName = (migratedRef) => {
 };
 
 // 著者名順の並べ替えに使う読み（読み仮名がなければ表記で代用）
-export const getSortReading = (migratedRef) => {
+const pickSortReading = (migratedRef) => {
   if (migratedRef.type === 'organization-book' || migratedRef.type === 'website') {
     // 団体出版本・Webサイトは「読み仮名」を優先、なければ団体名
     return migratedRef.organizationReading || migratedRef.organization || '';
@@ -444,6 +444,9 @@ export const getSortReading = (migratedRef) => {
   }
   return migratedRef.authors?.[0]?.reading || migratedRef.authors?.[0]?.lastName || migratedRef.composer || '';
 };
+
+// 手で編集したJSONで数値が入っていても localeCompare で落ちないよう、必ず文字列にして返す
+export const getSortReading = (migratedRef) => String(pickSortReading(migratedRef));
 
 // 本文中の引用形式を生成
 export const formatCitation = (reference, page = '') => {
@@ -677,7 +680,7 @@ const formatScoreForeign = (ref) => {
 const formatWebsite = (ref) => {
   const { organization, title, url, accessDate, yearSuffix } = ref;
   // "YYYY-MM-DD" を new Date() に渡すとUTCとして解釈され、日本より西のタイムゾーンでは前日になるため、ローカル日付として組み立てる
-  const isoDateMatch = accessDate ? accessDate.match(/^(\d{4})-(\d{2})-(\d{2})$/) : null;
+  const isoDateMatch = accessDate ? String(accessDate).match(/^(\d{4})-(\d{2})-(\d{2})$/) : null;
   const accessDateObj = isoDateMatch
     ? new Date(Number(isoDateMatch[1]), Number(isoDateMatch[2]) - 1, Number(isoDateMatch[3]))
     : new Date(accessDate);
@@ -699,10 +702,16 @@ const formatAudiovisual = (ref) => {
   return `${composer}作曲《${title}》 ${performers}演奏、${label}: ${catalogNumber}(${mediaType})${track}${recording}・${displayReleaseYear}発売。`;
 };
 
+// 全角で入力された数字とハイフンを半角にそろえる（「2桁以上は半角」「範囲のハイフンは波線に」の規則を当てるため）
+// 波線や「頁」など他の文字は入力のまま残す
+const toHalfWidthDigits = (text) => String(text)
+  .replace(/[０-９]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
+  .replace(/－/g, '-');
+
 // 数字フォーマット用のユーティリティ関数
 export const formatNumber = (num) => {
   if (!num) return '';
-  const numStr = num.toString();
+  const numStr = toHalfWidthDigits(num);
 
   // 1桁の場合は全角、2桁以上の場合は半角
   if (numStr.length === 1) {
@@ -722,7 +731,7 @@ export const formatPageRange = (pages) => {
 
   // ハイフンを波線に変換し、数字を適切にフォーマット
   // インポートしたJSONではページが数値のこともあるため文字列化する
-  return String(pages)
+  return toHalfWidthDigits(pages)
     .replace(/-/g, '〜') // ハイフンを波線に変換
     .replace(/\b(\d+)\b/g, (match) => formatNumber(match)); // 数字をフォーマット
 };
@@ -732,7 +741,7 @@ export const formatCitationPageRange = (pages) => {
   if (!pages) return '';
 
   // 引用ではハイフンのまま、数字を適切にフォーマット
-  return String(pages)
+  return toHalfWidthDigits(pages)
     .replace(/\b(\d+)\b/g, (match) => formatNumber(match)); // 数字をフォーマット
 };
 
@@ -804,6 +813,13 @@ export const migrateReferenceData = (reference) => {
           };
         }
       }).filter(translator => translator.lastName);
+    } else if (typeof migratedRef.translators === 'string' && migratedRef.translators.trim()) {
+      // 2025年6月以前は訳者を「服部幸三・戸口幸策」のような文字列で保存していた。
+      // 姓名の区切りは分からないため、表示が元どおりになるよう氏名全体を姓に入れる
+      migratedRef.translators = migratedRef.translators.split('・')
+        .map(name => name.trim())
+        .filter(Boolean)
+        .map(name => ({ lastName: name, firstName: '', reading: '' }));
     } else if (!migratedRef.translators || !Array.isArray(migratedRef.translators)) {
       migratedRef.translators = [{ lastName: '', firstName: '', reading: '' }];
     }

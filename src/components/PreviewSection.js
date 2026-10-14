@@ -6,6 +6,7 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
   const [selectedRef, setSelectedRef] = useState('');
   const [sortBy, setSortBy] = useState('year'); // 'author', 'year', 'title'
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc', 'desc'
+  const [bulkSelectType, setBulkSelectType] = useState('');
 
   // 文献種別ごとの一括選択
   const handleSelectByType = (type) => {
@@ -57,6 +58,11 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
 
   // 同一著者・同一年の文献に対してアルファベットサフィックスを付与（保存値ではなく毎回計算する）
   const allReferencesWithSuffixes = addYearSuffixes(references);
+
+  // 選んでいた文献が削除された場合は、空の引用やコピーボタンを出さない
+  const selectedReference = references.find(ref => ref.id === selectedRef);
+  // 削除・クリーンアップで消えた文献のIDがチェック状態に残っていても、件数に数えない
+  const checkedCount = references.filter(ref => checkedReferences.has(ref.id)).length;
 
   const generateCitation = () => {
     const ref = references.find(r => r.id === selectedRef);
@@ -124,26 +130,19 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
             type="text"
             value={citationPage}
             onChange={(e) => setCitationPage(e.target.value)}
-            placeholder={(() => {
-              if (selectedRef) {
-                const ref = references.find(r => r.id === selectedRef);
-                const migratedRef = ref ? migrateReferenceData(ref) : null;
-                if (migratedRef?.pages) {
-                  return `未入力時は掲載ページ「${migratedRef.pages}」を使用`;
-                }
-              }
-              return "例: 123, 123-125";
-            })()}
+            placeholder={selectedReference?.pages
+              ? `未入力時は掲載ページ「${selectedReference.pages}」を使用`
+              : '例: 123, 123-125'}
           />
         </div>
 
-        {selectedRef && (
+        {selectedReference && (
           <div className="preview-area">
             {generateCitation()}
           </div>
         )}
 
-        {selectedRef && (
+        {selectedReference && (
           <button
             className="btn btn-info"
             onClick={() => onCopy(generateCitation(), 'インライン引用をコピーしました')}
@@ -155,8 +154,9 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
 
       {/* 参考文献一覧 */}
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px' }}>
-          <h3 style={{ fontSize: '1.2rem', margin: 0, color: 'var(--color-text-onSurface)' }}>
+        {/* 幅が足りないときは操作ボタンを次の行に回し、見出しが途中で折り返されないようにする */}
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '15px', marginBottom: '15px' }}>
+          <h3 style={{ fontSize: '1.2rem', margin: 0, color: 'var(--color-text-onSurface)', whiteSpace: 'nowrap' }}>
             📚 参考文献一覧
           </h3>
           <div className="reference-list-controls">
@@ -170,37 +170,46 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
             <button
               className="btn btn-small btn-secondary"
               onClick={() => onToggleAll(false)}
-              disabled={checkedReferences.size === 0}
+              disabled={checkedCount === 0}
             >
               全て解除
             </button>
             <span className="reference-count">
-              {checkedReferences.size} / {references.length} 件選択
+              {checkedCount} / {references.length} 件選択
             </span>
 
-            <select
-              className="btn btn-small btn-secondary"
-              style={{ marginLeft: '10px', backgroundColor: '#f8f9fa', color: '#333', borderColor: '#ddd' }}
-              onChange={(e) => {
-                handleSelectByType(e.target.value);
-                e.target.value = ""; // Reset after selection
-              }}
-              disabled={references.length === 0}
-            >
-              <option value="">種類で一括選択...</option>
-              {Object.keys(REFERENCE_TYPES).filter(type =>
-                references.some(ref => migrateReferenceData(ref).type === type)
-              ).map(type => (
-                <option key={type} value={type}>
-                  {REFERENCE_TYPES[type]}のみ選択
-                </option>
-              ))}
-            </select>
+            {/* 選んだ瞬間に反映すると、矢印キーで候補を移るたびに選択が変わってしまうため、ボタンで確定する */}
+            <span className="type-select-group">
+              <select
+                className="type-select"
+                aria-label="まとめて選択する文献の種類"
+                value={bulkSelectType}
+                onChange={(e) => setBulkSelectType(e.target.value)}
+                disabled={references.length === 0}
+              >
+                <option value="">種類で一括選択...</option>
+                {Object.keys(REFERENCE_TYPES).filter(type =>
+                  references.some(ref => migrateReferenceData(ref).type === type)
+                ).map(type => (
+                  <option key={type} value={type}>
+                    {REFERENCE_TYPES[type]}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="btn btn-small btn-secondary"
+                onClick={() => handleSelectByType(bulkSelectType)}
+                disabled={!bulkSelectType}
+              >
+                のみ選択
+              </button>
+            </span>
           </div>
         </div>
 
         {/* 並べ替えコントロール */}
-        {checkedReferences.size > 1 && (
+        {checkedCount > 1 && (
           <div className="sort-controls" style={{ marginBottom: '15px' }}>
             <span className="sort-label">並べ替え:</span>
             <button
@@ -220,7 +229,7 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
 
         {references.length === 0 ? (
           <div className="preview-area">
-            参考文献を追加すると、ここに選択肢が表示されます。
+            まだ参考文献がありません。「新しい参考文献を追加」のフォームから登録すると、ここで本文中の引用と参考文献一覧を作れます。
           </div>
         ) : (
           <>
@@ -261,7 +270,7 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
             </div>
 
             {/* プレビュー */}
-            {checkedReferences.size > 0 ? (
+            {checkedCount > 0 ? (
               <>
                 <div className="preview-area">
                   {generateReferenceList()}
@@ -270,7 +279,7 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleCheck, 
                   className="btn btn-success"
                   onClick={() => onCopy(generateReferenceList(), '参考文献一覧をコピーしました')}
                 >
-                  📋 選択した参考文献一覧をコピー ({checkedReferences.size}件)
+                  📋 選択した参考文献一覧をコピー ({checkedCount}件)
                 </button>
               </>
             ) : (
