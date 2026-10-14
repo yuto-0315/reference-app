@@ -1,6 +1,24 @@
 // アプリケーションの変更履歴
 export const CHANGELOG = [
   {
+    version: '2.8.0',
+    date: '2026-10-15',
+    changes: [
+      {
+        type: 'improvement',
+        description: 'ISBN・論文検索のあとに出る画面を「取得した書誌情報を確認」に変更：取得できた項目だけを表の形で表示し、閉じるボタンを追加。著者名の分け方は「前から◯文字を姓に」と分かる表示に変更'
+      },
+      {
+        type: 'improvement',
+        description: '著者の姓・名・読み仮名の入力欄を横に並べ、フォームを短く変更'
+      },
+      {
+        type: 'improvement',
+        description: 'アップデートのお知らせは変更点だけを先に表示し、検索機能の使い方は開いたときだけ表示するように変更'
+      }
+    ]
+  },
+  {
     version: '2.7.0',
     date: '2026-10-14',
     changes: [

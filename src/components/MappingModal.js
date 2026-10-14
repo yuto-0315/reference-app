@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import useEscapeKey from '../hooks/useEscapeKey';
 import '../styles/MappingModal.css';
+import { X } from 'lucide-react';
 
 // Helpers: detect Japanese characters (kanji/kana)
 const isJapaneseText = (s) => /[\u3000-\u30FF\u4E00-\u9FFF\u3040-\u309F]/.test(s);
@@ -317,7 +318,8 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType }) => {
         setDraftAuthors(prev => ({ ...prev, [index]: { ...(prev[index] || {}), lastName: last, firstName: first } }));
     };
 
-    const renderField = (label, value) => (
+    // 取得できなかった項目まで空欄で並べると、どれが入るのか分かりにくいため、値のある項目だけ出す
+    const renderField = (label, value) => ((value === null || value === undefined || String(value).trim() === '') ? null : (
         <div className="mapping-row" key={label}>
             <span className="mapping-label">{label}</span>
             <span className="mapping-value">
@@ -328,7 +330,7 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType }) => {
                 )}
             </span>
         </div>
-    );
+    ));
 
     const creators = getCreators(apiData);
 
@@ -336,9 +338,11 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType }) => {
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal-content" role="dialog" aria-modal="true" aria-labelledby="mapping-modal-title" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
-                    <h2 id="mapping-modal-title">取得した書誌情報をマッピング</h2>
+                    <h2 id="mapping-modal-title">取得した書誌情報を確認</h2>
+                    <button type="button" className="modal-close" onClick={onClose} aria-label="閉じる"><X size={20} /></button>
                 </div>
                 <div className="modal-body">
+                    <p className="mapping-lead">取得できた項目です。「フォームに反映」で入力欄に入ります。ここにない項目は、反映後にフォームで入力してください。</p>
                     {renderField('タイトル', mapping.title)}
                     {renderField('出版社', mapping.publisher)}
                     {renderField('出版年', mapping.year)}
@@ -399,18 +403,18 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType }) => {
                                             placeholder="読み"
                                             aria-label={`${m.name}の読み仮名`}
                                         />
+                                        {/* 「分割」だけでは何をするか分からないため、前から何文字を姓にするかを文で示す */}
                                         <div className="creator-split-controls">
+                                            <span aria-hidden="true">前から</span>
                                             <input
                                                 type="number"
                                                 min="0"
                                                 value={splitCounts[m.idx] === '' ? '' : splitCounts[m.idx]}
                                                 onChange={(e) => handleSplitCountChange(m.idx, e.target.value)}
-                                                placeholder="n"
                                                 aria-label={`${m.name}の姓の文字数（前から何文字を姓にするか）`}
-                                                title="姓の文字数（前から何文字を姓にするか）"
-                                                style={{ width: 60, marginLeft: 8 }}
                                             />
-                                            <button type="button" onClick={() => handleSplit(m.idx)} style={{ marginLeft: 6 }}>分割</button>
+                                            <span aria-hidden="true">文字を姓に</span>
+                                            <button type="button" className="btn btn-small btn-secondary" onClick={() => handleSplit(m.idx)}>分ける</button>
                                         </div>
                                     </div>
                                 </div>
