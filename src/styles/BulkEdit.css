@@ -161,3 +161,9 @@
   color: var(--color-text-onSurface);
   cursor: pointer;
 }
+
+/* 調べた結果の候補は、名前と入力欄の下に横いっぱいで出す */
+.reading-group-lookup {
+  grid-column: 1 / -1;
+  margin-top: 0;
+}

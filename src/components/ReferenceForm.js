@@ -4,6 +4,7 @@ import InfoTooltip from './InfoTooltip';
 import APISearch from './APISearch';
 import MappingModal from './MappingModal';
 import SearchResultsModal from './SearchResultsModal';
+import ReadingLookup from './ReadingLookup';
 import { fetchBookInfoByISBN, searchCiNiiByTitle, fetchCiNiiArticleDetails } from '../utils/api';
 import { describeApiErrorReason } from '../utils/apiErrors';
 import { Lightbulb } from 'lucide-react';
@@ -395,6 +396,12 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
           />
         )}
         {error && <div id={errorId} className="error-message">{error}</div>}
+        {key === 'organizationReading' && (
+          <ReadingLookup
+            target={{ kind: 'organization', name: formData.organization }}
+            onPick={(reading) => handleChange('organizationReading', reading)}
+          />
+        )}
       </div>
     );
   };
@@ -463,6 +470,12 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
                 </button>
               )}
             </div>
+            {showReading && (
+              <ReadingLookup
+                target={{ kind: 'person', lastName: author.lastName, firstName: author.firstName }}
+                onPick={(reading) => handleAuthorChange(index, 'reading', reading)}
+              />
+            )}
           </div>
         ))}
         <button
