@@ -3,7 +3,8 @@
 
 export const API_SERVICES = {
   ndl: '国立国会図書館サーチ',
-  cinii: 'CiNii Research'
+  cinii: 'CiNii Research',
+  ndla: '国立国会図書館の典拠データ（Web NDL Authorities）'
 };
 
 export class ApiError extends Error {

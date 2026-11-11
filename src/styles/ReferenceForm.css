@@ -152,3 +152,67 @@
 .author-fields > .btn {
   flex: none;
 }
+
+/* --- 読み仮名を典拠データから調べる --- */
+.reading-lookup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin-top: 6px;
+}
+
+.reading-candidates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reading-candidate {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 6px 10px;
+  font: inherit;
+  text-align: left;
+  color: var(--color-text-onSurface);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.reading-candidate:hover {
+  background: var(--color-surfaceHover);
+}
+
+.reading-candidate-reading {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.reading-candidate-label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.reading-lookup-message {
+  flex: 1 1 200px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.reading-lookup-message:empty {
+  display: none;
+}
+
+.reading-lookup-message.is-error {
+  color: var(--color-text-danger);
+}
