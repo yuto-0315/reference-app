@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import useEscapeKey from '../hooks/useEscapeKey';
 import '../styles/MappingModal.css';
-import { X } from 'lucide-react';
+import { TriangleAlert, X } from 'lucide-react';
 
 // Helpers: detect Japanese characters (kanji/kana)
 const isJapaneseText = (s) => /[\u3000-\u30FF\u4E00-\u9FFF\u3040-\u309F]/.test(s);
@@ -61,7 +61,7 @@ const splitFullName = (fullName) => {
 
 const createEmptyAuthor = () => ({ lastName: '', firstName: '', reading: '' });
 
-const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType }) => {
+const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType, notice }) => {
     // helper: extract creators/authors from a variety of possible keys
     const getCreators = (data) => {
         if (!data) return [];
@@ -342,6 +342,7 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType }) => {
                     <button type="button" className="modal-close" onClick={onClose} aria-label="閉じる"><X size={20} /></button>
                 </div>
                 <div className="modal-body">
+                    {notice && <p className="mapping-notice" role="status"><TriangleAlert size={16} />{notice}</p>}
                     <p className="mapping-lead">取得できた項目です。「フォームに反映」で入力欄に入ります。ここにない項目は、反映後にフォームで入力してください。</p>
                     {renderField('タイトル', mapping.title)}
                     {renderField('出版社', mapping.publisher)}
