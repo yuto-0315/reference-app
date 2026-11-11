@@ -109,3 +109,23 @@
     width: 100%;
   }
 }
+
+/* 詳しい情報を取れなかったなど、確認する前に知っておいてほしいこと */
+.mapping-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 12px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text-onSurface);
+  background: var(--color-surface);
+  border: 1px solid var(--color-text-danger);
+  border-radius: 6px;
+}
+
+.mapping-notice .lucide {
+  margin: 0.2em 0 0;
+  color: var(--color-text-danger);
+}
