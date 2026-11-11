@@ -2,12 +2,20 @@ import React, { useMemo, useState } from 'react';
 import { X } from 'lucide-react';
 import useEscapeKey from '../hooks/useEscapeKey';
 import { collectReadingGroups } from '../utils/bulkEdit';
+import ReadingLookup from './ReadingLookup';
 
 // 未登録・読み方が食い違う名前を先に、出てくる文献の多い順に並べる（直す必要があるものから順に目に入るように）
 const groupPriority = (group) => (group.isMissing ? 0 : group.hasConflict ? 1 : 2);
 const sortGroups = (groups) => [...groups].sort((a, b) =>
   groupPriority(a) - groupPriority(b) || b.referenceIds.length - a.referenceIds.length || a.name.localeCompare(b.name, 'ja')
 );
+
+// 人名は「姓 名」でまとめているため、典拠データの「姓, 名」で探せるよう分けて渡す
+const lookupTargetOf = (group) => {
+  if (group.kind === 'organization') return { kind: 'organization', name: group.name };
+  const [lastName, ...rest] = group.name.split(' ');
+  return { kind: 'person', lastName, firstName: rest.join(' ') };
+};
 
 const describeStatus = (group) => {
   if (group.hasConflict) return `読み方が${group.readings.length}通りあります（${group.readings.join('・')}）`;
@@ -92,6 +100,14 @@ const ReadingBulkModal = ({ references, onSave, onClose }) => {
                         setEditedKeys(prev => new Set(prev).add(group.key));
                       }}
                       placeholder="よみがな"
+                    />
+                    <ReadingLookup
+                      className="reading-group-lookup"
+                      target={lookupTargetOf(group)}
+                      onPick={(reading) => {
+                        setReadingByKey(prev => ({ ...prev, [group.key]: reading }));
+                        setEditedKeys(prev => new Set(prev).add(group.key));
+                      }}
                     />
                   </li>
                 );

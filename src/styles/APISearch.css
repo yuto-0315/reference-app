@@ -72,3 +72,31 @@
   font-size: 13px;
   color: var(--color-text-secondary);
 }
+
+/* 詳しい情報を取得している間は、ほかの論文を選べないことを見た目でも示す（取得中の行はそのまま読めるように薄くしない） */
+.search-result-item:disabled {
+  cursor: wait;
+}
+
+.search-results-list[aria-busy="true"] .search-result-item:disabled:not(:has(.search-result-loading)) {
+  opacity: 0.6;
+}
+
+.search-result-loading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--color-text-onSurface);
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}

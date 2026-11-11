@@ -1,6 +1,12 @@
 /**
  * src/utils/api.js
  */
+import { fetchFromApi, invalidResponseError } from './apiErrors';
+
+// 同じISBN・同じ検索語をもう一度調べても、外部サービスに送り直さない（アクセス制限にかかりにくくするため）。
+// ページを開き直せば消えるので、相手側で情報が更新されても再読み込みで取り直せる
+const isbnResultCache = new Map();
+const ciniiSearchCache = new Map();
 
 // NDLの典拠形の人名は「夏目, 漱石, 1867-1916」のように生没年が付くため、姓名の分割前に取り除く
 const stripLifeDates = (name) => name.replace(/,?\s*\d{3,4}-(\d{3,4})?\s*$/, '').trim();
@@ -13,16 +19,21 @@ const stripLifeDates = (name) => name.replace(/,?\s*\d{3,4}-(\d{3,4})?\s*$/, '')
 export const fetchBookInfoByISBN = async (rawIsbn) => {
   // ハイフンや空白入りで入力されても検索できるよう、数字とチェックディジットXのみにする
   const isbn = rawIsbn.replace(/[^0-9Xx]/g, '');
+  if (isbnResultCache.has(isbn)) return isbnResultCache.get(isbn);
   const url = `https://ndlsearch.ndl.go.jp/api/sru?operation=searchRetrieve&query=isbn%3D${encodeURIComponent(isbn)}&recordSchema=dcndl&recordPacking=xml&onlyBib=true`;
 
+  const response = await fetchFromApi(url, 'ndl');
+  const bookInfo = parseNdlResponse(await response.text(), isbn);
+  isbnResultCache.set(isbn, bookInfo);
+  return bookInfo;
+};
+
+// 国立国会図書館サーチの応答（XML）から書誌情報を取り出す。見つからなければ null
+const parseNdlResponse = (xmlText, isbn) => {
   try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const xmlText = await response.text();
     const parser = new DOMParser();
     const xmlDoc = parser.parseFromString(xmlText, "application/xml");
+    if (xmlDoc.querySelector('parsererror')) throw invalidResponseError('ndl');
 
     const record = xmlDoc.querySelector('recordData');
     // console.log(record);
@@ -126,8 +137,8 @@ export const fetchBookInfoByISBN = async (rawIsbn) => {
       issued: getValue('issued'),
     };
   } catch (error) {
-    console.error("Failed to fetch book info from NDL:", error);
-    throw error; // エラーを呼び出し元に伝える
+    console.error("Failed to read book info from NDL:", error);
+    throw error.name === 'ApiError' ? error : invalidResponseError('ndl');
   }
 };
 
@@ -176,13 +187,17 @@ const extractIdentifiers = (identArr) => {
 export const searchCiNiiByTitle = async (title) => {
     const appId = 'OCtS3oAPLKiyuDYqZ3iN';
     const url = `https://cir.nii.ac.jp/opensearch/articles?q=${encodeURIComponent(title)}&format=json&appid=${appId}`;
+    if (ciniiSearchCache.has(title)) return ciniiSearchCache.get(title);
+
+    const response = await fetchFromApi(url, 'cinii');
+    let data;
+    try {
+      data = await response.json();
+    } catch (error) {
+      throw invalidResponseError('cinii');
+    }
 
     try {
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-    const data = await response.json();
     console.log("CiNii search results:", data);
 
     // Normalize possible shapes: top-level `items`, `@graph[*].items`,
@@ -274,10 +289,11 @@ export const searchCiNiiByTitle = async (title) => {
       };
     });
   console.log("CiNii mapped results count:", mapped.length);
+  ciniiSearchCache.set(title, mapped);
   return mapped;
     } catch (error) {
-        console.error("Failed to search CiNii:", error);
-        throw error;
+        console.error("Failed to read CiNii search results:", error);
+        throw invalidResponseError('cinii');
     }
 };
 
@@ -327,9 +343,10 @@ export const fetchCiNiiArticleDetails = async (linkOrSeeAlso) => {
   };
 
   for (const url of tryUrls) {
+    // 見つからない（404）ときだけ別の形のURLを試す。アクセス集中や障害のときに続けて送ると、制限が長引くため止める
+    const res = await fetchFromApi(url, 'cinii', { acceptStatuses: [404, 400] });
+    if (!res.ok) continue;
     try {
-      const res = await fetch(url);
-      if (!res.ok) continue;
       const data = await res.json();
 
       // data may contain items array or be a single item
