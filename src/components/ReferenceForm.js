@@ -4,7 +4,9 @@ import InfoTooltip from './InfoTooltip';
 import APISearch from './APISearch';
 import MappingModal from './MappingModal';
 import SearchResultsModal from './SearchResultsModal';
+import ReadingLookup from './ReadingLookup';
 import { fetchBookInfoByISBN, searchCiNiiByTitle, fetchCiNiiArticleDetails } from '../utils/api';
+import { describeApiErrorReason } from '../utils/apiErrors';
 import { Lightbulb } from 'lucide-react';
 
 const createEmptyAuthor = () => ({ lastName: '', firstName: '', reading: '' });
@@ -54,6 +56,10 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
   const [showResultsModal, setShowResultsModal] = useState(false);
   const [apiData, setApiData] = useState(null);
   const [ciniiResults, setCiniiResults] = useState([]);
+  // 検索結果から選んだ論文の詳細を取りに行っている間、その論文を覚えて「取得中」を出す
+  const [selectingResult, setSelectingResult] = useState(null);
+  // 詳細を取れずに検索結果だけで進めたときなど、確認画面で知らせること
+  const [mappingNotice, setMappingNotice] = useState('');
 
   // 編集する文献や複製元を渡されたら、その内容をフォームに読み込む
   useEffect(() => {
@@ -242,6 +248,7 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
     const data = await fetchBookInfoByISBN(isbn);
     if (data) {
       setApiData(data);
+      setMappingNotice('');
       setShowMappingModal(true);
     }
     return !!data;
@@ -266,8 +273,11 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
   };
 
   const handleSelectCiniiResult = (result) => {
+    if (selectingResult) return;
     // fetch detailed article info (authors etc.) if possible, then open mapping modal
     (async () => {
+      setSelectingResult(result);
+      setMappingNotice('');
       try {
         const details = await fetchCiNiiArticleDetails(result.seeAlso || result.link);
         // merge details into result but do not overwrite non-empty result fields with empty values from details
@@ -316,9 +326,11 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
 
         setApiData(merged);
       } catch (e) {
-        // fallback: use the search result as-is
+        // 詳細が取れなくても検索結果の情報で進められるようにし、何が足りないかは伝える
         setApiData(result);
+        setMappingNotice(`著者などの詳しい情報を取得できなかったため、検索結果の情報だけを表示しています（${describeApiErrorReason(e)}）。`);
       }
+      setSelectingResult(null);
       setShowResultsModal(false);
       setShowMappingModal(true);
     })();
@@ -384,6 +396,12 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
           />
         )}
         {error && <div id={errorId} className="error-message">{error}</div>}
+        {key === 'organizationReading' && (
+          <ReadingLookup
+            target={{ kind: 'organization', name: formData.organization }}
+            onPick={(reading) => handleChange('organizationReading', reading)}
+          />
+        )}
       </div>
     );
   };
@@ -452,6 +470,12 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
                 </button>
               )}
             </div>
+            {showReading && (
+              <ReadingLookup
+                target={{ kind: 'person', lastName: author.lastName, firstName: author.firstName }}
+                onPick={(reading) => handleAuthorChange(index, 'reading', reading)}
+              />
+            )}
           </div>
         ))}
         <button
@@ -600,6 +624,7 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
         apiData={apiData}
         onApply={handleApplyMapping}
         referenceType={formData.type}
+        notice={mappingNotice}
       />
 
       <SearchResultsModal
@@ -607,6 +632,7 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
         onClose={() => setShowResultsModal(false)}
         results={ciniiResults}
         onSelect={handleSelectCiniiResult}
+        selectingResult={selectingResult}
       />
     </>
   );

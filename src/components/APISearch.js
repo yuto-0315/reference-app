@@ -1,10 +1,24 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { BrowserMultiFormatReader, NotFoundException, ChecksumException, FormatException } from '@zxing/library';
 import useEscapeKey from '../hooks/useEscapeKey';
+import { describeApiError } from '../utils/apiErrors';
 
 // 日本の書籍のバーコードは2段あり、下段（192 で始まる分類・価格コード）を読んでも検索できないため、
 // ISBN-13（978/979 で始まる）と ISBN-10 だけを受け付ける
 const isIsbnCode = (code) => /^97[89]\d{10}$/.test(code) || /^\d{9}[\dX]$/i.test(code);
+
+// 送る前に分かる入力の誤りは、外部サービスに問い合わせずにその場で知らせる（無駄なアクセスも減らせる）
+const findIsbnInputProblem = (rawIsbn) => {
+  const isbn = rawIsbn.replace(/[-\s]/g, '');
+  if (/[^0-9Xx]/.test(isbn)) return 'ISBNには数字（10桁目だけはXも可）とハイフンだけを入力してください。';
+  if (isbn.length !== 10 && isbn.length !== 13) return `ISBNは10桁または13桁です（いま${isbn.length}桁）。本の裏表紙や奥付の「ISBN」の数字を確かめてください。`;
+  const digits = isbn.toUpperCase().split('').map(c => (c === 'X' ? 10 : Number(c)));
+  const isValid = isbn.length === 13
+    ? digits.reduce((sum, d, i) => sum + d * (i % 2 === 0 ? 1 : 3), 0) % 10 === 0
+    : digits.reduce((sum, d, i) => sum + d * (10 - i), 0) % 11 === 0;
+  if (!isValid) return 'ISBNの数字が1つ違っているようです（最後の確認用の数字と合いません）。入力した数字を確かめてください。';
+  return '';
+};
 
 // バーコードがまだ映っていない・読み取りかけのときに毎フレーム返る例外。利用者に見せるエラーではない
 // （本番ビルドではクラス名が短縮されるため、err.name ではなく instanceof で判定する）
@@ -20,19 +34,28 @@ const APISearch = ({ type, onSearchResult, onCiniiResult, idPrefix = '' }) => {
   const [scanError, setScanError] = useState('');
   const videoRef = useRef(null);
   const codeReaderRef = useRef(null);
+  // 画面の更新を待たずに判定できるよう ref で持つ（バーコードは同じ番号を何度も読み取るため、検索が重ならないようにする）
+  const isSearchingRef = useRef(false);
 
   const handleIsbnSearch = async (isbnToSearch = isbn) => {
-    if (!isbnToSearch) return;
+    if (!isbnToSearch || isSearchingRef.current) return;
+    const inputProblem = findIsbnInputProblem(isbnToSearch);
+    if (inputProblem) {
+      setSearchError(inputProblem);
+      return;
+    }
+    isSearchingRef.current = true;
     setIsLoading(true);
     setSearchError('');
     try {
       const result = await onSearchResult(isbnToSearch);
       if (!result) {
-        setSearchError('書籍情報が見つかりませんでした。ISBNの数字を確かめるか、下の各項目を直接入力してください。');
+        setSearchError('このISBNの本は国立国会図書館サーチに見つかりませんでした。ISBNの数字を確かめるか、下の各項目を直接入力してください。');
       }
     } catch (error) {
-      setSearchError('書籍情報を取得できませんでした。通信状況を確かめて、もう一度お試しください。');
+      setSearchError(describeApiError(error));
     } finally {
+      isSearchingRef.current = false;
       setIsLoading(false);
     }
   };
@@ -66,6 +89,8 @@ const APISearch = ({ type, onSearchResult, onCiniiResult, idPrefix = '' }) => {
     if (!isScannerOpen) return;
     const codeReader = new BrowserMultiFormatReader();
     codeReaderRef.current = codeReader;
+    // カメラを止めるまでの間も同じバーコードを読み続けるため、最初の1回だけ使う
+    let hasReadIsbn = false;
 
     const start = async () => {
       try {
@@ -75,7 +100,8 @@ const APISearch = ({ type, onSearchResult, onCiniiResult, idPrefix = '' }) => {
           if (result) {
             // normalize ISBN-like values (remove hyphens/spaces)
             const code = result.getText().replace(/[-\s]/g, '');
-            if (isIsbnCode(code)) {
+            if (isIsbnCode(code) && !hasReadIsbn) {
+              hasReadIsbn = true;
               setIsbn(code);
               closeScanner();
               // スキャンの目的は検索なので、読み取れたらそのまま検索する
@@ -108,7 +134,7 @@ const APISearch = ({ type, onSearchResult, onCiniiResult, idPrefix = '' }) => {
     try {
       await onCiniiResult(ciniiQuery);
     } catch (error) {
-      setSearchError('論文情報を検索できませんでした。通信状況を確かめて、もう一度お試しください。');
+      setSearchError(describeApiError(error));
     } finally {
       setIsLoading(false);
     }

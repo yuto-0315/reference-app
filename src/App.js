@@ -446,6 +446,7 @@ function App() {
         <p>
           一部メタデータは<a href="https://ndlsearch.ndl.go.jp/" target="_blank" rel="noopener noreferrer">国立国会図書館サーチ</a>
           および<a href="https://cir.nii.ac.jp/" target="_blank" rel="noopener noreferrer">CiNii Research</a>
+          から、読み仮名の候補は<a href="https://id.ndl.go.jp/auth/ndla" target="_blank" rel="noopener noreferrer">国立国会図書館の典拠データ（Web NDL Authorities）</a>
           から取得しています。該当データは各提供機関の利用条件（CC BY 4.0 等）に従っています。
         </p>
         <p>
