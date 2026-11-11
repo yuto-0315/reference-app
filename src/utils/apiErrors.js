@@ -78,6 +78,22 @@ export const fetchFromApi = async (url, service, { acceptStatuses = [] } = {}) =
 // 応答を読み取れなかった（想定外の形式だった）ことを表す
 export const invalidResponseError = (service) => new ApiError('invalid-response', { service });
 
+// 検索結果の一部だけで先に進むときなど、本文の途中に添える短い理由
+export const describeApiErrorReason = (error) => {
+  const name = API_SERVICES[error?.service] || '外部のサービス';
+  switch (error?.kind) {
+    case 'rate-limited': return `${name}へのアクセスが集中しています`;
+    case 'server': return `${name}が一時的に応答できない状態です`;
+    case 'forbidden': return `${name}へのアクセスが拒否されました`;
+    case 'rejected': return `${name}が受け付けませんでした（エラー番号 ${error.status}）`;
+    case 'timeout': return `${name}から応答がありませんでした`;
+    case 'offline': return 'インターネットに接続されていないようです';
+    case 'network': return `${name}に接続できませんでした`;
+    case 'invalid-response': return `${name}の応答を読み取れませんでした`;
+    default: return '取得中に問題が起きました';
+  }
+};
+
 const describeWait = (seconds) => (seconds >= 60 ? `${Math.ceil(seconds / 60)}分` : `${seconds}秒`);
 
 // 画面に出す文。どの場合も「何が起きたか」のあとに「次にすること」を書く

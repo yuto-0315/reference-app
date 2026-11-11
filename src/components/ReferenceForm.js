@@ -5,7 +5,7 @@ import APISearch from './APISearch';
 import MappingModal from './MappingModal';
 import SearchResultsModal from './SearchResultsModal';
 import { fetchBookInfoByISBN, searchCiNiiByTitle, fetchCiNiiArticleDetails } from '../utils/api';
-import { describeApiError } from '../utils/apiErrors';
+import { describeApiErrorReason } from '../utils/apiErrors';
 import { Lightbulb } from 'lucide-react';
 
 const createEmptyAuthor = () => ({ lastName: '', firstName: '', reading: '' });
@@ -327,7 +327,7 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
       } catch (e) {
         // 詳細が取れなくても検索結果の情報で進められるようにし、何が足りないかは伝える
         setApiData(result);
-        setMappingNotice(`著者などの詳しい情報を取得できなかったため、検索結果の情報だけを表示しています。${describeApiError(e)}`);
+        setMappingNotice(`著者などの詳しい情報を取得できなかったため、検索結果の情報だけを表示しています（${describeApiErrorReason(e)}）。`);
       }
       setSelectingResult(null);
       setShowResultsModal(false);
