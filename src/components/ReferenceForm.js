@@ -71,6 +71,10 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
 
   const [formData, setFormData] = useState(getInitialFormData);
   const formRef = useRef(null);
+  // 検索の結果が届く前に文献の種類を変えたり、検索結果の画面を閉じたりしたら、届いた結果は使わない
+  const searchGenerationRef = useRef(0);
+  const cancelPendingSearches = () => { searchGenerationRef.current += 1; };
+  useEffect(() => cancelPendingSearches, []);
   // 送信して足りない項目があったかどうか（ボタンの近くに残りの件数を出し、どこを直せばよいかへ案内する）
   const [hasFailedSubmit, setHasFailedSubmit] = useState(false);
   // 読み込んだ直後（または追加・更新直後）の内容。これと違えば「入力途中」とみなす
@@ -126,6 +130,7 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
   };
 
   const handleTypeChange = (newType) => {
+    cancelPendingSearches();
     const newFields = getReferenceTypeFields(newType);
     const currentFieldTypes = Object.fromEntries(fields.map(field => [field.key, field.type]));
 
@@ -308,7 +313,10 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
 
 
   const handleIsbnSearchResult = async (isbn) => {
+    const generation = searchGenerationRef.current;
     const data = await fetchBookInfoByISBN(isbn);
+    // 待っている間に種類を変えていたら、見つからなかったことにもせず、そのまま捨てる
+    if (generation !== searchGenerationRef.current) return true;
     if (data) {
       setApiData(data);
       setMappingNotice('');
@@ -318,7 +326,9 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
   };
 
   const handleCiniiSearchResult = async (query) => {
+    const generation = searchGenerationRef.current;
     const results = await searchCiNiiByTitle(query);
+    if (generation !== searchGenerationRef.current) return;
     setCiniiResults(results);
     setShowResultsModal(true);
   };
@@ -344,10 +354,23 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
     if (selectingResult) return;
     // fetch detailed article info (authors etc.) if possible, then open mapping modal
     (async () => {
+      const generation = searchGenerationRef.current;
       setSelectingResult(result);
       setMappingNotice('');
+      let details = null;
+      let detailError = null;
       try {
-        const details = await fetchCiNiiArticleDetails(result.seeAlso || result.link);
+        details = await fetchCiNiiArticleDetails(result.seeAlso || result.link);
+      } catch (error) {
+        detailError = error;
+      }
+      // 詳細を待っている間に検索結果の画面を閉じていたら、確認画面は開かない
+      if (generation !== searchGenerationRef.current) {
+        setSelectingResult(null);
+        return;
+      }
+      try {
+        if (detailError) throw detailError;
         // merge details into result but do not overwrite non-empty result fields with empty values from details
         const merged = { ...result };
         if (details) {
@@ -720,7 +743,11 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
 
       <SearchResultsModal
         isOpen={showResultsModal}
-        onClose={() => setShowResultsModal(false)}
+        onClose={() => {
+          cancelPendingSearches();
+          setSelectingResult(null);
+          setShowResultsModal(false);
+        }}
         results={ciniiResults}
         onSelect={handleSelectCiniiResult}
         selectingResult={selectingResult}

@@ -8,20 +8,18 @@
         "start": "serve -s build",
         "dev": "webpack serve --mode development",
         "build": "webpack --mode production",
-        "test": "echo \"Error: no test specified\" && exit 1",
+        "test": "node --test --import ./tests/register-loader.mjs \"tests/*.test.mjs\"",
         "rm": "rm -rf docs",
         "mv": "mv build docs",
-        "git": "git add . && git commit -m \"Deploy: Update reference app\" && git push origin main",
+        "git": "git add docs && git commit -m \"Deploy: Update reference app\" && git push origin main",
         "deploy": "npm run rm && npm run build && npm run mv && npm run git"
     },
     "dependencies": {
         "@zxing/library": "^0.21.3",
         "lucide-react": "^1.57.0",
-        "puppeteer": "^24.18.0",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
-        "uuid": "^9.0.0",
-        "xmldom": "^0.6.0"
+        "uuid": "^9.0.0"
     },
     "devDependencies": {
         "@babel/core": "^7.22.0",
@@ -30,11 +28,13 @@
         "babel-loader": "^9.1.0",
         "css-loader": "^6.8.0",
         "html-webpack-plugin": "^5.5.0",
+        "puppeteer": "^24.18.0",
         "serve": "^14.2.0",
         "style-loader": "^3.3.0",
         "webpack": "^5.88.0",
         "webpack-cli": "^5.1.0",
-        "webpack-dev-server": "^4.15.0"
+        "webpack-dev-server": "^4.15.0",
+        "xmldom": "^0.6.0"
     },
     "keywords": [
         "reference",

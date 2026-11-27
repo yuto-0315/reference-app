@@ -517,7 +517,7 @@ export const getYearSuffixGroupKey = (reference) => {
 export const formatCitation = (reference, page = '') => {
   const type = reference.type;
   const yearSuffix = reference.yearSuffix || '';
-  const displayYear = `${getPublicationYear(reference)}${yearSuffix}`;
+  const displayYear = `${getPublicationYear(reference) ?? ''}${yearSuffix}`;
   // 英語文献の引用は英文の中に置くため、全角数字にしない
   const isLatinReference = String(type || '').startsWith('english-') || type === 'score-foreign';
   const formattedPage = page ? (isLatinReference ? toHalfWidthDigits(page) : formatCitationPageRange(page)) : '';
@@ -688,11 +688,14 @@ const formatEnglishBook = (ref) => {
 const formatEnglishJournal = (ref) => {
   const { authors, title, journalName, volume, issue, year, yearSuffix, pages } = ref;
   const authorText = formatAuthors(authors, false, false);
+  // 英文の中に置くため、全角で入力された巻号も半角にする
+  const volumeText = volume ? toHalfWidthDigits(volume) : '';
+  const issueText = issue ? toHalfWidthDigits(issue) : '';
   let volumeIssue = '';
-  if (volume && issue) {
-    volumeIssue = ` ${volume}(${issue})`;
-  } else if (volume) {
-    volumeIssue = ` ${volume}`;
+  if (volumeText && issueText) {
+    volumeIssue = ` ${volumeText}(${issueText})`;
+  } else if (volumeText) {
+    volumeIssue = ` ${volumeText}`;
   }
   const displayYear = yearSuffix ? `${year}${yearSuffix}` : `${year}`;
 

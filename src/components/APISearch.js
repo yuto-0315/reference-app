@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { BrowserMultiFormatReader, NotFoundException, ChecksumException, FormatException } from '@zxing/library';
 import useDialog from '../hooks/useDialog';
 import { describeApiError } from '../utils/apiErrors';
 
@@ -39,8 +38,11 @@ const describeScanError = (error) => {
 
 // バーコードがまだ映っていない・読み取りかけのときに毎フレーム返る例外。利用者に見せるエラーではない
 // （本番ビルドではクラス名が短縮されるため、err.name ではなく instanceof で判定する）
-const isScanInProgressError = (err) =>
-  err instanceof NotFoundException || err instanceof ChecksumException || err instanceof FormatException;
+const isScanInProgressError = (err, zxing) =>
+  err instanceof zxing.NotFoundException || err instanceof zxing.ChecksumException || err instanceof zxing.FormatException;
+
+// バーコードの読み取り部品は大きく、使う人も限られるため、「バーコードスキャン」を押したときに初めて読み込む
+const loadBarcodeLibrary = () => import(/* webpackChunkName: "barcode" */ '@zxing/library');
 
 const APISearch = ({ type, onSearchResult, onCiniiResult, idPrefix = '' }) => {
   const [isbn, setIsbn] = useState('');
@@ -103,14 +105,18 @@ const APISearch = ({ type, onSearchResult, onCiniiResult, idPrefix = '' }) => {
   }, [type]);
 
   useEffect(() => {
-    if (!isScannerOpen) return;
-    const codeReader = new BrowserMultiFormatReader();
-    codeReaderRef.current = codeReader;
+    if (!isScannerOpen) return undefined;
     // カメラを止めるまでの間も同じバーコードを読み続けるため、最初の1回だけ使う
     let hasReadIsbn = false;
+    let isClosed = false;
 
     const start = async () => {
       try {
+        const zxing = await loadBarcodeLibrary();
+        // 読み込んでいる間に閉じられたら、カメラを起動しない
+        if (isClosed) return;
+        const codeReader = new zxing.BrowserMultiFormatReader();
+        codeReaderRef.current = codeReader;
         const videoInputDevices = await codeReader.listVideoInputDevices();
         const deviceId = videoInputDevices.length > 0 ? videoInputDevices[0].deviceId : null;
         await codeReader.decodeFromVideoDevice(deviceId, videoRef.current, (result, err) => {
@@ -125,7 +131,7 @@ const APISearch = ({ type, onSearchResult, onCiniiResult, idPrefix = '' }) => {
               handleIsbnSearch(code);
             }
           }
-          if (err && !isScanInProgressError(err)) {
+          if (err && !isScanInProgressError(err, zxing)) {
             setScanError(describeScanError(err));
           }
         });
@@ -137,8 +143,10 @@ const APISearch = ({ type, onSearchResult, onCiniiResult, idPrefix = '' }) => {
     start();
 
     return () => {
+      isClosed = true;
       if (codeReaderRef.current) {
         codeReaderRef.current.reset();
+        codeReaderRef.current = null;
       }
     };
   }, [isScannerOpen]);

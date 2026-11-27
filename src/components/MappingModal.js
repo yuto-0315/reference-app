@@ -3,6 +3,7 @@ import useDialog from '../hooks/useDialog';
 import '../styles/MappingModal.css';
 import { TriangleAlert, X } from 'lucide-react';
 import { stripCreatorRole } from '../utils/api';
+import { toDoiHref, toSafeHref } from '../utils/safeUrl';
 
 // Helpers: detect Japanese characters (kanji/kana)
 const isJapaneseText = (s) => /[\u3000-\u30FF\u4E00-\u9FFF\u3040-\u309F]/.test(s);
@@ -331,8 +332,8 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType, notice
             <div className="mapping-row" key={label}>
                 <span className="mapping-label">{label}</span>
                 <span className="mapping-value">
-                    {typeof value === 'string' && value.match(/^https?:\/\//) ? (
-                        <a href={value} target="_blank" rel="noopener noreferrer">{value}</a>
+                    {toSafeHref(value) ? (
+                        <a href={toSafeHref(value)} target="_blank" rel="noopener noreferrer">{value}</a>
                     ) : String(value)}
                     {willReplace && <span className="mapping-replace-note">今の入力「{String(currentValue)}」を置き換えます</span>}
                 </span>
@@ -367,8 +368,8 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType, notice
                         <div className="mapping-row" key="doi">
                             <span className="mapping-label">DOI</span>
                             <span className="mapping-value">
-                                {typeof mapping.doi === 'string' && mapping.doi.match(/^10\./) ? (
-                                    <a href={`https://doi.org/${mapping.doi}`} target="_blank" rel="noopener noreferrer">{mapping.doi}</a>
+                                {toDoiHref(mapping.doi) ? (
+                                    <a href={toDoiHref(mapping.doi)} target="_blank" rel="noopener noreferrer">{mapping.doi}</a>
                                 ) : (
                                     String(mapping.doi)
                                 )}

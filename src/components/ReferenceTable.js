@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import CitationPopover from './CitationPopover';
+import { toDoiHref, toSafeHref } from '../utils/safeUrl';
 import { formatCitation, formatReference, migrateReferenceData, addYearSuffixes, getSortReading, getPublicationYear, buildSortReadingLookup } from '../utils/formatters';
 import { collectReadingGroups } from '../utils/bulkEdit';
 import { ArrowDown, ArrowUp, ArrowUpDown, ArrowUpToLine, BookText, CopyPlus, ExternalLink, Languages, ListChecks, Pencil, Quote, TriangleAlert, Trash2 } from 'lucide-react';
@@ -163,15 +164,8 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
     onCopy(formatReference(refWithSuffix), '参考文献をコピーしました');
   };
 
-  const getExternalLink = (ref) => {
-    if (ref.doi) {
-      return `https://doi.org/${ref.doi}`;
-    }
-    if (ref.url) {
-      return ref.url;
-    }
-    return null;
-  };
+  // DOI があれば DOI のリンク、なければ URL。http(s) 以外のURLはリンクにしない
+  const getExternalLink = (ref) => toDoiHref(ref.doi) || toSafeHref(ref.url);
 
   return (
     <section className="reference-table-container" aria-labelledby="reference-table-title">
@@ -405,8 +399,8 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                           target="_blank"
                           rel="noopener noreferrer"
                           className="external-link"
-                          title={ref.doi ? `DOI: ${ref.doi}` : 'リンクを開く'}
-                          aria-label={ref.doi ? `DOI: ${ref.doi}（新しいタブで開く）` : 'リンクを新しいタブで開く'}
+                          title={toDoiHref(ref.doi) ? `DOI: ${ref.doi}` : 'リンクを開く'}
+                          aria-label={toDoiHref(ref.doi) ? `「${titleOf(ref)}」のDOI ${ref.doi} を新しいタブで開く` : `「${titleOf(ref)}」のリンクを新しいタブで開く`}
                         >
                           <ExternalLink size={16} className="icon-alone" />
                         </a>

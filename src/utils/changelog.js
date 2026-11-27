@@ -589,11 +589,3 @@ export const CHANGE_TYPE_LABELS = {
   breaking: '破壊的変更'
 };
 
-// 変更タイプのアイコン
-export const CHANGE_TYPE_ICONS = {
-  feature: '✨',
-  fix: '🔧',
-  improvement: '⚡',
-  security: '🔒',
-  breaking: '💥'
-};

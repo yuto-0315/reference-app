@@ -1,7 +1,9 @@
 /**
  * src/utils/api.js
  */
-import { fetchFromApi, invalidResponseError } from './apiErrors';
+import { fetchFromApi, invalidResponseError, readResponseBody } from './apiErrors';
+
+const CINII_ORIGIN = 'https://cir.nii.ac.jp/';
 
 // 同じISBN・同じ検索語をもう一度調べても、外部サービスに送り直さない（アクセス制限にかかりにくくするため）。
 // ページを開き直せば消えるので、相手側で情報が更新されても再読み込みで取り直せる
@@ -38,7 +40,7 @@ export const fetchBookInfoByISBN = async (rawIsbn) => {
   const url = `https://ndlsearch.ndl.go.jp/api/sru?operation=searchRetrieve&query=isbn%3D${encodeURIComponent(isbn)}&recordSchema=dcndl&recordPacking=xml&onlyBib=true`;
 
   const response = await fetchFromApi(url, 'ndl');
-  const bookInfo = parseNdlResponse(await response.text(), isbn);
+  const bookInfo = parseNdlResponse(await readResponseBody(response, 'ndl', 'text'), isbn);
   isbnResultCache.set(isbn, bookInfo);
   return bookInfo;
 };
@@ -51,7 +53,6 @@ const parseNdlResponse = (xmlText, isbn) => {
     if (xmlDoc.querySelector('parsererror')) throw invalidResponseError('ndl');
 
     const record = xmlDoc.querySelector('recordData');
-    // console.log(record);
     if (!record) {
       return null;
     }
@@ -142,7 +143,7 @@ const parseNdlResponse = (xmlText, isbn) => {
         }
       }
     } catch (e) {
-      console.error("Error extracting publisher info:", e);
+      // 出版社の詳しい情報が読めなくても、ほかの項目は使えるので続ける
     }
 
     return {
@@ -155,7 +156,6 @@ const parseNdlResponse = (xmlText, isbn) => {
       issued: getValue('issued'),
     };
   } catch (error) {
-    console.error("Failed to read book info from NDL:", error);
     throw error.name === 'ApiError' ? error : invalidResponseError('ndl');
   }
 };
@@ -208,15 +208,9 @@ export const searchCiNiiByTitle = async (title) => {
     if (ciniiSearchCache.has(title)) return ciniiSearchCache.get(title);
 
     const response = await fetchFromApi(url, 'cinii');
-    let data;
-    try {
-      data = await response.json();
-    } catch (error) {
-      throw invalidResponseError('cinii');
-    }
+    const data = await readResponseBody(response, 'cinii', 'json');
 
     try {
-    console.log("CiNii search results:", data);
 
     // Normalize possible shapes: top-level `items`, `@graph[*].items`,
     // or single object -> coerce into array
@@ -234,10 +228,6 @@ export const searchCiNiiByTitle = async (title) => {
       }
     }
 
-    console.log("CiNii normalized rawItems count:", Array.isArray(rawItems) ? rawItems.length : 0);
-    if (Array.isArray(rawItems) && rawItems.length > 0) {
-      console.log("Sample rawItem[0]:", rawItems[0]);
-    }
     if (!Array.isArray(rawItems) || rawItems.length === 0) return [];
 
   const normalizeAuthorField = (creatorsField) => {
@@ -306,11 +296,9 @@ export const searchCiNiiByTitle = async (title) => {
         seeAlso: unwrapValue((item['rdfs:seeAlso'] && item['rdfs:seeAlso']['@id']) || (item.seeAlso && item.seeAlso['@id']) || null) || null,
       };
     });
-  console.log("CiNii mapped results count:", mapped.length);
   ciniiSearchCache.set(title, mapped);
   return mapped;
     } catch (error) {
-        console.error("Failed to read CiNii search results:", error);
         throw invalidResponseError('cinii');
     }
 };
@@ -322,17 +310,12 @@ export const searchCiNiiByTitle = async (title) => {
  * @returns {Promise<object>} 標準化された記事オブジェクト
  */
 export const fetchCiNiiArticleDetails = async (linkOrSeeAlso) => {
-  if (!linkOrSeeAlso) return null;
+  // 検索結果に入っていたURLへそのまま問い合わせるため、CiNii 以外の場所には送らない
+  if (!linkOrSeeAlso || !String(linkOrSeeAlso).startsWith(CINII_ORIGIN)) return null;
 
-  console.log("Fetching CiNii article data from:", linkOrSeeAlso);
-  const tryUrls = [];
-  if (linkOrSeeAlso.endsWith('.json')) {
-    tryUrls.push(linkOrSeeAlso);
-  } else {
-    tryUrls.push(linkOrSeeAlso + '.json');
-    tryUrls.push(linkOrSeeAlso.replace(/\/$/, '') + '.json');
-    tryUrls.push(linkOrSeeAlso);
-  }
+  const tryUrls = linkOrSeeAlso.endsWith('.json')
+    ? [linkOrSeeAlso]
+    : [...new Set([`${linkOrSeeAlso.replace(/\/$/, '')}.json`, linkOrSeeAlso])];
 
   const normalizeAuthors = (item) => {
     const creators = item['dc:creator'] || item.creator || item.creator || null;
@@ -364,8 +347,9 @@ export const fetchCiNiiArticleDetails = async (linkOrSeeAlso) => {
     // 見つからない（404）ときだけ別の形のURLを試す。アクセス集中や障害のときに続けて送ると、制限が長引くため止める
     const res = await fetchFromApi(url, 'cinii', { acceptStatuses: [404, 400] });
     if (!res.ok) continue;
+    const data = await readResponseBody(res, 'cinii', 'json').catch(() => null);
+    if (!data) continue;
     try {
-      const data = await res.json();
 
       // data may contain items array or be a single item
       const rawItems = data.items || (data['@graph'] && data['@graph'][0] && data['@graph'][0].items) || (Array.isArray(data) ? data : null);

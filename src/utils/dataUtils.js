@@ -50,7 +50,6 @@ export const stripComputedFields = (reference) => {
  */
 export const removeDuplicates = (references) => {
   if (!Array.isArray(references)) {
-    console.warn('removeDuplicates: 入力が配列ではありません', references);
     return [];
   }
 
@@ -58,22 +57,9 @@ export const removeDuplicates = (references) => {
   const uniqueReferences = [];
 
   references.forEach((ref) => {
-    if (!ref || typeof ref !== 'object') {
-      console.warn('removeDuplicates: 不正なデータを検出しました', ref);
-      return;
-    }
-
-    if (!ref.id) {
-      console.warn('removeDuplicates: IDが存在しないデータを検出しました', ref);
-      return;
-    }
-
-    if (!seen.has(ref.id)) {
-      seen.add(ref.id);
-      uniqueReferences.push(ref);
-    } else {
-      console.log(`重複データを除去しました: ${ref.id} - ${ref.title || '不明なタイトル'}`);
-    }
+    if (!ref || typeof ref !== 'object' || !ref.id || seen.has(ref.id)) return;
+    seen.add(ref.id);
+    uniqueReferences.push(ref);
   });
 
   return uniqueReferences;
@@ -93,7 +79,6 @@ export const validateAndCleanData = (references) => {
   };
 
   if (!Array.isArray(references)) {
-    console.warn('validateAndCleanData: 入力が配列ではありません');
     return { cleaned: [], stats };
   }
 
