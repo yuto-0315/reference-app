@@ -11,3 +11,6 @@ dist/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# 端末の操作記録（script コマンドの出力）。ユーザー名やホスト名が入るため公開しない
+dev
