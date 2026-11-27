@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { REFERENCE_TYPES, REFERENCE_TYPE_HINTS, getReferenceTypeFields } from '../utils/formatters';
 import InfoTooltip from './InfoTooltip';
 import APISearch from './APISearch';
@@ -10,6 +10,27 @@ import { describeApiErrorReason } from '../utils/apiErrors';
 import { Lightbulb } from 'lucide-react';
 
 const createEmptyAuthor = () => ({ lastName: '', firstName: '', reading: '' });
+
+// 端末の日付（toISOString は UTC なので、日本の午前0〜9時に前日になってしまう）
+const todayIsoDate = () => {
+  const today = new Date();
+  return [today.getFullYear(), today.getMonth() + 1, today.getDate()].map(part => String(part).padStart(2, '0')).join('-');
+};
+
+// 追加したあとは、同じ種類の文献を続けて登録することが多いため、種類はそのままにして中身だけ空にする。
+// Webサイトの閲覧日は、たいてい登録した日なので今日の日付を入れておく
+const buildEmptyFormData = (type) => {
+  const emptyData = { type };
+  getReferenceTypeFields(type).forEach(field => {
+    if (field.type === 'authors' || field.type === 'translation-authors') emptyData[field.key] = [createEmptyAuthor()];
+  });
+  if (type === 'website') emptyData.accessDate = todayIsoDate();
+  return emptyData;
+};
+
+const YEAR_FIELD_KEYS = ['year', 'originalYear', 'releaseYear', 'recordingYear'];
+// 出版予定の本も登録できるよう、来年までは受け付ける
+const isValidYear = (value) => /^\d{4}$/.test(String(value).trim()) && Number(value) >= 1000 && Number(value) <= new Date().getFullYear() + 1;
 
 // 空白だけの入力も未入力として扱う
 const isBlank = (value) => value === undefined || value === null || String(value).trim() === '';
@@ -48,7 +69,10 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
     return baseData;
   };
 
-  const [formData, setFormData] = useState(getInitialFormData());
+  const [formData, setFormData] = useState(getInitialFormData);
+  const formRef = useRef(null);
+  // 送信して足りない項目があったかどうか（ボタンの近くに残りの件数を出し、どこを直せばよいかへ案内する）
+  const [hasFailedSubmit, setHasFailedSubmit] = useState(false);
   // 読み込んだ直後（または追加・更新直後）の内容。これと違えば「入力途中」とみなす
   const [baselineData, setBaselineData] = useState(formData);
   const [errors, setErrors] = useState({});
@@ -69,15 +93,30 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
       setFormData(loadedData);
       setBaselineData(loadedData);
       setErrors({});
+      setHasFailedSubmit(false);
     }
   }, [initialData]);
 
+  const isDirty = JSON.stringify(formData) !== JSON.stringify(baselineData);
+
   // 別の文献の編集に切り替えるとき、書きかけの内容を黙って消さないよう、入力途中かどうかを親に伝える
   useEffect(() => {
-    onDirtyChange?.(JSON.stringify(formData) !== JSON.stringify(baselineData));
-  }, [formData, baselineData, onDirtyChange]);
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
+
+  // 入力途中でタブを閉じたり再読み込みしたりしたときは、ブラウザの確認を出して書きかけを守る
+  useEffect(() => {
+    if (!isDirty) return undefined;
+    const warnBeforeLeaving = (event) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warnBeforeLeaving);
+    return () => window.removeEventListener('beforeunload', warnBeforeLeaving);
+  }, [isDirty]);
 
   const fields = getReferenceTypeFields(formData.type);
+  const remainingErrorCount = Object.values(errors).filter(Boolean).length;
 
   const handleChange = (key, value) => {
     setFormData(prev => ({ ...prev, [key]: value }));
@@ -102,6 +141,7 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
       type: newType,
       ...carriedOverData
     };
+    if (newType === 'website' && !newFormData.accessDate) newFormData.accessDate = todayIsoDate();
 
     // 著者フィールドがある場合のみ著者を初期化
     const hasAuthorsField = newFields.some(field => field.key === 'authors');
@@ -223,25 +263,40 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
       if (field.type === 'url' && !isBlank(value) && !/^https?:\/\/.+/.test(String(value))) {
         newErrors[field.key] = '有効なURLを入力してください（http://またはhttps://で始まる）';
       }
+      if (YEAR_FIELD_KEYS.includes(field.key) && !isBlank(value) && !isValidYear(value)) {
+        newErrors[field.key] = `${field.label}は西暦4桁で入力してください（例：2020）`;
+      }
     });
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const isValid = Object.values(newErrors).filter(Boolean).length === 0;
+    setHasFailedSubmit(!isValid);
+    return isValid;
+  };
+
+  // 足りない項目が画面の外にあっても気づけるよう、最初の項目まで移動して入力できる状態にする
+  const focusFirstError = () => {
+    requestAnimationFrame(() => {
+      const firstInvalid = formRef.current?.querySelector('[aria-invalid="true"], input.error, textarea.error, .error-message');
+      if (!firstInvalid) return;
+      firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (typeof firstInvalid.focus === 'function' && firstInvalid.matches('input, textarea, select')) {
+        firstInvalid.focus({ preventScroll: true });
+      }
+    });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (validateForm()) {
-      // 重複などで追加できなかった場合は、入力内容を消さずに修正できるようにする
-      if (onSubmit(formData) === false) return;
-      // 新規追加・編集問わずフォームをリセット
-      const resetData = { type: 'japanese-book' };
-      // 日本語書籍は著者フィールドがあるので著者を初期化
-      resetData.authors = [{ lastName: '', firstName: '', reading: '' }];
-
-      setFormData(resetData);
-      setBaselineData(resetData);
-      setErrors({});
+    if (!validateForm()) {
+      focusFirstError();
+      return;
     }
+    // 重複などで追加できなかった場合は、入力内容を消さずに修正できるようにする
+    if (onSubmit(formData) === false) return;
+    const resetData = buildEmptyFormData(formData.type);
+    setFormData(resetData);
+    setBaselineData(resetData);
+    setErrors({});
   };
 
 
@@ -271,6 +326,11 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
       })
     );
     setFormData(prev => ({ ...prev, ...filledData }));
+    // 取り込んだ値で埋まった項目の「必須項目です」などの表示は、もう当てはまらないので消す
+    setErrors(prev => Object.fromEntries(Object.entries(prev).filter(([key]) => {
+      const [fieldKey] = key.split('.');
+      return !Object.prototype.hasOwnProperty.call(filledData, fieldKey);
+    })));
   };
 
   const handleSelectCiniiResult = (result) => {
@@ -571,7 +631,7 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
 
   return (
     <>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} ref={formRef} noValidate>
         <div className="form-group">
           <label htmlFor={`${idPrefix}reference-type`}>文献の種類 <span className="required-mark">*</span></label>
           <select
@@ -602,6 +662,11 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
 
         {fields.map(renderField)}
 
+        {hasFailedSubmit && remainingErrorCount > 0 && (
+          <p className="form-error-summary" role="alert">
+            直す必要のある項目が{remainingErrorCount}件あります。赤い枠の欄を確かめてください。
+          </p>
+        )}
         <div className="button-group">
           <button type="submit" className="btn btn-primary">
             {isEditing ? '更新' : '追加'}
@@ -626,6 +691,7 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
         onApply={handleApplyMapping}
         referenceType={formData.type}
         notice={mappingNotice}
+        currentValues={formData}
       />
 
       <SearchResultsModal

@@ -1,6 +1,7 @@
 .toast {
   position: fixed;
-  top: 20px;
+  /* 上部中央のお知らせと重ならないよう、画面の右下に出す */
+  bottom: 20px;
   right: 20px;
   z-index: 1000;
   opacity: 0;

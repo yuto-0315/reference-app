@@ -129,3 +129,11 @@
   margin: 0.2em 0 0;
   color: var(--color-text-danger);
 }
+
+/* 反映すると置き換わる項目は、値の下に小さく添えて気づけるようにする */
+.mapping-replace-note {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.85em;
+  color: var(--color-text-secondary);
+}

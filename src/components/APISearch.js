@@ -20,6 +20,23 @@ const findIsbnInputProblem = (rawIsbn) => {
   return '';
 };
 
+// カメラまわりの英語のエラーを、次にすることが分かる日本語にする
+const describeScanError = (error) => {
+  switch (error?.name) {
+    case 'NotAllowedError':
+    case 'SecurityError':
+      return 'カメラの使用が許可されていません。ブラウザのアドレスバーの左にある設定からカメラを許可するか、ISBNを直接入力してください。';
+    case 'NotFoundError':
+    case 'OverconstrainedError':
+      return '使えるカメラが見つかりませんでした。ISBNを直接入力してください。';
+    case 'NotReadableError':
+    case 'AbortError':
+      return 'カメラを起動できませんでした。ほかのアプリがカメラを使っていないか確かめるか、ISBNを直接入力してください。';
+    default:
+      return 'バーコードを読み取れませんでした。もう一度試すか、ISBNを直接入力してください。';
+  }
+};
+
 // バーコードがまだ映っていない・読み取りかけのときに毎フレーム返る例外。利用者に見せるエラーではない
 // （本番ビルドではクラス名が短縮されるため、err.name ではなく instanceof で判定する）
 const isScanInProgressError = (err) =>
@@ -109,12 +126,11 @@ const APISearch = ({ type, onSearchResult, onCiniiResult, idPrefix = '' }) => {
             }
           }
           if (err && !isScanInProgressError(err)) {
-            // other errors
-            setScanError(err.message || String(err));
+            setScanError(describeScanError(err));
           }
         });
       } catch (e) {
-        setScanError(e.message || String(e));
+        setScanError(describeScanError(e));
       }
     };
 
@@ -195,7 +211,7 @@ const APISearch = ({ type, onSearchResult, onCiniiResult, idPrefix = '' }) => {
               <video ref={videoRef} style={{ width: '100%', maxHeight: '400px' }} autoPlay muted playsInline />
               <div style={{ marginTop: 8 }}>
                 <button type="button" className="btn btn-secondary" onClick={closeScanner}>閉じる</button>
-                {scanError && <div className="error-message" role="alert">スキャンエラー: {scanError}</div>}
+                {scanError && <div className="error-message" role="alert">{scanError}</div>}
                 <div style={{ marginTop: 6, fontSize: 'smaller' }}>本の裏表紙にある上段のバーコード（978 で始まる ISBN）をカメラにかざしてください</div>
               </div>
             </div>

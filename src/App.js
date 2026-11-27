@@ -15,7 +15,7 @@ import FormatGuideModal from './components/FormatGuideModal';
 import Toast from './components/Toast';
 import VersionInfo from './components/VersionInfo';
 import {
-  loadFromStorage, readStoredReferences, saveToStorage, isDuplicate, validateAndCleanData, stripComputedFields,
+  loadFromStorage, readStoredReferences, saveToStorage, findDuplicate, validateAndCleanData, stripComputedFields,
   planImport, createUndo, removeContentDuplicates, CORRUPT_BACKUP_SUFFIX
 } from './utils/dataUtils';
 import { BookOpenText, Library, X } from 'lucide-react';
@@ -63,6 +63,7 @@ function App() {
   const [bulkDialog, setBulkDialog] = useState(null);
   const alertTimerRef = useRef(null);
   const formSectionRef = useRef(null);
+  const previewSectionRef = useRef(null);
   const isFormDirtyRef = useRef(false);
   // 一覧の「複製」で追加フォームに読み込む文献
   const [duplicateSource, setDuplicateSource] = useState(null);
@@ -82,9 +83,9 @@ function App() {
     // 保存できないまま作業を続けると、閉じたときに入力がすべて消えるため、すぐに知らせてファイルへの保存を促す
     if (!saved && !saveFailedRef.current) {
       showAlert(
-        'ブラウザに保存できませんでした（空き容量が足りない可能性があります）。このまま閉じると変更が消えるため、「JSONエクスポート」でファイルに保存してください',
+        'ブラウザに保存できませんでした（空き容量が足りない可能性があります）。このまま閉じると変更が消えるため、「ファイルに保存」でファイルに保存してください',
         'error',
-        { label: 'JSONエクスポート', onClick: exportToJSON }
+        { label: 'ファイルに保存', onClick: exportToJSON }
       );
     }
     saveFailedRef.current = !saved;
@@ -107,12 +108,12 @@ function App() {
     };
     if (initialStorage.problem === 'unreadable') {
       showAlert(
-        '保存されていたデータを読み込めませんでした。元のデータは別の場所に残してあるので、ファイルに保存して、最後にエクスポートしたJSONと見比べてください',
+        '保存されていたデータを読み込めませんでした。元のデータは別の場所に残してあるので、ファイルに保存して、最後に「ファイルに保存」したファイルと見比べてください',
         'error',
         downloadOriginal
       );
     } else if (initialStorage.problem === 'unavailable') {
-      showAlert('このブラウザの設定で、データを保存できない状態です。閉じると入力が消えるため、作業の終わりに「JSONエクスポート」で保存してください', 'error');
+      showAlert('このブラウザの設定で、データを保存できない状態です。閉じると入力が消えるため、作業の終わりに「ファイルに保存」で保存してください', 'error');
     } else if (initialStorage.invalidCount > 0) {
       showAlert(
         `文献の種類が分からないデータ${initialStorage.invalidCount}件を読み込めませんでした。元のデータは残してあるので、ファイルに保存できます`,
@@ -146,9 +147,13 @@ function App() {
       updatedAt: new Date().toISOString()
     };
 
-    // 重複チェック（内容ベース）
-    if (isDuplicate(references, newReference)) {
-      showAlert('同じ内容の参考文献が既に存在します', 'error');
+    // 重複チェック（内容ベース）。どの文献と同じなのかを示し、一覧のその行へ移れるようにする
+    const duplicate = findDuplicate(references, newReference);
+    if (duplicate) {
+      showAlert(`「${duplicate.title || '（タイトルなし）'}」と同じ内容の文献がすでに登録されているため、追加しませんでした`, 'error', {
+        label: '一覧で見る',
+        onClick: () => returnToRow(duplicate.id)
+      });
       // 追加できなかったことをフォームに伝え、入力内容を残してもらう
       return false;
     }
@@ -159,22 +164,25 @@ function App() {
   };
 
   const updateReference = (id, referenceData) => {
-    setReferences(prev => {
-      // 統合ではなく置き換える。編集中に種類を変えたとき、前の種類の項目（著者・ページなど）が
-      // 画面からは消えたのにデータに残り、引用に混ざってしまうため（フォームには元の文献の全項目が入っている）
-      const updated = prev.map(ref =>
-        ref.id === id
-          ? { ...stripComputedFields(referenceData), id, createdAt: ref.createdAt, updatedAt: new Date().toISOString() }
-          : ref
-      );
+    // 統合ではなく置き換える。編集中に種類を変えたとき、前の種類の項目（著者・ページなど）が
+    // 画面からは消えたのにデータに残り、引用に混ざってしまうため（フォームには元の文献の全項目が入っている）
+    const updated = references.map(ref =>
+      ref.id === id
+        ? { ...stripComputedFields(referenceData), id, createdAt: ref.createdAt, updatedAt: new Date().toISOString() }
+        : ref
+    );
+    const { cleaned } = validateAndCleanData(updated);
+    const undo = createUndo(references, cleaned);
 
-      // 更新後に重複チェックと除去
-      const { cleaned } = validateAndCleanData(updated);
-      return cleaned;
-    });
-
+    setReferences(cleaned);
     setSelectedReference(null);
-    showAlert('参考文献を更新しました', 'success');
+    showAlert('参考文献を更新しました', 'success', {
+      label: '元に戻す',
+      onClick: () => {
+        setReferences(undo);
+        showAlert('更新する前の内容に戻しました', 'info');
+      }
+    });
     returnToRow(id);
   };
 
@@ -194,6 +202,14 @@ function App() {
       section.scrollIntoView({ behavior: 'smooth', block: 'start' });
       section.querySelector('.section-title')?.focus({ preventScroll: true });
     });
+  };
+
+  // 一覧でチェックした結果の参考文献一覧（画面上部の出力欄）へ移り、見出しから読めるようにする
+  const showOutput = () => {
+    const section = previewSectionRef.current;
+    if (!section) return;
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    section.querySelector('.section-title')?.focus({ preventScroll: true });
   };
 
   // 更新した行を少しの間だけ枠で示す。編集画面は行の上で開いていたので、閉じれば同じ位置に戻っている
@@ -272,11 +288,11 @@ function App() {
       try {
         importedData = JSON.parse(e.target.result);
       } catch (error) {
-        showAlert('JSONファイルとして読み込めませんでした。このアプリの「JSONエクスポート」で保存したファイルを選んでください', 'error');
+        showAlert('JSONファイルとして読み込めませんでした。このアプリの「ファイルに保存」で保存したファイルを選んでください', 'error');
         return;
       }
       if (!Array.isArray(importedData)) {
-        showAlert('このアプリの文献データではないようです。「JSONエクスポート」で保存したファイルを選んでください', 'error');
+        showAlert('このアプリの文献データではないようです。「ファイルに保存」で保存したファイルを選んでください', 'error');
         return;
       }
 
@@ -309,6 +325,14 @@ function App() {
     // エラーは読み逃すと次に何をすればよいか分からないため、閉じるまで表示し続ける
     // 「元に戻す」などの操作が付いたお知らせも、押す前に消えないようにする
     if (type === 'error' || action) return;
+    alertTimerRef.current = setTimeout(() => setAlert(null), ALERT_DURATION_MS);
+  };
+
+  // 読んでいる途中（マウスを乗せている・フォーカスしている間）は消さず、離れてから数え直す
+  const pauseAlertTimer = () => clearTimeout(alertTimerRef.current);
+  const resumeAlertTimer = () => {
+    if (!alert || alert.type === 'error' || alert.action) return;
+    clearTimeout(alertTimerRef.current);
     alertTimerRef.current = setTimeout(() => setAlert(null), ALERT_DURATION_MS);
   };
 
@@ -371,10 +395,9 @@ function App() {
   };
 
   const saveBulkField = (field, value, referenceIds) => {
-    replaceReferencesWithUndo(
-      applyFieldValue(references, referenceIds, field, value, new Date().toISOString()),
-      `${referenceIds.length}件の文献の「${field.label}」を「${value}」にしました`
-    );
+    const nextReferences = applyFieldValue(references, referenceIds, field, value, new Date().toISOString());
+    const changedCount = nextReferences.filter((ref, index) => ref !== references[index]).length;
+    replaceReferencesWithUndo(nextReferences, `${changedCount}件の文献の「${field.label}」を「${value}」にしました`);
   };
 
   // チェック状態の管理
@@ -443,6 +466,10 @@ function App() {
         <div
           className={`alert alert-${alert.type}`}
           role={alert.type === 'error' ? 'alert' : 'status'}
+          onMouseEnter={pauseAlertTimer}
+          onMouseLeave={resumeAlertTimer}
+          onFocus={pauseAlertTimer}
+          onBlur={resumeAlertTimer}
         >
           <span className="alert-message">{alert.message}</span>
           {alert.action && (
@@ -473,7 +500,7 @@ function App() {
           />
         </div>
 
-        <div className="preview-section">
+        <div className="preview-section" ref={previewSectionRef}>
           <PreviewSection
             references={references}
             checkedReferences={checkedReferences}
@@ -495,6 +522,7 @@ function App() {
         checkedReferences={checkedReferences}
         onOpenReadingBulk={() => setBulkDialog('reading')}
         onOpenBulkEdit={() => setBulkDialog('fields')}
+        onShowOutput={showOutput}
       />
 
       {selectedReference && (

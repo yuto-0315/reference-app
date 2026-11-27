@@ -47,7 +47,7 @@ const UpdateGuideModal = ({ isOpen, onClose }) => {
                         <h3>注意事項</h3>
                         <ul>
                             <li>
-                                <strong>団体出版本</strong>などの特殊な書誌データには<span style={{ color: 'var(--color-text-danger)', fontWeight: 'bold', textDecoration: 'underline' }}>現在未対応</span>です（今後対応予定）。
+                                <strong>団体出版本</strong>でISBNから取り込むと、著者（「文部科学省 編」の文部科学省など）を執筆団体に入れます。著者がない本は出版社を入れるので、違う場合は直してください。
                             </li>
                         </ul>
 
@@ -60,9 +60,11 @@ const UpdateGuideModal = ({ isOpen, onClose }) => {
 
                         <hr />
 
-                        <h3>トラブルシューティング</h3>
+                        <h3>うまくいかないとき</h3>
                         <ul>
-                            <li>そんなもんあるわけない。</li>
+                            <li>「アクセスが集中しています」と出たら、表示された時間だけ待ってからもう一度お試しください。その間も各項目は直接入力できます。</li>
+                            <li>本が見つからないときは、ISBNの数字（10桁または13桁）を確かめてください。古い本や非売品は登録されていないことがあります。</li>
+                            <li>著者の姓と名の分かれ目がずれたときは、確認画面の「前から○文字を姓に分ける」で直せます。</li>
                         </ul>
 
                         <h3>備考</h3>

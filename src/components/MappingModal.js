@@ -62,7 +62,7 @@ const splitFullName = (fullName) => {
 
 const createEmptyAuthor = () => ({ lastName: '', firstName: '', reading: '' });
 
-const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType, notice }) => {
+const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType, notice, currentValues = {} }) => {
     // helper: extract creators/authors from a variety of possible keys
     const getCreators = (data) => {
         if (!data) return [];
@@ -321,18 +321,24 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType, notice
     };
 
     // 取得できなかった項目まで空欄で並べると、どれが入るのか分かりにくいため、値のある項目だけ出す
-    const renderField = (label, value) => ((value === null || value === undefined || String(value).trim() === '') ? null : (
-        <div className="mapping-row" key={label}>
-            <span className="mapping-label">{label}</span>
-            <span className="mapping-value">
-                {typeof value === 'string' && value.match(/^https?:\/\//) ? (
-                    <a href={value} target="_blank" rel="noopener noreferrer">{value}</a>
-                ) : (
-                    (value === null || value === undefined) ? '' : String(value)
-                )}
-            </span>
-        </div>
-    ));
+    // フォームにすでに別の値が入っている項目は、反映すると置き換わることを先に示す（黙って上書きしない）
+    const renderField = (label, value, formKey) => {
+        if (value === null || value === undefined || String(value).trim() === '') return null;
+        const currentValue = formKey ? currentValues[formKey] : undefined;
+        const willReplace = currentValue !== undefined && currentValue !== null && String(currentValue).trim() !== ''
+            && String(currentValue).trim() !== String(value).trim();
+        return (
+            <div className="mapping-row" key={label}>
+                <span className="mapping-label">{label}</span>
+                <span className="mapping-value">
+                    {typeof value === 'string' && value.match(/^https?:\/\//) ? (
+                        <a href={value} target="_blank" rel="noopener noreferrer">{value}</a>
+                    ) : String(value)}
+                    {willReplace && <span className="mapping-replace-note">今の入力「{String(currentValue)}」を置き換えます</span>}
+                </span>
+            </div>
+        );
+    };
 
     // 団体出版本は著者の代わりに執筆団体を入れるため、著者の選択は出さない
     const isOrganizationBook = referenceType === 'organization-book';
@@ -347,15 +353,15 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType, notice
                 <div className="modal-body">
                     {notice && <p className="mapping-notice" role="status"><TriangleAlert size={16} />{notice}</p>}
                     <p className="mapping-lead">取得できた項目です。「フォームに反映」で入力欄に入ります。ここにない項目は、反映後にフォームで入力してください。</p>
-                    {isOrganizationBook && renderField('執筆団体', mapping.organization)}
-                    {isOrganizationBook && renderField('執筆団体（読み仮名）', mapping.organizationReading)}
-                    {renderField('タイトル', mapping.title)}
-                    {!isOrganizationBook && renderField('出版社', mapping.publisher)}
-                    {renderField('出版年', mapping.year)}
-                    {renderField('雑誌名', mapping.journalName)}
-                    {renderField('巻', mapping.volume)}
-                    {renderField('号', mapping.issue)}
-                    {renderField('ページ', mapping.pages)}
+                    {isOrganizationBook && renderField('執筆団体', mapping.organization, 'organization')}
+                    {isOrganizationBook && renderField('執筆団体（読み仮名）', mapping.organizationReading, 'organizationReading')}
+                    {renderField('タイトル', mapping.title, 'title')}
+                    {!isOrganizationBook && renderField('出版社', mapping.publisher, 'publisher')}
+                    {renderField('出版年', mapping.year, 'year')}
+                    {renderField('雑誌名', mapping.journalName, 'journalName')}
+                    {renderField('巻', mapping.volume, 'volume')}
+                    {renderField('号', mapping.issue, 'issue')}
+                    {renderField('ページ', mapping.pages, 'pages')}
                     {renderField('リンク', mapping.link)}
                     {mapping.doi && (
                         <div className="mapping-row" key="doi">

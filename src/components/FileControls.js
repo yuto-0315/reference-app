@@ -8,7 +8,7 @@ const BackupStatus = ({ lastBackup, hasChangesSinceBackup, referenceCount }) => 
   if (!lastBackup) {
     return (
       <p className="backup-status needs-backup">
-        <TriangleAlert size={16} />まだバックアップしていません。データはこのブラウザの中だけにあるため、「JSONエクスポート」で保存しておくと安心です
+        <TriangleAlert size={16} />まだバックアップしていません。データはこのブラウザの中だけにあるため、「ファイルに保存」で保存しておくと安心です
       </p>
     );
   }
@@ -16,7 +16,7 @@ const BackupStatus = ({ lastBackup, hasChangesSinceBackup, referenceCount }) => 
   if (hasChangesSinceBackup) {
     return (
       <p className="backup-status needs-backup">
-        <TriangleAlert size={16} />最後のバックアップ：{elapsed}（そのあと変更があります。「JSONエクスポート」で保存し直してください）
+        <TriangleAlert size={16} />最後のバックアップ：{elapsed}（そのあと変更があります。「ファイルに保存」で保存し直してください）
       </p>
     );
   }
@@ -38,14 +38,14 @@ const FileControls = ({ onExport, onImport, onCleanup, referenceCount, lastBacku
           className="btn btn-secondary"
           onClick={onExport}
           disabled={referenceCount === 0}
-          title={referenceCount === 0 ? '参考文献がありません' : 'JSONファイルとしてエクスポート'}
+          title={referenceCount === 0 ? '参考文献がありません' : 'すべての文献をJSONファイルに保存（バックアップ）'}
         >
-          <Download size={16} />JSONエクスポート ({referenceCount}件)
+          <Download size={16} />ファイルに保存（{referenceCount}件）
         </button>
 
         {/* display: none だとキーボードで選べないため、見た目だけ隠してラベルをボタンとして見せる */}
         <label className="file-input-label">
-          <Upload size={16} />JSONインポート
+          <Upload size={16} />ファイルから読み込む
           <input
             type="file"
             accept=".json"
@@ -61,7 +61,7 @@ const FileControls = ({ onExport, onImport, onCleanup, referenceCount, lastBacku
           disabled={referenceCount === 0}
           title={referenceCount === 0 ? '参考文献がありません' : '同じ文献の二重登録などを取り除く'}
         >
-          <Eraser size={16} />データクリーンアップ
+          <Eraser size={16} />二重登録を整理
         </button>
       </div>
 
@@ -72,9 +72,9 @@ const FileControls = ({ onExport, onImport, onCleanup, referenceCount, lastBacku
         <summary><Lightbulb size={16} />使い方のヒント</summary>
         <ul>
           <li><strong>自動保存:</strong> 入力した内容は自動的にブラウザに保存されます</li>
-          <li><strong>エクスポート:</strong> データをJSONファイルとしてバックアップできます</li>
-          <li><strong>インポート:</strong> エクスポートしたJSONファイルを読み込みます。今の文献は残したまま、ない文献を追加し、同じ文献はより新しく直したほうの内容にします（別のPCで直した内容を持ち帰れます）</li>
-          <li><strong>クリーンアップ:</strong> 同じ文献を2回登録したもの（参考文献一覧に同じ行が出るもの）や、読み込めないデータを取り除きます。取り除いたあとも「元に戻す」で戻せます</li>
+          <li><strong>ファイルに保存:</strong> すべての文献をJSONファイルに保存します。別のPCやブラウザへ移すときや、バックアップに使います</li>
+          <li><strong>ファイルから読み込む:</strong> 「ファイルに保存」で作ったJSONファイルを読み込みます。今の文献は残したまま、ない文献を追加し、同じ文献はより新しく直したほうの内容にします（別のPCで直した内容を持ち帰れます）</li>
+          <li><strong>二重登録を整理:</strong> 同じ文献を2回登録したもの（参考文献一覧に同じ行が出るもの）や、読み込めないデータを取り除きます。取り除いたあとも「元に戻す」で戻せます</li>
           <li><strong>まとめて登録・編集:</strong> 一覧の上の「読み仮名をまとめて登録」で、同じ団体名・著者名の読み仮名を1回の入力で登録できます。一覧でチェックした文献は「チェックした文献をまとめて編集」で、出版社や発行年などをまとめて同じ値にできます</li>
           <li><strong>コピー機能:</strong> 一覧の「引用」で本文中の引用（割注）、「文献」で参考文献の形式をクリップボードにコピーできます</li>
         </ul>

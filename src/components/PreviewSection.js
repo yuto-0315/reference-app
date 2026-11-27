@@ -111,7 +111,7 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleAll, on
 
   return (
     <div>
-      <h2 className="section-title">参考文献一覧の出力</h2>
+      <h2 className="section-title" tabIndex={-1}>参考文献一覧の出力</h2>
       <p className="preview-lead">下の一覧の左端でチェックした文献を、提出用の形式で並べます。</p>
 
       {/* 参考文献一覧 */}
@@ -166,20 +166,19 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleAll, on
 
         {/* 並べ替えコントロール */}
         {checkedCount > 1 && (
-          <div className="sort-controls" style={{ marginBottom: '15px' }}>
-            <span className="sort-label">並べ替え:</span>
-            <button
-              className={`sort-btn ${sortBy === 'author' ? 'active' : ''}`}
-              onClick={() => handleSort('author')}
-            >
-              著者名{getSortIcon('author')}
-            </button>
-            <button
-              className={`sort-btn ${sortBy === 'year' ? 'active' : ''}`}
-              onClick={() => handleSort('year')}
-            >
-              発行年{getSortIcon('year')}
-            </button>
+          <div className="sort-controls" role="group" aria-label="参考文献一覧の並べ替え" style={{ marginBottom: '15px' }}>
+            <span className="sort-label" aria-hidden="true">並べ替え:</span>
+            {[['author', '著者名'], ['year', '発行年']].map(([field, label]) => (
+              <button
+                key={field}
+                type="button"
+                className={`sort-btn ${sortBy === field ? 'active' : ''}`}
+                aria-pressed={sortBy === field}
+                onClick={() => handleSort(field)}
+              >
+                {label}{getSortIcon(field)}
+              </button>
+            ))}
           </div>
         )}
 

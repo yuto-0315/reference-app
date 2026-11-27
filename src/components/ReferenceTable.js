@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import CitationPopover from './CitationPopover';
 import { formatCitation, formatReference, migrateReferenceData, addYearSuffixes, getSortReading, getPublicationYear, buildSortReadingLookup } from '../utils/formatters';
 import { collectReadingGroups } from '../utils/bulkEdit';
-import { ArrowDown, ArrowUp, ArrowUpDown, BookText, CopyPlus, ExternalLink, Languages, ListChecks, Pencil, Quote, TriangleAlert, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, ArrowUpToLine, BookText, CopyPlus, ExternalLink, Languages, ListChecks, Pencil, Quote, TriangleAlert, Trash2 } from 'lucide-react';
 
 // 著者・団体・作曲者の名前と読み、書誌情報をまとめた検索対象テキスト
 const getSearchableText = (migratedRef) => {
@@ -38,7 +38,9 @@ const isReadingMissing = (migratedRef) => {
   return false;
 };
 
-const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, checkedReferences, onOpenReadingBulk, onOpenBulkEdit, onDuplicate, recentlyUpdatedId }) => {
+const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, checkedReferences, onOpenReadingBulk, onOpenBulkEdit, onDuplicate, recentlyUpdatedId, onShowOutput }) => {
+  // 削除した文献のチェックが残っていても数えない
+  const checkedCount = references.filter(ref => checkedReferences.has(ref.id)).length;
   const missingReadingNameCount = useMemo(() => collectReadingGroups(references).filter(group => group.isMissing).length, [references]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showOnlyMissingReading, setShowOnlyMissingReading] = useState(false);
@@ -163,35 +165,35 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
       <div className="table-controls">
         <div className="search-container">
           <input
-            type="text"
-            placeholder="参考文献を検索..."
+            type="search"
+            placeholder="著者名・タイトル・年などで検索（空白で区切ると、すべてを含む文献）"
             aria-label="参考文献を検索"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape' && searchTerm) {
+                e.stopPropagation();
+                setSearchTerm('');
+              }
+            }}
             className="search-input"
           />
         </div>
 
-        <div className="sort-controls">
-          <span className="sort-label">並べ替え:</span>
-          <button
-            className={`sort-btn ${sortBy === 'year' ? 'active' : ''}`}
-            onClick={() => handleSort('year')}
-          >
-            発行年{getSortIcon('year')}
-          </button>
-          <button
-            className={`sort-btn ${sortBy === 'reading' ? 'active' : ''}`}
-            onClick={() => handleSort('reading')}
-          >
-            著者名{getSortIcon('reading')}
-          </button>
-          <button
-            className={`sort-btn ${sortBy === 'title' ? 'active' : ''}`}
-            onClick={() => handleSort('title')}
-          >
-            タイトル{getSortIcon('title')}
-          </button>
+        {/* 出力欄の並べ替えと同じ順に並べ、どちらでも同じ位置に同じボタンがあるようにする */}
+        <div className="sort-controls" role="group" aria-label="一覧の並べ替え">
+          <span className="sort-label" aria-hidden="true">並べ替え:</span>
+          {[['reading', '著者名'], ['year', '発行年'], ['title', 'タイトル']].map(([field, label]) => (
+            <button
+              key={field}
+              type="button"
+              className={`sort-btn ${sortBy === field ? 'active' : ''}`}
+              aria-pressed={sortBy === field}
+              onClick={() => handleSort(field)}
+            >
+              {label}{getSortIcon(field)}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -210,18 +212,27 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
         <div className="bulk-actions">
           <button type="button" className="btn btn-secondary btn-small" onClick={onOpenReadingBulk} disabled={references.length === 0}>
             <Languages size={14} />読み仮名をまとめて登録
-            {missingReadingNameCount > 0 && <span className="count-badge">未登録 {missingReadingNameCount}件</span>}
+            {missingReadingNameCount > 0 && <span className="count-badge">未登録の名前 {missingReadingNameCount}</span>}
           </button>
           {/* 「何をまとめて変えるか」より先に「どれを」を選んでもらう（チェックしてから押す） */}
           <button
             type="button"
             className="btn btn-secondary btn-small"
             onClick={onOpenBulkEdit}
-            disabled={checkedReferences.size === 0}
-            title={checkedReferences.size === 0 ? '一覧の左端のチェックで、まとめて編集する文献を選んでください' : undefined}
+            disabled={checkedCount === 0}
+            aria-describedby={checkedCount === 0 ? 'bulk-edit-hint' : undefined}
           >
-            <ListChecks size={14} />チェックした文献をまとめて編集（{checkedReferences.size}件）
+            <ListChecks size={14} />チェックした文献をまとめて編集（{checkedCount}件）
           </button>
+          {checkedCount === 0 && (
+            <span id="bulk-edit-hint" className="bulk-actions-hint">左端のチェックで文献を選ぶと使えます</span>
+          )}
+          {/* チェックした結果（参考文献一覧）は画面の上の出力欄に出るため、そこへすぐ移れるようにする */}
+          {checkedCount > 0 && onShowOutput && (
+            <button type="button" className="btn btn-secondary btn-small" onClick={onShowOutput}>
+              <ArrowUpToLine size={14} />出力欄で{checkedCount}件の参考文献一覧を見る
+            </button>
+          )}
         </div>
       </div>
 

@@ -160,11 +160,11 @@ export const getReferenceTypeFields = (type) => {
     ],
 
     'english-book': [
-      { key: 'authors', label: 'Authors', required: true, type: 'authors' },
-      { key: 'title', label: 'Book Title', required: true, type: 'text' },
-      { key: 'publisherLocation', label: 'Publisher Location', required: true, type: 'text' },
-      { key: 'publisher', label: 'Publisher', required: true, type: 'text' },
-      { key: 'year', label: 'Publication Year', required: true, type: 'number' },
+      { key: 'authors', label: '著者（Authors）', required: true, type: 'authors' },
+      { key: 'title', label: '書名（Book Title）', required: true, type: 'text' },
+      { key: 'publisherLocation', label: '出版地（Publisher Location）', required: true, type: 'text' },
+      { key: 'publisher', label: '出版社（Publisher）', required: true, type: 'text' },
+      { key: 'year', label: '出版年（Publication Year）', required: true, type: 'number' },
       { key: 'isbn', label: 'ISBN', required: false, type: 'text' },
       {
         key: 'doi', label: 'DOI', required: false, type: 'text', placeholder: '10.1234/example',
@@ -175,13 +175,13 @@ export const getReferenceTypeFields = (type) => {
     ],
 
     'english-journal': [
-      { key: 'authors', label: 'Authors', required: true, type: 'authors' },
-      { key: 'title', label: 'Article Title', required: true, type: 'text' },
-      { key: 'journalName', label: 'Journal Name', required: true, type: 'text' },
-      { key: 'volume', label: 'Volume', required: false, type: 'text' },
-      { key: 'issue', label: 'Issue', required: false, type: 'text' },
-      { key: 'year', label: 'Publication Year', required: true, type: 'number' },
-      { key: 'pages', label: 'Pages', required: true, type: 'text' },
+      { key: 'authors', label: '著者（Authors）', required: true, type: 'authors' },
+      { key: 'title', label: '論文名（Article Title）', required: true, type: 'text' },
+      { key: 'journalName', label: '雑誌名（Journal Name）', required: true, type: 'text' },
+      { key: 'volume', label: '巻（Volume）', required: false, type: 'text' },
+      { key: 'issue', label: '号（Issue）', required: false, type: 'text' },
+      { key: 'year', label: '出版年（Publication Year）', required: true, type: 'number' },
+      { key: 'pages', label: 'ページ（Pages）', required: true, type: 'text' },
       {
         key: 'doi', label: 'DOI', required: false, type: 'text', placeholder: '10.1234/example',
         description: 'デジタルオブジェクト識別子（DOI）がある場合は入力してください。',
@@ -191,13 +191,13 @@ export const getReferenceTypeFields = (type) => {
     ],
 
     'english-chapter': [
-      { key: 'authors', label: 'Authors', required: true, type: 'authors' },
-      { key: 'title', label: 'Chapter Title', required: true, type: 'text' },
-      { key: 'bookTitle', label: 'Book Title', required: true, type: 'text' },
-      { key: 'publisherLocation', label: 'Publisher Location', required: true, type: 'text' },
-      { key: 'publisher', label: 'Publisher', required: true, type: 'text' },
-      { key: 'year', label: 'Publication Year', required: true, type: 'number' },
-      { key: 'pages', label: 'Pages', required: true, type: 'text' },
+      { key: 'authors', label: '著者（Authors）', required: true, type: 'authors' },
+      { key: 'title', label: '章の題名（Chapter Title）', required: true, type: 'text' },
+      { key: 'bookTitle', label: '書名（Book Title）', required: true, type: 'text' },
+      { key: 'publisherLocation', label: '出版地（Publisher Location）', required: true, type: 'text' },
+      { key: 'publisher', label: '出版社（Publisher）', required: true, type: 'text' },
+      { key: 'year', label: '出版年（Publication Year）', required: true, type: 'number' },
+      { key: 'pages', label: 'ページ（Pages）', required: true, type: 'text' },
       {
         key: 'doi', label: 'DOI', required: false, type: 'text', placeholder: '10.1234/example',
         description: 'デジタルオブジェクト識別子（DOI）がある場合は入力してください。',

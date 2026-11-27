@@ -149,21 +149,23 @@ export const validateAndCleanData = (references) => {
  * @param {Object} newReference - 新しい参考文献
  * @returns {boolean} 既に存在する場合はtrue
  */
-export const isDuplicate = (references, newReference) => {
+export const findDuplicate = (references, newReference) => {
   if (!Array.isArray(references) || !newReference) {
-    return false;
+    return null;
   }
 
   // 内容ベースのチェック：参考文献一覧に出力される文字列が同じなら同じ文献とみなす
-  // （インポート時は新しいIDを振るため、IDだけでは同じファイルの再インポートを検出できない）
+  // （別のIDで登録された同じ文献も見つけられるように）
   const toComparableText = (ref) => formatReference(migrateReferenceData(stripComputedFields(ref)));
   const newReferenceText = toComparableText(newReference);
 
-  return references.some(ref =>
+  return references.find(ref =>
     (newReference.id && ref.id === newReference.id) ||
     toComparableText(ref) === newReferenceText
-  );
+  ) || null;
 };
+
+export const isDuplicate = (references, newReference) => Boolean(findDuplicate(references, newReference));
 
 // 読めなかった保存データを残しておく場所。空のデータで上書きして、文献がすべて消えてしまうのを防ぐ
 export const CORRUPT_BACKUP_SUFFIX = ':unreadable-backup';

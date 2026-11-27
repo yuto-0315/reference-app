@@ -40,7 +40,7 @@ class ErrorBoundary extends React.Component {
         <ol>
           <li>「データをファイルに保存」で、今のデータを手元に残す</li>
           <li>「再読み込み」でページを開き直す</li>
-          <li>直前にJSONを読み込んでいた場合は、別のファイル（以前にエクスポートしたもの）を読み込む</li>
+          <li>直前にJSONを読み込んでいた場合は、別のファイル（以前に「ファイルに保存」したもの）を読み込む</li>
         </ol>
         <div className="button-group">
           <button type="button" className="btn btn-primary" onClick={this.downloadSavedData}>データをファイルに保存</button>
