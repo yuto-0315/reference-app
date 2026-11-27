@@ -102,6 +102,10 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
     return filtered;
   }, [references, readingLookup, searchTerm, showOnlyMissingReading, sortBy, sortOrder]);
 
+  const isFiltered = searchTerm.trim() !== '' || showOnlyMissingReading;
+  const allVisibleChecked = filteredAndSortedReferences.length > 0 && filteredAndSortedReferences.every(ref => checkedReferences.has(ref.id));
+  const someVisibleChecked = filteredAndSortedReferences.some(ref => checkedReferences.has(ref.id));
+
   const handleSort = (field) => {
     if (sortBy === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -226,26 +230,20 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
           <thead>
             <tr>
               <th style={{ width: '40px', textAlign: 'center' }}>
+                {/* 検索や絞り込みで見えていない文献まで勝手にチェックしないよう、表示中の文献だけを対象にする */}
                 <input
                   type="checkbox"
-                  checked={references.length > 0 && references.every(ref => checkedReferences.has(ref.id))}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      references.forEach(ref => {
-                        if (!checkedReferences.has(ref.id)) {
-                          onToggleCheck(ref.id);
-                        }
-                      });
-                    } else {
-                      references.forEach(ref => {
-                        if (checkedReferences.has(ref.id)) {
-                          onToggleCheck(ref.id);
-                        }
-                      });
-                    }
+                  ref={(element) => {
+                    if (element) element.indeterminate = someVisibleChecked && !allVisibleChecked;
                   }}
-                  title="全て選択/解除"
-                  aria-label="すべての参考文献を一覧に含める／外す"
+                  checked={allVisibleChecked}
+                  disabled={filteredAndSortedReferences.length === 0}
+                  onChange={(e) => {
+                    filteredAndSortedReferences.forEach(ref => {
+                      if (checkedReferences.has(ref.id) !== e.target.checked) onToggleCheck(ref.id);
+                    });
+                  }}
+                  aria-label={isFiltered ? '表示中の文献をすべて参考文献一覧に含める／外す' : 'すべての文献を参考文献一覧に含める／外す'}
                 />
               </th>
               <th>著者</th>

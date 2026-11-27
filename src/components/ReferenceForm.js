@@ -122,10 +122,13 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
     setErrors({});
   };
 
+  // 読み仮名の検索は結果が後から届くため、その間に書き換えた他の著者の入力を消さないよう、常に最新の内容から作り直す
   const handleAuthorChange = (index, field, value) => {
-    const updatedAuthors = [...formData.authors];
-    updatedAuthors[index] = { ...updatedAuthors[index], [field]: value };
-    setFormData(prev => ({ ...prev, authors: updatedAuthors }));
+    setFormData(prev => {
+      const updatedAuthors = [...(prev.authors || [])];
+      updatedAuthors[index] = { ...updatedAuthors[index], [field]: value };
+      return { ...prev, authors: updatedAuthors };
+    });
 
     // エラーをクリア
     if (errors[`authors.${index}.${field}`]) {
@@ -135,9 +138,11 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
 
   // 汎用的な著者フィールド変更処理
   const handleAuthorFieldChange = (fieldName, index, field, value) => {
-    const updatedAuthors = [...(formData[fieldName] || [])];
-    updatedAuthors[index] = { ...updatedAuthors[index], [field]: value };
-    setFormData(prev => ({ ...prev, [fieldName]: updatedAuthors }));
+    setFormData(prev => {
+      const updatedAuthors = [...(prev[fieldName] || [])];
+      updatedAuthors[index] = { ...updatedAuthors[index], [field]: value };
+      return { ...prev, [fieldName]: updatedAuthors };
+    });
 
     // エラーをクリア
     if (errors[`${fieldName}.${index}.${field}`]) {
@@ -162,18 +167,14 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
   };
 
   const removeAuthor = (index) => {
-    if (formData.authors.length > 1) {
-      const updatedAuthors = formData.authors.filter((_, i) => i !== index);
-      setFormData(prev => ({ ...prev, authors: updatedAuthors }));
-    }
+    setFormData(prev => (prev.authors.length > 1 ? { ...prev, authors: prev.authors.filter((_, i) => i !== index) } : prev));
   };
 
   const removeAuthorField = (fieldName, index) => {
-    const currentAuthors = formData[fieldName] || [];
-    if (currentAuthors.length > 1) {
-      const updatedAuthors = currentAuthors.filter((_, i) => i !== index);
-      setFormData(prev => ({ ...prev, [fieldName]: updatedAuthors }));
-    }
+    setFormData(prev => {
+      const currentAuthors = prev[fieldName] || [];
+      return currentAuthors.length > 1 ? { ...prev, [fieldName]: currentAuthors.filter((_, i) => i !== index) } : prev;
+    });
   };
 
   const validateForm = () => {

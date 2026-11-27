@@ -27,7 +27,7 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleAll, on
       .map(ref => ref.id);
 
     if (onBulkCheck) {
-      onBulkCheck(idsToSelect);
+      onBulkCheck(idsToSelect, REFERENCE_TYPES[type]);
     }
   };
 
