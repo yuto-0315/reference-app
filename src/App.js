@@ -445,7 +445,7 @@ function App() {
       <header className="header">
         <div className="header-content">
           <div className="header-main">
-            <h1><Library size={36} className="title-icon" />参考文献管理アプリ</h1>
+            <h1><Library size={28} className="title-icon" />参考文献管理アプリ</h1>
             <p>音楽領域-卒業論文の参考文献と引用を正しい形式で管理・生成</p>
             <VersionInfo />
           </div>

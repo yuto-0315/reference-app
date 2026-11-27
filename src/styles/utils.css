@@ -119,3 +119,13 @@
   color: var(--color-text-secondary);
   font-size: 14px;
 }
+
+/* 画面の表示中にエラーが起きたときの案内 */
+.error-screen {
+  max-width: 640px;
+  line-height: 1.7;
+}
+
+.error-screen h1 {
+  color: var(--color-text-primary);
+}

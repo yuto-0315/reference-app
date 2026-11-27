@@ -690,10 +690,8 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
             直す必要のある項目が{remainingErrorCount}件あります。赤い枠の欄を確かめてください。
           </p>
         )}
-        <div className="button-group">
-          <button type="submit" className="btn btn-primary">
-            {isEditing ? '更新' : '追加'}
-          </button>
+        {/* 編集画面ではほかの画面と同じく、右下に「キャンセル」「更新」の順で並べる */}
+        <div className={`button-group${isEditing ? ' form-actions-end' : ''}`}>
           {isEditing && (
             <button
               type="button"
@@ -703,6 +701,9 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
               キャンセル
             </button>
           )}
+          <button type="submit" className="btn btn-primary">
+            {isEditing ? '更新' : '追加'}
+          </button>
         </div>
       </form>
 

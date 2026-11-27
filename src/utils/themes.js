@@ -573,6 +573,27 @@ const adjustLightness = (hex, meetsRequirement, direction) => {
 
 const hexToRgba = (hex, alpha) => `rgba(${hexToRgb(hex).join(', ')}, ${alpha})`;
 
+// 削除ボタンの赤（danger）と同じ系統の鮮やかな赤をメインやコピーのボタンに使うと、押すと消えるボタンと見分けにくい。
+// 色相が近く彩度の高い色は、色味を残したまま彩度を落として区別する
+const DANGER_HUE = 0;
+const DANGER_HUE_RANGE = 18;
+const MAX_SATURATION_NEAR_DANGER = 35;
+const awayFromDanger = (hex) => {
+  const [hue, saturation, lightness] = hexToHsl(hex);
+  const hueDistance = Math.min(Math.abs(hue - DANGER_HUE), 360 - Math.abs(hue - DANGER_HUE));
+  if (hueDistance > DANGER_HUE_RANGE || saturation <= MAX_SATURATION_NEAR_DANGER) return hex;
+  return hslToHex(hue, MAX_SATURATION_NEAR_DANGER, lightness);
+};
+
+// 色相・明るさともに近い2色は、並べても見分けにくい
+const isSimilarColor = (hexA, hexB) => {
+  const [hueA, satA, lightA] = hexToHsl(hexA);
+  const [hueB, satB, lightB] = hexToHsl(hexB);
+  const hueDistance = Math.min(Math.abs(hueA - hueB), 360 - Math.abs(hueA - hueB));
+  const bothGrayish = satA < 12 && satB < 12;
+  return (bothGrayish || hueDistance < 20) && Math.abs(lightA - lightB) < 6;
+};
+
 const buildPaletteColors = (paletteColors) => {
   const [darkest, midDark, midLight, lightest] = [...paletteColors].sort((a, b) => relativeLuminance(a) - relativeLuminance(b));
   // 中間の2色のうち、彩度の高い方をメイン（追加ボタン・ヘッダー）、もう一方をサブ（コピー・出力ボタン）にする
@@ -580,13 +601,19 @@ const buildPaletteColors = (paletteColors) => {
 
   const isReadableWithInk = (hex) => contrastRatio(hex, PALETTE_INK) >= TEXT_MIN_RATIO;
   const toHover = (hex) => adjustLightness(withLightness(hex, hexToHsl(hex)[2] - 7), isReadableWithInk, +1);
-  const primary = adjustLightness(mainSource, isReadableWithInk, +1);
-  const accent = adjustLightness(subSource, isReadableWithInk, +1);
+  const primary = adjustLightness(awayFromDanger(mainSource), isReadableWithInk, +1);
+  const accentBase = adjustLightness(awayFromDanger(subSource), isReadableWithInk, +1);
+  // メインのボタンとコピーのボタンがほぼ同じ色だと役割を見分けられないため、サブ側を明るくして差を付ける
+  const accent = isSimilarColor(primary, accentBase)
+    ? adjustLightness(withLightness(accentBase, hexToHsl(primary)[2] + 10), isReadableWithInk, +1)
+    : accentBase;
   const secondary = withLightness(primary, 93);
   const secondaryHover = withLightness(primary, 87);
 
-  // 背景は、いちばん明るい色をごく淡くして使う（すでに十分淡ければそのまま）
-  const background = hexToHsl(lightest)[2] >= 95 ? lightest : withLightness(lightest, 96.5);
+  // 背景は、いちばん明るい色をごく淡くして使う。白に近すぎると白いカードとの境目が消えるため、明るさは 97% までにする
+  const lightestLightness = hexToHsl(lightest)[2];
+  const isPaleEnough = lightestLightness >= 95 && lightestLightness <= 97;
+  const background = isPaleEnough ? lightest : withLightness(lightest, lightestLightness > 97 ? 97 : 96.5);
 
   const headingBackgrounds = ['#FFFFFF', background, secondary, secondaryHover];
   const textPrimary = adjustLightness(

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import useDialog from '../hooks/useDialog';
-import { X } from 'lucide-react';
+import { Info, X } from 'lucide-react';
 
 const InfoTooltip = ({ description, example, fieldLabel = '', className = '' }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -29,22 +29,22 @@ const InfoTooltip = ({ description, example, fieldLabel = '', className = '' }) 
           title="入力ガイドを表示"
           aria-label={fieldLabel ? `${fieldLabel}の入力ガイドを表示` : '入力ガイドを表示'}
         >
-          i
+          <Info size={16} />
         </button>
       </div>
 
       {isModalOpen && (
-        <div className="info-modal-overlay" onClick={handleOverlayClick}>
-          <div ref={dialogRef} className="info-modal" role="dialog" aria-modal="true" aria-labelledby="info-modal-title" onClick={(e) => e.stopPropagation()}>
-            <div className="info-modal-header">
-              <h3 id="info-modal-title" className="info-modal-title">
+        <div className="modal-overlay info-modal-overlay" onClick={handleOverlayClick}>
+          <div ref={dialogRef} className="modal-content info-modal" role="dialog" aria-modal="true" aria-labelledby="info-modal-title" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 id="info-modal-title">
                 {fieldLabel ? `入力ガイド：${fieldLabel}` : '入力ガイド'}
-              </h3>
-              <button type="button" className="info-modal-close" onClick={closeModal} aria-label="閉じる">
+              </h2>
+              <button type="button" className="modal-close" onClick={closeModal} aria-label="閉じる">
                 <X size={20} />
               </button>
             </div>
-            <div className="info-modal-content">
+            <div className="modal-body">
               {description && (
                 <div className="info-description">
                   {description}

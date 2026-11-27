@@ -10,7 +10,7 @@ const SWATCH_ROLES = [
   { label: 'ヘッダー', pick: colors => colors.secondary },
   { label: 'メインのボタン', pick: colors => colors.primary },
   { label: 'コピーのボタン', pick: colors => colors.accent },
-  { label: '見出しの文字', pick: colors => colors.text.primary }
+  { label: '項目名の文字', pick: colors => colors.text.primary }
 ];
 
 const ThemeSwatches = ({ colors }) => (
