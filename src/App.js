@@ -14,10 +14,36 @@ import { readLastBackup, saveLastBackup, fingerprintReferences } from './utils/b
 import FormatGuideModal from './components/FormatGuideModal';
 import Toast from './components/Toast';
 import VersionInfo from './components/VersionInfo';
-import { loadFromStorage, saveToStorage, isDuplicate, validateAndCleanData, stripComputedFields } from './utils/dataUtils';
+import {
+  loadFromStorage, readStoredReferences, saveToStorage, findDuplicate, validateAndCleanData, stripComputedFields,
+  planImport, createUndo, removeContentDuplicates, CORRUPT_BACKUP_SUFFIX
+} from './utils/dataUtils';
 import { BookOpenText, Library, X } from 'lucide-react';
 
 const STORAGE_KEY = 'reference-app-data';
+// 一覧のチェック（出力する文献の選択）も、再読み込みで消えないように保存する
+const CHECKED_STORAGE_KEY = 'reference-app-checked';
+
+const readCheckedIds = () => {
+  try {
+    const ids = JSON.parse(localStorage.getItem(CHECKED_STORAGE_KEY) || '[]');
+    return new Set(Array.isArray(ids) ? ids.map(String) : []);
+  } catch (error) {
+    return new Set();
+  }
+};
+
+// 読めなかった保存データを、ファイルとして手元に残せるようにする
+const downloadText = (text, fileName) => {
+  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
 const ALERT_DURATION_MS = 3000;
 // 更新した行の強調は、移動して目で探し当てるのに十分で、作業の邪魔にならない長さにする
 const RECENT_HIGHLIGHT_MS = 2500;
@@ -25,17 +51,19 @@ const RECENT_HIGHLIGHT_MS = 2500;
 function App() {
   // ローカルストレージから自動読み込み（重複除去付き）
   // 初回描画前に読み込むことで、空配列で保存データを上書きする余地をなくす
-  const [references, setReferences] = useState(() => loadFromStorage(STORAGE_KEY));
+  const [initialStorage] = useState(() => readStoredReferences(STORAGE_KEY));
+  const [references, setReferences] = useState(initialStorage.references);
   const [selectedReference, setSelectedReference] = useState(null);
   const [alert, setAlert] = useState(null);
   // 同じ文言のコピーが続いても毎回表示し直せるよう、表示ごとに id を振る
   const [toast, setToast] = useState(null);
   const [showFormatGuide, setShowFormatGuide] = useState(false);
-  const [checkedReferences, setCheckedReferences] = useState(new Set());
+  const [checkedReferences, setCheckedReferences] = useState(readCheckedIds);
   // 'reading'（読み仮名をまとめて登録）か 'fields'（チェックした文献をまとめて編集）
   const [bulkDialog, setBulkDialog] = useState(null);
   const alertTimerRef = useRef(null);
   const formSectionRef = useRef(null);
+  const previewSectionRef = useRef(null);
   const isFormDirtyRef = useRef(false);
   // 一覧の「複製」で追加フォームに読み込む文献
   const [duplicateSource, setDuplicateSource] = useState(null);
@@ -44,12 +72,57 @@ function App() {
   const currentFingerprint = useMemo(() => fingerprintReferences(validateAndCleanData(references).cleaned), [references]);
   // 更新した直後の行を少しの間だけ目立たせ、一覧のどこが変わったかを分かるようにする
   const [recentlyUpdatedId, setRecentlyUpdatedId] = useState(null);
+  const saveFailedRef = useRef(false);
+  // 続けて削除したとき、まとめて元に戻せるよう、最初の削除の前の一覧を覚えておく
+  const deleteBatchRef = useRef(null);
 
   // 自動保存（ローカルストレージ）- 重複除去付き
   // 0件も保存しないと、最後の1件を削除しても再読み込みで復活してしまう
   useEffect(() => {
-    saveToStorage(STORAGE_KEY, references);
+    const saved = saveToStorage(STORAGE_KEY, references);
+    // 保存できないまま作業を続けると、閉じたときに入力がすべて消えるため、すぐに知らせてファイルへの保存を促す
+    if (!saved && !saveFailedRef.current) {
+      showAlert(
+        'ブラウザに保存できませんでした（空き容量が足りない可能性があります）。このまま閉じると変更が消えるため、「ファイルに保存」でファイルに保存してください',
+        'error',
+        { label: 'ファイルに保存', onClick: exportToJSON }
+      );
+    }
+    saveFailedRef.current = !saved;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [references]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(CHECKED_STORAGE_KEY, JSON.stringify([...checkedReferences]));
+    } catch (error) {
+      // チェックが残らないだけで、文献のデータには影響しない
+    }
+  }, [checkedReferences]);
+
+  // 保存データが読めなかったときは、空の一覧で黙って上書きせず、退避した元のデータを保存できるようにする
+  useEffect(() => {
+    const downloadOriginal = {
+      label: '元のデータをファイルに保存',
+      onClick: () => downloadText(localStorage.getItem(`${STORAGE_KEY}${CORRUPT_BACKUP_SUFFIX}`) || '', 'references_unreadable.json')
+    };
+    if (initialStorage.problem === 'unreadable') {
+      showAlert(
+        '保存されていたデータを読み込めませんでした。元のデータは別の場所に残してあるので、ファイルに保存して、最後に「ファイルに保存」したファイルと見比べてください',
+        'error',
+        downloadOriginal
+      );
+    } else if (initialStorage.problem === 'unavailable') {
+      showAlert('このブラウザの設定で、データを保存できない状態です。閉じると入力が消えるため、作業の終わりに「ファイルに保存」で保存してください', 'error');
+    } else if (initialStorage.invalidCount > 0) {
+      showAlert(
+        `文献の種類が分からないデータ${initialStorage.invalidCount}件を読み込めませんでした。元のデータは残してあるので、ファイルに保存できます`,
+        'warning',
+        downloadOriginal
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 別のタブで保存されたら読み込み直す（2つのタブで開いていると、後から保存した側が先の変更を消してしまうため）
   // 読み込んだ内容をそのまま保存し直しても値は変わらないので、タブ同士で保存を繰り返すことはない
@@ -58,6 +131,7 @@ function App() {
       // key が null のときは、別のタブで保存データ全体が消された
       if (event.key !== null && event.key !== STORAGE_KEY) return;
       setReferences(loadFromStorage(STORAGE_KEY));
+      if (event.key === null) setCheckedReferences(new Set());
     };
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
@@ -73,9 +147,13 @@ function App() {
       updatedAt: new Date().toISOString()
     };
 
-    // 重複チェック（内容ベース）
-    if (isDuplicate(references, newReference)) {
-      showAlert('同じ内容の参考文献が既に存在します', 'error');
+    // 重複チェック（内容ベース）。どの文献と同じなのかを示し、一覧のその行へ移れるようにする
+    const duplicate = findDuplicate(references, newReference);
+    if (duplicate) {
+      showAlert(`「${duplicate.title || '（タイトルなし）'}」と同じ内容の文献がすでに登録されているため、追加しませんでした`, 'error', {
+        label: '一覧で見る',
+        onClick: () => returnToRow(duplicate.id)
+      });
       // 追加できなかったことをフォームに伝え、入力内容を残してもらう
       return false;
     }
@@ -86,22 +164,25 @@ function App() {
   };
 
   const updateReference = (id, referenceData) => {
-    setReferences(prev => {
-      // 統合ではなく置き換える。編集中に種類を変えたとき、前の種類の項目（著者・ページなど）が
-      // 画面からは消えたのにデータに残り、引用に混ざってしまうため（フォームには元の文献の全項目が入っている）
-      const updated = prev.map(ref =>
-        ref.id === id
-          ? { ...stripComputedFields(referenceData), id, createdAt: ref.createdAt, updatedAt: new Date().toISOString() }
-          : ref
-      );
+    // 統合ではなく置き換える。編集中に種類を変えたとき、前の種類の項目（著者・ページなど）が
+    // 画面からは消えたのにデータに残り、引用に混ざってしまうため（フォームには元の文献の全項目が入っている）
+    const updated = references.map(ref =>
+      ref.id === id
+        ? { ...stripComputedFields(referenceData), id, createdAt: ref.createdAt, updatedAt: new Date().toISOString() }
+        : ref
+    );
+    const { cleaned } = validateAndCleanData(updated);
+    const undo = createUndo(references, cleaned);
 
-      // 更新後に重複チェックと除去
-      const { cleaned } = validateAndCleanData(updated);
-      return cleaned;
-    });
-
+    setReferences(cleaned);
     setSelectedReference(null);
-    showAlert('参考文献を更新しました', 'success');
+    showAlert('参考文献を更新しました', 'success', {
+      label: '元に戻す',
+      onClick: () => {
+        setReferences(undo);
+        showAlert('更新する前の内容に戻しました', 'info');
+      }
+    });
     returnToRow(id);
   };
 
@@ -123,6 +204,14 @@ function App() {
     });
   };
 
+  // 一覧でチェックした結果の参考文献一覧（画面上部の出力欄）へ移り、見出しから読めるようにする
+  const showOutput = () => {
+    const section = previewSectionRef.current;
+    if (!section) return;
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    section.querySelector('.section-title')?.focus({ preventScroll: true });
+  };
+
   // 更新した行を少しの間だけ枠で示す。編集画面は行の上で開いていたので、閉じれば同じ位置に戻っている
   const returnToRow = (id) => {
     setRecentlyUpdatedId(id);
@@ -134,12 +223,17 @@ function App() {
 
   // 確認ダイアログを挟まずに削除し、間違えたときは「元に戻す」で同じ位置に戻せるようにする
   const deleteReference = (id) => {
-    const deletedIndex = references.findIndex(ref => ref.id === id);
-    if (deletedIndex === -1) return;
-    const deletedReference = references[deletedIndex];
-    const wasChecked = checkedReferences.has(id);
+    const deletedReference = references.find(ref => ref.id === id);
+    if (!deletedReference) return;
+    // 「元に戻す」を押す前に続けて削除しても、まとめて戻せるようにする
+    const batch = deleteBatchRef.current || { before: references, checkedIds: new Set(), count: 0 };
+    const nextReferences = references.filter(ref => ref.id !== id);
+    if (checkedReferences.has(id)) batch.checkedIds.add(id);
+    batch.count += 1;
+    const undo = createUndo(batch.before, nextReferences);
+    const restoredCheckedIds = new Set(batch.checkedIds);
 
-    setReferences(prev => prev.filter(ref => ref.id !== id));
+    setReferences(nextReferences);
     setCheckedReferences(prev => {
       const newSet = new Set(prev);
       newSet.delete(id);
@@ -148,19 +242,18 @@ function App() {
     if (selectedReference && selectedReference.id === id) {
       setSelectedReference(null);
     }
-    showAlert(`「${deletedReference.title || '（タイトルなし）'}」を削除しました`, 'success', {
-      label: '元に戻す',
+    const message = batch.count > 1
+      ? `${batch.count}件の文献を削除しました（最後に削除したのは「${deletedReference.title || '（タイトルなし）'}」）`
+      : `「${deletedReference.title || '（タイトルなし）'}」を削除しました`;
+    showAlert(message, 'success', {
+      label: batch.count > 1 ? `${batch.count}件とも元に戻す` : '元に戻す',
       onClick: () => {
-        setReferences(prev => {
-          if (prev.some(ref => ref.id === id)) return prev;
-          const restored = [...prev];
-          restored.splice(Math.min(deletedIndex, restored.length), 0, deletedReference);
-          return restored;
-        });
-        if (wasChecked) setCheckedReferences(prev => new Set(prev).add(id));
+        setReferences(undo);
+        setCheckedReferences(prev => new Set([...prev, ...restoredCheckedIds]));
         showAlert('削除を取り消しました', 'info');
       }
     });
+    deleteBatchRef.current = batch;
   };
 
   const exportToJSON = () => {
@@ -191,59 +284,34 @@ function App() {
 
     const reader = new FileReader();
     reader.onload = (e) => {
+      let importedData;
       try {
-        const importedData = JSON.parse(e.target.result);
-        if (Array.isArray(importedData)) {
-          // ID のない手作りの JSON でも取り込めるよう、先に ID を振ってからクリーンアップする
-          // （取り込む文献には、どのみち下で新しい ID を振り直す）
-          const importedWithIds = importedData.map(ref =>
-            ref && typeof ref === 'object' && !ref.id ? { ...ref, id: uuidv4() } : ref
-          );
-          const { cleaned: cleanImportedData, stats } = validateAndCleanData(importedWithIds);
-
-          // 既存データとの重複をチェックして除外
-          const newReferences = [];
-          let duplicateCount = 0;
-
-          cleanImportedData.forEach(ref => {
-            // 同じファイル内に同じ内容の文献が複数ある場合も1件にする
-            if (!isDuplicate([...references, ...newReferences], ref)) {
-              // 新しいIDを生成（既存IDとの衝突を避けるため）
-              newReferences.push({
-                ...ref,
-                id: uuidv4(),
-                importedAt: new Date().toISOString()
-              });
-            } else {
-              duplicateCount++;
-            }
-          });
-
-          // 取り込まなかった件数は、最後のお知らせ1つにまとめて伝える（途中のお知らせはすぐ上書きされて読めないため）
-          const skippedNotes = [];
-          const totalDuplicates = duplicateCount + stats.duplicatesRemoved;
-          if (totalDuplicates > 0) skippedNotes.push(`重複${totalDuplicates}件をスキップ`);
-          if (stats.invalidDataRemoved > 0) skippedNotes.push(`文献の種類がないなど読み込めないデータ${stats.invalidDataRemoved}件を除外`);
-          const skippedText = skippedNotes.length > 0 ? `（${skippedNotes.join('、')}）` : '';
-
-          if (newReferences.length > 0) {
-            setReferences(prev => {
-              const combined = [...prev, ...newReferences];
-              const { cleaned } = validateAndCleanData(combined);
-              return cleaned;
-            });
-            showAlert(`${newReferences.length}件の参考文献をインポートしました${skippedText}`, 'success');
-          } else {
-            showAlert(`インポート可能な新しい参考文献がありませんでした${skippedText}`, 'warning');
-          }
-        } else {
-          showAlert('無効なJSONファイルです', 'error');
-        }
+        importedData = JSON.parse(e.target.result);
       } catch (error) {
-        showAlert('JSONファイルの読み込みに失敗しました', 'error');
-        console.error('Import error:', error);
+        showAlert('JSONファイルとして読み込めませんでした。このアプリの「ファイルに保存」で保存したファイルを選んでください', 'error');
+        return;
       }
+      if (!Array.isArray(importedData)) {
+        showAlert('このアプリの文献データではないようです。「ファイルに保存」で保存したファイルを選んでください', 'error');
+        return;
+      }
+
+      const plan = planImport(references, importedData, uuidv4);
+      // 取り込まなかった件数も、最後のお知らせ1つにまとめて伝える（途中のお知らせはすぐ上書きされて読めないため）
+      const notes = [];
+      if (plan.updated > 0) notes.push(`${plan.updated}件を新しい内容に更新`);
+      if (plan.unchanged > 0) notes.push(`${plan.unchanged}件は登録済みの内容と同じか古いため変更なし`);
+      if (plan.duplicates > 0) notes.push(`同じ内容の${plan.duplicates}件をスキップ`);
+      if (plan.invalid > 0) notes.push(`文献の種類がないなど読み込めないデータ${plan.invalid}件を除外`);
+      const notesText = notes.length > 0 ? `（${notes.join('、')}）` : '';
+
+      if (plan.added === 0 && plan.updated === 0) {
+        showAlert(`取り込める新しい文献はありませんでした${notesText}`, 'warning');
+        return;
+      }
+      replaceReferencesWithUndo(plan.next, `${plan.added}件の参考文献を追加しました${notesText}`, '読み込む前に戻しました');
     };
+    reader.onerror = () => showAlert('ファイルを読み込めませんでした。もう一度選び直してください', 'error');
     reader.readAsText(file);
     event.target.value = ''; // ファイル選択をリセット
   };
@@ -251,6 +319,8 @@ function App() {
   const showAlert = (message, type, action = null) => {
     // 前のアラートのタイマーが残っていると、新しいアラートが表示途中で消えてしまう
     clearTimeout(alertTimerRef.current);
+    // 削除以外のお知らせを出したら、続けて削除したときの「まとめて元に戻す」は区切る
+    deleteBatchRef.current = null;
     setAlert({ message, type, action });
     // エラーは読み逃すと次に何をすればよいか分からないため、閉じるまで表示し続ける
     // 「元に戻す」などの操作が付いたお知らせも、押す前に消えないようにする
@@ -258,8 +328,17 @@ function App() {
     alertTimerRef.current = setTimeout(() => setAlert(null), ALERT_DURATION_MS);
   };
 
+  // 読んでいる途中（マウスを乗せている・フォーカスしている間）は消さず、離れてから数え直す
+  const pauseAlertTimer = () => clearTimeout(alertTimerRef.current);
+  const resumeAlertTimer = () => {
+    if (!alert || alert.type === 'error' || alert.action) return;
+    clearTimeout(alertTimerRef.current);
+    alertTimerRef.current = setTimeout(() => setAlert(null), ALERT_DURATION_MS);
+  };
+
   const closeAlert = () => {
     clearTimeout(alertTimerRef.current);
+    deleteBatchRef.current = null;
     setAlert(null);
   };
 
@@ -276,30 +355,34 @@ function App() {
     });
   };
 
+  // 同じ文献の二重登録（参考文献一覧に同じ行が2回出るもの）と、読み込めないデータを取り除く
   const cleanupData = () => {
     const { cleaned, stats } = validateAndCleanData(references);
+    const withoutContentDuplicates = removeContentDuplicates(cleaned);
+    const duplicateCount = stats.duplicatesRemoved + (cleaned.length - withoutContentDuplicates.length);
 
-    if (stats.duplicatesRemoved > 0 || stats.invalidDataRemoved > 0) {
-      setReferences(cleaned);
-      showAlert(
-        `データをクリーンアップしました: 重複${stats.duplicatesRemoved}件、無効データ${stats.invalidDataRemoved}件を除去`,
-        'success'
-      );
-    } else {
-      showAlert('クリーンアップが必要なデータはありませんでした', 'info');
+    if (duplicateCount === 0 && stats.invalidDataRemoved === 0) {
+      showAlert('同じ文献の二重登録や、読み込めないデータはありませんでした', 'info');
+      return;
     }
+    replaceReferencesWithUndo(
+      withoutContentDuplicates,
+      `同じ文献の二重登録${duplicateCount}件、読み込めないデータ${stats.invalidDataRemoved}件を取り除きました`,
+      '取り除く前に戻しました'
+    );
   };
 
-  // まとめて書き換えたあとも「元に戻す」で前の状態に戻せるようにする（確認ダイアログの代わりに取り消せる安心感を出す）
-  const replaceReferencesWithUndo = (nextReferences, message) => {
-    const previousReferences = references;
+  // まとめて書き換えたあとも「元に戻す」で前の状態に戻せるようにする（確認ダイアログの代わりに取り消せる安心感を出す）。
+  // 戻すのは今回変えた文献だけにして、そのあと別のタブなどで加えた変更は残す
+  const replaceReferencesWithUndo = (nextReferences, message, undoneMessage = 'まとめて変更する前に戻しました') => {
+    const undo = createUndo(references, nextReferences);
     setReferences(nextReferences);
     setBulkDialog(null);
     showAlert(message, 'success', {
       label: '元に戻す',
       onClick: () => {
-        setReferences(previousReferences);
-        showAlert('まとめて変更する前に戻しました', 'info');
+        setReferences(undo);
+        showAlert(undoneMessage, 'info');
       }
     });
   };
@@ -312,10 +395,9 @@ function App() {
   };
 
   const saveBulkField = (field, value, referenceIds) => {
-    replaceReferencesWithUndo(
-      applyFieldValue(references, referenceIds, field, value, new Date().toISOString()),
-      `${referenceIds.length}件の文献の「${field.label}」を「${value}」にしました`
-    );
+    const nextReferences = applyFieldValue(references, referenceIds, field, value, new Date().toISOString());
+    const changedCount = nextReferences.filter((ref, index) => ref !== references[index]).length;
+    replaceReferencesWithUndo(nextReferences, `${changedCount}件の文献の「${field.label}」を「${value}」にしました`);
   };
 
   // チェック状態の管理
@@ -331,16 +413,31 @@ function App() {
     });
   };
 
+  // 選び直すのに手間のかかるチェックをまとめて変えたときは、元のチェックに戻せるようにする
+  const replaceChecksWithUndo = (nextChecked, message) => {
+    const previousChecked = checkedReferences;
+    setCheckedReferences(nextChecked);
+    const hadChecks = references.some(ref => previousChecked.has(ref.id));
+    if (!hadChecks) return;
+    showAlert(message, 'info', {
+      label: '元のチェックに戻す',
+      onClick: () => {
+        setCheckedReferences(previousChecked);
+        showAlert('チェックを元に戻しました', 'info');
+      }
+    });
+  };
+
   const toggleAllReferences = (checked) => {
     if (checked) {
       setCheckedReferences(new Set(references.map(ref => ref.id)));
     } else {
-      setCheckedReferences(new Set());
+      replaceChecksWithUndo(new Set(), 'すべてのチェックを外しました');
     }
   };
 
-  const bulkCheckReferences = (ids) => {
-    setCheckedReferences(new Set(ids));
+  const bulkCheckReferences = (ids, label) => {
+    replaceChecksWithUndo(new Set(ids), `${label || '選んだ種類'}の文献だけにチェックしました`);
   };
 
   return (
@@ -348,7 +445,7 @@ function App() {
       <header className="header">
         <div className="header-content">
           <div className="header-main">
-            <h1><Library size={36} className="title-icon" />参考文献管理アプリ</h1>
+            <h1><Library size={28} className="title-icon" />参考文献管理アプリ</h1>
             <p>音楽領域-卒業論文の参考文献と引用を正しい形式で管理・生成</p>
             <VersionInfo />
           </div>
@@ -365,10 +462,21 @@ function App() {
         </div>
       </header>
 
+      {/* 読み上げ用の通知の場所は常に置いておく（表示と同時に作ると、読み上げられないことがあるため） */}
+      <div className="visually-hidden" role="status" aria-live="polite">
+        {alert && alert.type !== 'error' ? alert.message : (toast?.message || '')}
+      </div>
+      <div className="visually-hidden" role="alert" aria-live="assertive">
+        {alert && alert.type === 'error' ? alert.message : ''}
+      </div>
+
       {alert && (
         <div
           className={`alert alert-${alert.type}`}
-          role={alert.type === 'error' ? 'alert' : 'status'}
+          onMouseEnter={pauseAlertTimer}
+          onMouseLeave={resumeAlertTimer}
+          onFocus={pauseAlertTimer}
+          onBlur={resumeAlertTimer}
         >
           <span className="alert-message">{alert.message}</span>
           {alert.action && (
@@ -380,6 +488,7 @@ function App() {
         </div>
       )}
 
+      <main>
       <FileControls
         onExport={exportToJSON}
         onImport={importFromJSON}
@@ -399,7 +508,7 @@ function App() {
           />
         </div>
 
-        <div className="preview-section">
+        <div className="preview-section" ref={previewSectionRef}>
           <PreviewSection
             references={references}
             checkedReferences={checkedReferences}
@@ -421,7 +530,10 @@ function App() {
         checkedReferences={checkedReferences}
         onOpenReadingBulk={() => setBulkDialog('reading')}
         onOpenBulkEdit={() => setBulkDialog('fields')}
+        onShowOutput={showOutput}
       />
+
+      </main>
 
       {selectedReference && (
         <EditReferenceModal

@@ -1,9 +1,9 @@
 import React from 'react';
-import useEscapeKey from '../hooks/useEscapeKey';
+import useDialog from '../hooks/useDialog';
 import { X } from 'lucide-react';
 
 const FormatGuideModal = ({ isOpen, onClose }) => {
-  useEscapeKey(isOpen, onClose);
+  const dialogRef = useDialog(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -95,7 +95,7 @@ const FormatGuideModal = ({ isOpen, onClose }) => {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content format-guide-modal" role="dialog" aria-modal="true" aria-labelledby="format-guide-title" onClick={(e) => e.stopPropagation()}>
+      <div ref={dialogRef} className="modal-content format-guide-modal" role="dialog" aria-modal="true" aria-labelledby="format-guide-title" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2 id="format-guide-title">引用・参考文献の書き方ガイド</h2>
           <button type="button" className="modal-close" onClick={onClose} aria-label="閉じる"><X size={20} /></button>

@@ -157,7 +157,8 @@
 
 .publisher-cell {
   max-width: 150px;
-  color: var(--color-text-secondary);
+  /* 補足の情報なので、テーマの色ではなく控えめな灰色にして、色の付いた文字を増やさない */
+  color: var(--color-text-muted);
   word-break: break-word;
 }
 
@@ -169,6 +170,7 @@
 .external-link {
   display: inline-block;
   padding: 4px 8px;
+  color: var(--color-text-primary);
   text-decoration: none;
   border-radius: 4px;
   transition: background-color 0.15s ease;
@@ -278,4 +280,10 @@
 /* 「2025-12-07」が途中で改行されないようにする */
 .year-cell {
   white-space: nowrap;
+}
+
+/* まとめて編集が押せない理由を、ボタンの横に文字で示す */
+.bulk-actions-hint {
+  font-size: 13px;
+  color: var(--color-text-muted);
 }

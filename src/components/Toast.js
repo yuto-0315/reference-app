@@ -28,7 +28,8 @@ const Toast = ({ message, isVisible, onClose }) => {
   if (!message) return null;
 
   return (
-    <div className={`toast ${show ? 'toast-show' : ''}`} role="status">
+    // 読み上げは App の常設の通知領域で行うので、ここでは見た目だけを出す
+    <div className={`toast ${show ? 'toast-show' : ''}`}>
       <div className="toast-content">
         <CircleCheck size={20} className="toast-icon" />
         <span className="toast-message">

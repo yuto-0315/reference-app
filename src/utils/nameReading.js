@@ -1,6 +1,6 @@
 // 著者名・団体名の読み仮名を、Web NDL Authorities（国立国会図書館の典拠データ）から調べる
 // https://id.ndl.go.jp/information/sparql-11/
-import { fetchFromApi, invalidResponseError } from './apiErrors';
+import { fetchFromApi, invalidResponseError, readResponseBody } from './apiErrors';
 
 const SPARQL_ENDPOINT = 'https://id.ndl.go.jp/auth/ndla/sparql';
 // 同姓同名などで候補が多すぎると選びにくいため、上位だけ出す
@@ -63,12 +63,7 @@ export const lookupReadingCandidates = async (target) => {
 
   const url = `${SPARQL_ENDPOINT}?query=${encodeURIComponent(buildQuery(label))}`;
   const response = await fetchFromApi(url, 'ndla');
-  let data;
-  try {
-    data = await response.json();
-  } catch (error) {
-    throw invalidResponseError('ndla');
-  }
+  const data = await readResponseBody(response, 'ndla', 'json');
   const rows = data?.results?.bindings;
   if (!Array.isArray(rows)) throw invalidResponseError('ndla');
 

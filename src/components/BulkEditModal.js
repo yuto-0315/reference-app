@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { X } from 'lucide-react';
-import useEscapeKey from '../hooks/useEscapeKey';
+import useDialog from '../hooks/useDialog';
 import { getBulkEditableFields } from '../utils/bulkEdit';
 import { REFERENCE_TYPES } from '../utils/formatters';
 
@@ -18,15 +18,24 @@ const mostCommonValue = (references, field) => {
 
 const validateValue = (field, value) => {
   if (!value.trim()) return '値を入力してください';
-  if (field.inputType === 'number' && !/^\d{1,4}$/.test(value.trim())) return '半角数字（例: 2024）で入力してください';
+  if (field.inputType === 'number' && !/^\d{4}$/.test(value.trim())) return '西暦4桁の半角数字（例: 2024）で入力してください';
   return '';
+};
+
+const currentValueOf = (ref, field) => (ref[field.key] === undefined || ref[field.key] === null ? '' : String(ref[field.key]));
+
+// 文献ごとに値がばらばらな項目は、まとめてそろえたい項目である見込みが高いので、最初に選んでおく
+const pickDefaultField = (references, fields) => {
+  const varies = (field) => new Set(references.filter(ref => field.referenceIds.includes(ref.id)).map(ref => currentValueOf(ref, field))).size > 1;
+  const widestCount = Math.max(0, ...fields.map(field => field.referenceIds.length));
+  return fields.find(field => field.referenceIds.length === widestCount && varies(field)) || fields[0];
 };
 
 // 一覧でチェックした文献の、同じ項目をまとめて同じ値にする
 const BulkEditModal = ({ references, onSave, onClose }) => {
-  useEscapeKey(true, onClose);
+  const dialogRef = useDialog(true, onClose);
   const fields = useMemo(() => getBulkEditableFields(references), [references]);
-  const [fieldKey, setFieldKey] = useState(fields[0]?.key || '');
+  const [fieldKey, setFieldKey] = useState(() => pickDefaultField(references, fields)?.key || '');
   const field = fields.find(item => item.key === fieldKey);
   const [value, setValue] = useState(() => (field ? mostCommonValue(references, field) : ''));
   const [hasTriedSave, setHasTriedSave] = useState(false);
@@ -39,9 +48,13 @@ const BulkEditModal = ({ references, onSave, onClose }) => {
   };
 
   const errorMessage = field ? validateValue(field, value) : '';
+  // すでに同じ値の文献は変わらないので、実際に変わる件数を数える
+  const changingCount = field
+    ? references.filter(ref => field.referenceIds.includes(ref.id) && currentValueOf(ref, field) !== value.trim()).length
+    : 0;
   const handleSave = () => {
     setHasTriedSave(true);
-    if (errorMessage) return;
+    if (errorMessage || changingCount === 0) return;
     onSave(field, value.trim(), field.referenceIds);
   };
 
@@ -49,6 +62,7 @@ const BulkEditModal = ({ references, onSave, onClose }) => {
     <div className="modal-overlay" onClick={onClose}>
       <div
         className="modal-content bulk-modal"
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="bulk-edit-title"
@@ -97,14 +111,15 @@ const BulkEditModal = ({ references, onSave, onClose }) => {
               <ul className="bulk-preview-list">
                 {references.map(ref => {
                   const isTarget = field.referenceIds.includes(ref.id);
-                  const currentValue = ref[field.key] === undefined || ref[field.key] === '' ? '（空欄）' : String(ref[field.key]);
+                  const currentValue = currentValueOf(ref, field) || '（空欄）';
+                  const isUnchanged = isTarget && currentValueOf(ref, field) === value.trim();
                   return (
                     <li key={ref.id} className={`bulk-preview-item${isTarget ? '' : ' is-skipped'}`}>
                       <span className="bulk-preview-ref">{ref.title || '（タイトルなし）'}</span>
                       <span className="bulk-preview-change">
-                        {isTarget
-                          ? `${currentValue} → ${value.trim() || '（未入力）'}`
-                          : `${REFERENCE_TYPES[ref.type] || ref.type}には「${field.label}」がないため変更しません`}
+                        {!isTarget && `${REFERENCE_TYPES[ref.type] || ref.type}には「${field.label}」がないため変更しません`}
+                        {isUnchanged && `${currentValue}（すでに同じ値なので変わりません）`}
+                        {isTarget && !isUnchanged && `${currentValue} → ${value.trim() || '（未入力）'}`}
                       </span>
                     </li>
                   );
@@ -115,10 +130,13 @@ const BulkEditModal = ({ references, onSave, onClose }) => {
         </div>
 
         <div className="modal-footer bulk-footer">
+          {field && !errorMessage && changingCount === 0 && (
+            <span className="bulk-summary" aria-live="polite">すべて同じ値のため、変わる文献はありません</span>
+          )}
           <button type="button" className="btn btn-secondary" onClick={onClose}>キャンセル</button>
           {field && (
-            <button type="button" className="btn btn-primary" onClick={handleSave}>
-              {field.referenceIds.length}件に設定
+            <button type="button" className="btn btn-primary" onClick={handleSave} disabled={!errorMessage && changingCount === 0}>
+              {changingCount}件を変更
             </button>
           )}
         </div>

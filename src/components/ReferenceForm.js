@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { REFERENCE_TYPES, REFERENCE_TYPE_HINTS, getReferenceTypeFields } from '../utils/formatters';
 import InfoTooltip from './InfoTooltip';
 import APISearch from './APISearch';
@@ -10,6 +10,27 @@ import { describeApiErrorReason } from '../utils/apiErrors';
 import { Lightbulb } from 'lucide-react';
 
 const createEmptyAuthor = () => ({ lastName: '', firstName: '', reading: '' });
+
+// 端末の日付（toISOString は UTC なので、日本の午前0〜9時に前日になってしまう）
+const todayIsoDate = () => {
+  const today = new Date();
+  return [today.getFullYear(), today.getMonth() + 1, today.getDate()].map(part => String(part).padStart(2, '0')).join('-');
+};
+
+// 追加したあとは、同じ種類の文献を続けて登録することが多いため、種類はそのままにして中身だけ空にする。
+// Webサイトの閲覧日は、たいてい登録した日なので今日の日付を入れておく
+const buildEmptyFormData = (type) => {
+  const emptyData = { type };
+  getReferenceTypeFields(type).forEach(field => {
+    if (field.type === 'authors' || field.type === 'translation-authors') emptyData[field.key] = [createEmptyAuthor()];
+  });
+  if (type === 'website') emptyData.accessDate = todayIsoDate();
+  return emptyData;
+};
+
+const YEAR_FIELD_KEYS = ['year', 'originalYear', 'releaseYear', 'recordingYear'];
+// 出版予定の本も登録できるよう、来年までは受け付ける
+const isValidYear = (value) => /^\d{4}$/.test(String(value).trim()) && Number(value) >= 1000 && Number(value) <= new Date().getFullYear() + 1;
 
 // 空白だけの入力も未入力として扱う
 const isBlank = (value) => value === undefined || value === null || String(value).trim() === '';
@@ -48,7 +69,14 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
     return baseData;
   };
 
-  const [formData, setFormData] = useState(getInitialFormData());
+  const [formData, setFormData] = useState(getInitialFormData);
+  const formRef = useRef(null);
+  // 検索の結果が届く前に文献の種類を変えたり、検索結果の画面を閉じたりしたら、届いた結果は使わない
+  const searchGenerationRef = useRef(0);
+  const cancelPendingSearches = () => { searchGenerationRef.current += 1; };
+  useEffect(() => cancelPendingSearches, []);
+  // 送信して足りない項目があったかどうか（ボタンの近くに残りの件数を出し、どこを直せばよいかへ案内する）
+  const [hasFailedSubmit, setHasFailedSubmit] = useState(false);
   // 読み込んだ直後（または追加・更新直後）の内容。これと違えば「入力途中」とみなす
   const [baselineData, setBaselineData] = useState(formData);
   const [errors, setErrors] = useState({});
@@ -69,15 +97,30 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
       setFormData(loadedData);
       setBaselineData(loadedData);
       setErrors({});
+      setHasFailedSubmit(false);
     }
   }, [initialData]);
 
+  const isDirty = JSON.stringify(formData) !== JSON.stringify(baselineData);
+
   // 別の文献の編集に切り替えるとき、書きかけの内容を黙って消さないよう、入力途中かどうかを親に伝える
   useEffect(() => {
-    onDirtyChange?.(JSON.stringify(formData) !== JSON.stringify(baselineData));
-  }, [formData, baselineData, onDirtyChange]);
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
+
+  // 入力途中でタブを閉じたり再読み込みしたりしたときは、ブラウザの確認を出して書きかけを守る
+  useEffect(() => {
+    if (!isDirty) return undefined;
+    const warnBeforeLeaving = (event) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warnBeforeLeaving);
+    return () => window.removeEventListener('beforeunload', warnBeforeLeaving);
+  }, [isDirty]);
 
   const fields = getReferenceTypeFields(formData.type);
+  const remainingErrorCount = Object.values(errors).filter(Boolean).length;
 
   const handleChange = (key, value) => {
     setFormData(prev => ({ ...prev, [key]: value }));
@@ -87,6 +130,7 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
   };
 
   const handleTypeChange = (newType) => {
+    cancelPendingSearches();
     const newFields = getReferenceTypeFields(newType);
     const currentFieldTypes = Object.fromEntries(fields.map(field => [field.key, field.type]));
 
@@ -102,6 +146,7 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
       type: newType,
       ...carriedOverData
     };
+    if (newType === 'website' && !newFormData.accessDate) newFormData.accessDate = todayIsoDate();
 
     // 著者フィールドがある場合のみ著者を初期化
     const hasAuthorsField = newFields.some(field => field.key === 'authors');
@@ -122,10 +167,13 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
     setErrors({});
   };
 
+  // 読み仮名の検索は結果が後から届くため、その間に書き換えた他の著者の入力を消さないよう、常に最新の内容から作り直す
   const handleAuthorChange = (index, field, value) => {
-    const updatedAuthors = [...formData.authors];
-    updatedAuthors[index] = { ...updatedAuthors[index], [field]: value };
-    setFormData(prev => ({ ...prev, authors: updatedAuthors }));
+    setFormData(prev => {
+      const updatedAuthors = [...(prev.authors || [])];
+      updatedAuthors[index] = { ...updatedAuthors[index], [field]: value };
+      return { ...prev, authors: updatedAuthors };
+    });
 
     // エラーをクリア
     if (errors[`authors.${index}.${field}`]) {
@@ -135,9 +183,11 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
 
   // 汎用的な著者フィールド変更処理
   const handleAuthorFieldChange = (fieldName, index, field, value) => {
-    const updatedAuthors = [...(formData[fieldName] || [])];
-    updatedAuthors[index] = { ...updatedAuthors[index], [field]: value };
-    setFormData(prev => ({ ...prev, [fieldName]: updatedAuthors }));
+    setFormData(prev => {
+      const updatedAuthors = [...(prev[fieldName] || [])];
+      updatedAuthors[index] = { ...updatedAuthors[index], [field]: value };
+      return { ...prev, [fieldName]: updatedAuthors };
+    });
 
     // エラーをクリア
     if (errors[`${fieldName}.${index}.${field}`]) {
@@ -162,18 +212,21 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
   };
 
   const removeAuthor = (index) => {
-    if (formData.authors.length > 1) {
-      const updatedAuthors = formData.authors.filter((_, i) => i !== index);
-      setFormData(prev => ({ ...prev, authors: updatedAuthors }));
-    }
+    setFormData(prev => (prev.authors.length > 1 ? { ...prev, authors: prev.authors.filter((_, i) => i !== index) } : prev));
   };
 
   const removeAuthorField = (fieldName, index) => {
-    const currentAuthors = formData[fieldName] || [];
-    if (currentAuthors.length > 1) {
-      const updatedAuthors = currentAuthors.filter((_, i) => i !== index);
-      setFormData(prev => ({ ...prev, [fieldName]: updatedAuthors }));
-    }
+    setFormData(prev => {
+      const currentAuthors = prev[fieldName] || [];
+      return currentAuthors.length > 1 ? { ...prev, [fieldName]: currentAuthors.filter((_, i) => i !== index) } : prev;
+    });
+  };
+
+  // 削除したボタンと一緒にフォーカスが消えないよう、ひとつ前（先頭なら次）の著者の姓の欄へ移す
+  const focusAuthorAfterRemoval = (fieldName, removedIndex) => {
+    requestAnimationFrame(() => {
+      document.getElementById(`${idPrefix}${fieldName}-${Math.max(0, removedIndex - 1)}-lastName`)?.focus();
+    });
   };
 
   const validateForm = () => {
@@ -222,30 +275,48 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
       if (field.type === 'url' && !isBlank(value) && !/^https?:\/\/.+/.test(String(value))) {
         newErrors[field.key] = '有効なURLを入力してください（http://またはhttps://で始まる）';
       }
+      if (YEAR_FIELD_KEYS.includes(field.key) && !isBlank(value) && !isValidYear(value)) {
+        newErrors[field.key] = `${field.label}は西暦4桁で入力してください（例：2020）`;
+      }
     });
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const isValid = Object.values(newErrors).filter(Boolean).length === 0;
+    setHasFailedSubmit(!isValid);
+    return isValid;
+  };
+
+  // 足りない項目が画面の外にあっても気づけるよう、最初の項目まで移動して入力できる状態にする
+  const focusFirstError = () => {
+    requestAnimationFrame(() => {
+      const firstInvalid = formRef.current?.querySelector('[aria-invalid="true"], input.error, textarea.error, .error-message');
+      if (!firstInvalid) return;
+      firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (typeof firstInvalid.focus === 'function' && firstInvalid.matches('input, textarea, select')) {
+        firstInvalid.focus({ preventScroll: true });
+      }
+    });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (validateForm()) {
-      // 重複などで追加できなかった場合は、入力内容を消さずに修正できるようにする
-      if (onSubmit(formData) === false) return;
-      // 新規追加・編集問わずフォームをリセット
-      const resetData = { type: 'japanese-book' };
-      // 日本語書籍は著者フィールドがあるので著者を初期化
-      resetData.authors = [{ lastName: '', firstName: '', reading: '' }];
-
-      setFormData(resetData);
-      setBaselineData(resetData);
-      setErrors({});
+    if (!validateForm()) {
+      focusFirstError();
+      return;
     }
+    // 重複などで追加できなかった場合は、入力内容を消さずに修正できるようにする
+    if (onSubmit(formData) === false) return;
+    const resetData = buildEmptyFormData(formData.type);
+    setFormData(resetData);
+    setBaselineData(resetData);
+    setErrors({});
   };
 
 
   const handleIsbnSearchResult = async (isbn) => {
+    const generation = searchGenerationRef.current;
     const data = await fetchBookInfoByISBN(isbn);
+    // 待っている間に種類を変えていたら、見つからなかったことにもせず、そのまま捨てる
+    if (generation !== searchGenerationRef.current) return true;
     if (data) {
       setApiData(data);
       setMappingNotice('');
@@ -255,7 +326,9 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
   };
 
   const handleCiniiSearchResult = async (query) => {
+    const generation = searchGenerationRef.current;
     const results = await searchCiNiiByTitle(query);
+    if (generation !== searchGenerationRef.current) return;
     setCiniiResults(results);
     setShowResultsModal(true);
   };
@@ -270,16 +343,34 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
       })
     );
     setFormData(prev => ({ ...prev, ...filledData }));
+    // 取り込んだ値で埋まった項目の「必須項目です」などの表示は、もう当てはまらないので消す
+    setErrors(prev => Object.fromEntries(Object.entries(prev).filter(([key]) => {
+      const [fieldKey] = key.split('.');
+      return !Object.prototype.hasOwnProperty.call(filledData, fieldKey);
+    })));
   };
 
   const handleSelectCiniiResult = (result) => {
     if (selectingResult) return;
     // fetch detailed article info (authors etc.) if possible, then open mapping modal
     (async () => {
+      const generation = searchGenerationRef.current;
       setSelectingResult(result);
       setMappingNotice('');
+      let details = null;
+      let detailError = null;
       try {
-        const details = await fetchCiNiiArticleDetails(result.seeAlso || result.link);
+        details = await fetchCiNiiArticleDetails(result.seeAlso || result.link);
+      } catch (error) {
+        detailError = error;
+      }
+      // 詳細を待っている間に検索結果の画面を閉じていたら、確認画面は開かない
+      if (generation !== searchGenerationRef.current) {
+        setSelectingResult(null);
+        return;
+      }
+      try {
+        if (detailError) throw detailError;
         // merge details into result but do not overwrite non-empty result fields with empty values from details
         const merged = { ...result };
         if (details) {
@@ -371,7 +462,7 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
         <div className="label-row">
           <label htmlFor={inputId}>
             {label}
-            {required && <span className="required-mark"> *</span>}
+            {required && <span className="required-mark" aria-hidden="true"> *</span>}
           </label>
           <InfoTooltip description={description} example={example} fieldLabel={label} />
         </div>
@@ -408,13 +499,15 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
 
   const renderAuthorsField = (label, showReading = true) => {
     return (
-      <div key="authors" className="form-group">
-        <label>
-          {label} <span className="required-mark">*</span>
-        </label>
+      <div key="authors" className="form-group" role="group" aria-labelledby={`${idPrefix}authors-label`}>
+        <span className="group-label" id={`${idPrefix}authors-label`}>
+          {label} <span className="required-mark" aria-hidden="true">*</span>
+        </span>
         {errors.authors && <div className="error-message" role="alert">{errors.authors}</div>}
         {(formData.authors || []).map((author, index) => (
-          <div key={index} className="author-input-group">
+          // 姓・名の欄が著者の数だけ並ぶので、読み上げでも何人目の欄かが分かるようにする
+          <fieldset key={index} className="author-input-group">
+            <legend className="visually-hidden">{label}{index + 1}人目</legend>
             <div className="author-fields">
               <div className="author-field">
                 <label htmlFor={`${idPrefix}authors-${index}-lastName`}>姓 *</label>
@@ -426,10 +519,11 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
                   className={errors[`authors.${index}.lastName`] ? 'error' : ''}
                   aria-required="true"
                   aria-invalid={errors[`authors.${index}.lastName`] ? true : undefined}
+                  aria-describedby={errors[`authors.${index}.lastName`] ? `${idPrefix}authors-${index}-lastName-error` : undefined}
                   placeholder="山田"
                 />
                 {errors[`authors.${index}.lastName`] && (
-                  <div className="error-message">{errors[`authors.${index}.lastName`]}</div>
+                  <div id={`${idPrefix}authors-${index}-lastName-error`} className="error-message">{errors[`authors.${index}.lastName`]}</div>
                 )}
               </div>
               <div className="author-field">
@@ -442,10 +536,11 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
                   className={errors[`authors.${index}.firstName`] ? 'error' : ''}
                   aria-required="true"
                   aria-invalid={errors[`authors.${index}.firstName`] ? true : undefined}
+                  aria-describedby={errors[`authors.${index}.firstName`] ? `${idPrefix}authors-${index}-firstName-error` : undefined}
                   placeholder="太郎"
                 />
                 {errors[`authors.${index}.firstName`] && (
-                  <div className="error-message">{errors[`authors.${index}.firstName`]}</div>
+                  <div id={`${idPrefix}authors-${index}-firstName-error`} className="error-message">{errors[`authors.${index}.firstName`]}</div>
                 )}
               </div>
               {showReading && (
@@ -464,7 +559,11 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
                 <button
                   type="button"
                   className="btn btn-danger btn-small"
-                  onClick={() => removeAuthor(index)}
+                  onClick={() => {
+                    removeAuthor(index);
+                    focusAuthorAfterRemoval('authors', index);
+                  }}
+                  aria-label={`${label}${index + 1}人目を削除`}
                 >
                   削除
                 </button>
@@ -476,7 +575,7 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
                 onPick={(reading) => handleAuthorChange(index, 'reading', reading)}
               />
             )}
-          </div>
+          </fieldset>
         ))}
         <button
           type="button"
@@ -493,13 +592,14 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
   const renderTranslationAuthorsField = (fieldName, label, showReading = true) => {
     const authors = formData[fieldName] || [];
     return (
-      <div key={fieldName} className="form-group">
-        <label>
-          {label} <span className="required-mark">*</span>
-        </label>
+      <div key={fieldName} className="form-group" role="group" aria-labelledby={`${idPrefix}${fieldName}-label`}>
+        <span className="group-label" id={`${idPrefix}${fieldName}-label`}>
+          {label} <span className="required-mark" aria-hidden="true">*</span>
+        </span>
         {errors[fieldName] && <div className="error-message" role="alert">{errors[fieldName]}</div>}
         {authors.map((author, index) => (
-          <div key={index} className="author-input-group">
+          <fieldset key={index} className="author-input-group">
+            <legend className="visually-hidden">{label}{index + 1}人目</legend>
             <div className="author-fields">
               <div className="author-field">
                 <label htmlFor={`${idPrefix}${fieldName}-${index}-lastName`}>姓 *</label>
@@ -511,10 +611,11 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
                   className={errors[`${fieldName}.${index}.lastName`] ? 'error' : ''}
                   aria-required="true"
                   aria-invalid={errors[`${fieldName}.${index}.lastName`] ? true : undefined}
+                  aria-describedby={errors[`${fieldName}.${index}.lastName`] ? `${idPrefix}${fieldName}-${index}-lastName-error` : undefined}
                   placeholder="山田"
                 />
                 {errors[`${fieldName}.${index}.lastName`] && (
-                  <div className="error-message">{errors[`${fieldName}.${index}.lastName`]}</div>
+                  <div id={`${idPrefix}${fieldName}-${index}-lastName-error`} className="error-message">{errors[`${fieldName}.${index}.lastName`]}</div>
                 )}
               </div>
               <div className="author-field">
@@ -527,10 +628,11 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
                   className={errors[`${fieldName}.${index}.firstName`] ? 'error' : ''}
                   aria-required="true"
                   aria-invalid={errors[`${fieldName}.${index}.firstName`] ? true : undefined}
+                  aria-describedby={errors[`${fieldName}.${index}.firstName`] ? `${idPrefix}${fieldName}-${index}-firstName-error` : undefined}
                   placeholder="太郎"
                 />
                 {errors[`${fieldName}.${index}.firstName`] && (
-                  <div className="error-message">{errors[`${fieldName}.${index}.firstName`]}</div>
+                  <div id={`${idPrefix}${fieldName}-${index}-firstName-error`} className="error-message">{errors[`${fieldName}.${index}.firstName`]}</div>
                 )}
               </div>
               {showReading && (
@@ -549,13 +651,17 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
                 <button
                   type="button"
                   className="btn btn-danger btn-small"
-                  onClick={() => removeAuthorField(fieldName, index)}
+                  onClick={() => {
+                    removeAuthorField(fieldName, index);
+                    focusAuthorAfterRemoval(fieldName, index);
+                  }}
+                  aria-label={`${label}${index + 1}人目を削除`}
                 >
                   削除
                 </button>
               )}
             </div>
-          </div>
+          </fieldset>
         ))}
         <button
           type="button"
@@ -570,9 +676,10 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
 
   return (
     <>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} ref={formRef} noValidate>
+        <p className="form-required-note"><span className="required-mark" aria-hidden="true">*</span> は必ず入力する項目です</p>
         <div className="form-group">
-          <label htmlFor={`${idPrefix}reference-type`}>文献の種類 <span className="required-mark">*</span></label>
+          <label htmlFor={`${idPrefix}reference-type`}>文献の種類 <span className="required-mark" aria-hidden="true">*</span></label>
           <select
             id={`${idPrefix}reference-type`}
             value={formData.type}
@@ -601,10 +708,13 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
 
         {fields.map(renderField)}
 
-        <div className="button-group">
-          <button type="submit" className="btn btn-primary">
-            {isEditing ? '更新' : '追加'}
-          </button>
+        {hasFailedSubmit && remainingErrorCount > 0 && (
+          <p className="form-error-summary" role="alert">
+            直す必要のある項目が{remainingErrorCount}件あります。赤い枠の欄を確かめてください。
+          </p>
+        )}
+        {/* 編集画面ではほかの画面と同じく、右下に「キャンセル」「更新」の順で並べる */}
+        <div className={`button-group${isEditing ? ' form-actions-end' : ''}`}>
           {isEditing && (
             <button
               type="button"
@@ -614,6 +724,9 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
               キャンセル
             </button>
           )}
+          <button type="submit" className="btn btn-primary">
+            {isEditing ? '更新' : '追加'}
+          </button>
         </div>
       </form>
 
@@ -625,11 +738,16 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
         onApply={handleApplyMapping}
         referenceType={formData.type}
         notice={mappingNotice}
+        currentValues={formData}
       />
 
       <SearchResultsModal
         isOpen={showResultsModal}
-        onClose={() => setShowResultsModal(false)}
+        onClose={() => {
+          cancelPendingSearches();
+          setSelectingResult(null);
+          setShowResultsModal(false);
+        }}
         results={ciniiResults}
         onSelect={handleSelectCiniiResult}
         selectingResult={selectingResult}

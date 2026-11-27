@@ -24,16 +24,22 @@ const REQUEST_TIMEOUT_MS = 15000;
 // アクセス集中（429）で待ち時間の指定がないときに、こちらから送るのを控える長さ。
 // 制限中に送り続けると制限が長引くため、短すぎない時間にする
 const DEFAULT_RATE_LIMIT_WAIT_SECONDS = 60;
+// サーバーが極端に長い待ち時間を返しても、検索がずっと使えなくならないよう上限を設ける
+const MAX_RATE_LIMIT_WAIT_SECONDS = 600;
+// 接続できなかった直後に何度も押されると、アクセス集中（CORS の付かない 429 は接続エラーに見える）を長引かせるため、少しだけ間を空ける
+const NETWORK_ERROR_WAIT_MS = 10000;
 
 const rateLimitedUntil = {};
+const networkFailedUntil = {};
 
 const parseRetryAfterSeconds = (response) => {
   const value = response.headers.get('Retry-After');
   if (!value) return null;
+  const clamp = (seconds) => Math.min(MAX_RATE_LIMIT_WAIT_SECONDS, Math.max(1, Math.ceil(seconds)));
   const seconds = Number(value);
-  if (Number.isFinite(seconds)) return Math.max(1, Math.ceil(seconds));
+  if (Number.isFinite(seconds)) return clamp(seconds);
   const date = Date.parse(value);
-  return Number.isNaN(date) ? null : Math.max(1, Math.ceil((date - Date.now()) / 1000));
+  return Number.isNaN(date) ? null : clamp((date - Date.now()) / 1000);
 };
 
 const classifyStatus = (status) => {
@@ -51,6 +57,7 @@ export const fetchFromApi = async (url, service, { acceptStatuses = [] } = {}) =
   const waitSeconds = Math.ceil(((rateLimitedUntil[service] || 0) - Date.now()) / 1000);
   if (waitSeconds > 0) throw new ApiError('rate-limited', { service, status: 429, retryAfterSeconds: waitSeconds });
   if (typeof navigator !== 'undefined' && navigator.onLine === false) throw new ApiError('offline', { service });
+  if ((networkFailedUntil[service] || 0) > Date.now()) throw new ApiError('network', { service });
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -60,7 +67,9 @@ export const fetchFromApi = async (url, service, { acceptStatuses = [] } = {}) =
   } catch (error) {
     if (error.name === 'AbortError') throw new ApiError('timeout', { service });
     // サーバーが拒否の応答にブラウザ向けの許可（CORS）を付けていないと、状態コードが読めず通信エラーとして届く
-    throw new ApiError(navigator.onLine === false ? 'offline' : 'network', { service });
+    if (navigator.onLine === false) throw new ApiError('offline', { service });
+    networkFailedUntil[service] = Date.now() + NETWORK_ERROR_WAIT_MS;
+    throw new ApiError('network', { service });
   } finally {
     clearTimeout(timer);
   }
@@ -78,6 +87,24 @@ export const fetchFromApi = async (url, service, { acceptStatuses = [] } = {}) =
 
 // 応答を読み取れなかった（想定外の形式だった）ことを表す
 export const invalidResponseError = (service) => new ApiError('invalid-response', { service });
+
+/**
+ * 応答の本文を読む。本文が途中で止まっても待たせ続けないよう、時間を区切る
+ * @param {'json' | 'text'} format
+ */
+export const readResponseBody = async (response, service, format) => {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new ApiError('timeout', { service })), REQUEST_TIMEOUT_MS);
+  });
+  try {
+    return await Promise.race([format === 'json' ? response.json() : response.text(), timeout]);
+  } catch (error) {
+    throw error instanceof ApiError ? error : invalidResponseError(service);
+  } finally {
+    clearTimeout(timer);
+  }
+};
 
 // 検索結果の一部だけで先に進むときなど、本文の途中に添える短い理由
 export const describeApiErrorReason = (error) => {

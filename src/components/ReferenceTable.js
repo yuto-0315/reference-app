@@ -1,10 +1,13 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import CitationPopover from './CitationPopover';
-import { formatCitation, formatReference, migrateReferenceData, addYearSuffixes, getSortReading, getPublicationYear } from '../utils/formatters';
+import { toDoiHref, toSafeHref } from '../utils/safeUrl';
+import { formatCitation, formatReference, migrateReferenceData, addYearSuffixes, getSortReading, getPublicationYear, buildSortReadingLookup } from '../utils/formatters';
 import { collectReadingGroups } from '../utils/bulkEdit';
-import { ArrowDown, ArrowUp, ArrowUpDown, BookText, CopyPlus, ExternalLink, Languages, ListChecks, Pencil, Quote, TriangleAlert, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, ArrowUpToLine, BookText, CopyPlus, ExternalLink, Languages, ListChecks, Pencil, Quote, TriangleAlert, Trash2 } from 'lucide-react';
 
 // 著者・団体・作曲者の名前と読み、書誌情報をまとめた検索対象テキスト
+const titleOf = (ref) => ref.title || '（タイトルなし）';
+
 const getSearchableText = (migratedRef) => {
   const people = [
     ...(migratedRef.authors || []),
@@ -38,7 +41,9 @@ const isReadingMissing = (migratedRef) => {
   return false;
 };
 
-const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, checkedReferences, onOpenReadingBulk, onOpenBulkEdit, onDuplicate, recentlyUpdatedId }) => {
+const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, checkedReferences, onOpenReadingBulk, onOpenBulkEdit, onDuplicate, recentlyUpdatedId, onShowOutput }) => {
+  // 削除した文献のチェックが残っていても数えない
+  const checkedCount = references.filter(ref => checkedReferences.has(ref.id)).length;
   const missingReadingNameCount = useMemo(() => collectReadingGroups(references).filter(group => group.isMissing).length, [references]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showOnlyMissingReading, setShowOnlyMissingReading] = useState(false);
@@ -52,14 +57,19 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
     [references]
   );
 
+  const readingLookup = useMemo(() => buildSortReadingLookup(references), [references]);
+
   // 検索とソート機能
   const filteredAndSortedReferences = useMemo(() => {
-    const searchLower = searchTerm.toLowerCase();
+    // 「山田 1996」のように空白で区切った語は、すべてを含む文献を探す（全角の空白も区切りとして扱う）
+    const searchWords = searchTerm.toLowerCase().split(/[\s　]+/).filter(Boolean);
     let filtered = references.filter(ref => {
       const migratedRef = migrateReferenceData(ref);
       if (showOnlyMissingReading && !isReadingMissing(migratedRef)) return false;
-      return getSearchableText(migratedRef).includes(searchLower);
+      const searchableText = getSearchableText(migratedRef);
+      return searchWords.every(word => searchableText.includes(word));
     });
+    const compareReading = (refA, refB) => getSortReading(refA, readingLookup).localeCompare(getSortReading(refB, readingLookup), 'ja');
 
     // ソート処理
     filtered.sort((a, b) => {
@@ -68,21 +78,18 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
       let compareValue = 0;
 
       switch (sortBy) {
-        case 'year':
-          // use migrated values and coerce to Number to avoid string subtraction
-          // website type might not have year, treating as 0 or handling appropriately
+        case 'year': {
+          // 年のない文献（Webサイトなど）は、昇順・降順どちらでも最後に置く
           const yearA = Number(getPublicationYear(migratedA)) || 0;
           const yearB = Number(getPublicationYear(migratedB)) || 0;
-          compareValue = yearA - yearB;
-
+          if ((yearA === 0) !== (yearB === 0)) return yearA === 0 ? 1 : -1;
           // 年が同じ場合は読み仮名で比較（第二ソートキー）
-          if (compareValue === 0) {
-            compareValue = getSortReading(migratedA).localeCompare(getSortReading(migratedB), 'ja');
-          }
+          compareValue = yearA - yearB || compareReading(migratedA, migratedB);
           break;
+        }
         case 'reading':
           // 筆頭著者の読み仮名または姓で比較、団体出版本・Webサイトの場合は団体名
-          compareValue = getSortReading(migratedA).localeCompare(getSortReading(migratedB), 'ja');
+          compareValue = compareReading(migratedA, migratedB);
           break;
         case 'title':
           // 手で編集したJSONで数値が入っていても落ちないよう、文字列にして比べる
@@ -98,7 +105,11 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
     });
 
     return filtered;
-  }, [references, searchTerm, showOnlyMissingReading, sortBy, sortOrder]);
+  }, [references, readingLookup, searchTerm, showOnlyMissingReading, sortBy, sortOrder]);
+
+  const isFiltered = searchTerm.trim() !== '' || showOnlyMissingReading;
+  const allVisibleChecked = filteredAndSortedReferences.length > 0 && filteredAndSortedReferences.every(ref => checkedReferences.has(ref.id));
+  const someVisibleChecked = filteredAndSortedReferences.some(ref => checkedReferences.has(ref.id));
 
   const handleSort = (field) => {
     if (sortBy === field) {
@@ -126,6 +137,17 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
     if (restoreFocus) document.querySelector(`[data-citation-trigger="${triggerId}"]`)?.focus();
   }, [citationTargetId]);
 
+  // 削除したボタンと一緒にフォーカスが消えないよう、次の行（最後なら前の行）の削除ボタンへ移す
+  const deleteAndKeepFocus = (id) => {
+    const index = filteredAndSortedReferences.findIndex(ref => ref.id === id);
+    const neighbor = filteredAndSortedReferences[index + 1] || filteredAndSortedReferences[index - 1];
+    onDelete(id);
+    requestAnimationFrame(() => {
+      const target = neighbor && document.querySelector(`[data-delete-for="${neighbor.id}"]`);
+      (target || document.querySelector('.search-input'))?.focus();
+    });
+  };
+
   const copyFormatted = (ref, type) => {
     // 同一著者・同一年の文献に対してアルファベットサフィックスを付与
     const refWithSuffix = suffixedReferenceById.get(ref.id) || ref;
@@ -142,50 +164,44 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
     onCopy(formatReference(refWithSuffix), '参考文献をコピーしました');
   };
 
-  const getExternalLink = (ref) => {
-    if (ref.doi) {
-      return `https://doi.org/${ref.doi}`;
-    }
-    if (ref.url) {
-      return ref.url;
-    }
-    return null;
-  };
+  // DOI があれば DOI のリンク、なければ URL。http(s) 以外のURLはリンクにしない
+  const getExternalLink = (ref) => toDoiHref(ref.doi) || toSafeHref(ref.url);
 
   return (
-    <div className="reference-table-container">
+    <section className="reference-table-container" aria-labelledby="reference-table-title">
+      <h2 className="section-title" id="reference-table-title">登録した参考文献</h2>
       <div className="table-controls">
         <div className="search-container">
           <input
-            type="text"
-            placeholder="参考文献を検索..."
+            type="search"
+            placeholder="著者名・タイトル・年などで検索（空白で区切ると、すべてを含む文献）"
             aria-label="参考文献を検索"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape' && searchTerm) {
+                e.stopPropagation();
+                setSearchTerm('');
+              }
+            }}
             className="search-input"
           />
         </div>
 
-        <div className="sort-controls">
-          <span className="sort-label">並べ替え:</span>
-          <button
-            className={`sort-btn ${sortBy === 'year' ? 'active' : ''}`}
-            onClick={() => handleSort('year')}
-          >
-            発行年{getSortIcon('year')}
-          </button>
-          <button
-            className={`sort-btn ${sortBy === 'reading' ? 'active' : ''}`}
-            onClick={() => handleSort('reading')}
-          >
-            著者名{getSortIcon('reading')}
-          </button>
-          <button
-            className={`sort-btn ${sortBy === 'title' ? 'active' : ''}`}
-            onClick={() => handleSort('title')}
-          >
-            タイトル{getSortIcon('title')}
-          </button>
+        {/* 出力欄の並べ替えと同じ順に並べ、どちらでも同じ位置に同じボタンがあるようにする */}
+        <div className="sort-controls" role="group" aria-label="一覧の並べ替え">
+          <span className="sort-label" aria-hidden="true">並べ替え:</span>
+          {[['reading', '著者名'], ['year', '発行年'], ['title', 'タイトル']].map(([field, label]) => (
+            <button
+              key={field}
+              type="button"
+              className={`sort-btn ${sortBy === field ? 'active' : ''}`}
+              aria-pressed={sortBy === field}
+              onClick={() => handleSort(field)}
+            >
+              {label}{getSortIcon(field)}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -204,18 +220,27 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
         <div className="bulk-actions">
           <button type="button" className="btn btn-secondary btn-small" onClick={onOpenReadingBulk} disabled={references.length === 0}>
             <Languages size={14} />読み仮名をまとめて登録
-            {missingReadingNameCount > 0 && <span className="count-badge">未登録 {missingReadingNameCount}件</span>}
+            {missingReadingNameCount > 0 && <span className="count-badge">未登録の名前 {missingReadingNameCount}</span>}
           </button>
           {/* 「何をまとめて変えるか」より先に「どれを」を選んでもらう（チェックしてから押す） */}
           <button
             type="button"
             className="btn btn-secondary btn-small"
             onClick={onOpenBulkEdit}
-            disabled={checkedReferences.size === 0}
-            title={checkedReferences.size === 0 ? '一覧の左端のチェックで、まとめて編集する文献を選んでください' : undefined}
+            disabled={checkedCount === 0}
+            aria-describedby={checkedCount === 0 ? 'bulk-edit-hint' : undefined}
           >
-            <ListChecks size={14} />チェックした文献をまとめて編集（{checkedReferences.size}件）
+            <ListChecks size={14} />チェックした文献をまとめて編集（{checkedCount}件）
           </button>
+          {checkedCount === 0 && (
+            <span id="bulk-edit-hint" className="bulk-actions-hint">左端のチェックで文献を選ぶと使えます</span>
+          )}
+          {/* チェックした結果（参考文献一覧）は画面の上の出力欄に出るため、そこへすぐ移れるようにする */}
+          {checkedCount > 0 && onShowOutput && (
+            <button type="button" className="btn btn-secondary btn-small" onClick={onShowOutput}>
+              <ArrowUpToLine size={14} />出力欄で{checkedCount}件の参考文献一覧を見る
+            </button>
+          )}
         </div>
       </div>
 
@@ -224,26 +249,20 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
           <thead>
             <tr>
               <th style={{ width: '40px', textAlign: 'center' }}>
+                {/* 検索や絞り込みで見えていない文献まで勝手にチェックしないよう、表示中の文献だけを対象にする */}
                 <input
                   type="checkbox"
-                  checked={references.length > 0 && references.every(ref => checkedReferences.has(ref.id))}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      references.forEach(ref => {
-                        if (!checkedReferences.has(ref.id)) {
-                          onToggleCheck(ref.id);
-                        }
-                      });
-                    } else {
-                      references.forEach(ref => {
-                        if (checkedReferences.has(ref.id)) {
-                          onToggleCheck(ref.id);
-                        }
-                      });
-                    }
+                  ref={(element) => {
+                    if (element) element.indeterminate = someVisibleChecked && !allVisibleChecked;
                   }}
-                  title="全て選択/解除"
-                  aria-label="すべての参考文献を一覧に含める／外す"
+                  checked={allVisibleChecked}
+                  disabled={filteredAndSortedReferences.length === 0}
+                  onChange={(e) => {
+                    filteredAndSortedReferences.forEach(ref => {
+                      if (checkedReferences.has(ref.id) !== e.target.checked) onToggleCheck(ref.id);
+                    });
+                  }}
+                  aria-label={isFiltered ? '表示中の文献をすべて参考文献一覧に含める／外す' : 'すべての文献を参考文献一覧に含める／外す'}
                 />
               </th>
               <th>著者</th>
@@ -380,8 +399,8 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                           target="_blank"
                           rel="noopener noreferrer"
                           className="external-link"
-                          title={ref.doi ? `DOI: ${ref.doi}` : 'リンクを開く'}
-                          aria-label={ref.doi ? `DOI: ${ref.doi}（新しいタブで開く）` : 'リンクを新しいタブで開く'}
+                          title={toDoiHref(ref.doi) ? `DOI: ${ref.doi}` : 'リンクを開く'}
+                          aria-label={toDoiHref(ref.doi) ? `「${titleOf(ref)}」のDOI ${ref.doi} を新しいタブで開く` : `「${titleOf(ref)}」のリンクを新しいタブで開く`}
                         >
                           <ExternalLink size={16} className="icon-alone" />
                         </a>
@@ -404,7 +423,8 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                             onClick={() => copyFormatted(migratedRef, 'citation')}
                             className="btn btn-sm btn-accent"
                             title="引用形式でコピー(割注)"
-                            aria-label="引用形式でコピー(割注)"
+                            aria-label={`「${titleOf(ref)}」の引用（割注）をコピー`}
+                            aria-haspopup={migratedRef.type === 'website' ? undefined : 'dialog'}
                             aria-expanded={migratedRef.type === 'website' ? undefined : citationTargetId === ref.id}
                             data-citation-trigger={ref.id}
                           >
@@ -414,7 +434,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                             onClick={() => copyFormatted(migratedRef, 'reference')}
                             className="btn btn-sm btn-accent"
                             title="参考文献形式でコピー"
-                            aria-label="参考文献形式でコピー"
+                            aria-label={`「${titleOf(ref)}」の参考文献の形式をコピー`}
                           >
                             <BookText size={14} />文献
                           </button>
@@ -424,7 +444,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                             onClick={() => onEdit(migratedRef)}
                             className="btn btn-sm btn-secondary btn-icon"
                             title="編集"
-                            aria-label="編集"
+                            aria-label={`「${titleOf(ref)}」を編集`}
                           >
                             <Pencil size={16} className="icon-alone" />
                           </button>
@@ -432,15 +452,16 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                             onClick={() => onDuplicate(migratedRef)}
                             className="btn btn-sm btn-secondary btn-icon"
                             title="複製（この文献の内容を追加フォームに入れて、似た文献を追加する）"
-                            aria-label="複製して追加フォームに入れる"
+                            aria-label={`「${titleOf(ref)}」を複製して追加フォームに入れる`}
                           >
                             <CopyPlus size={16} className="icon-alone" />
                           </button>
                           <button
-                            onClick={() => onDelete(ref.id)}
+                            onClick={() => deleteAndKeepFocus(ref.id)}
                             className="btn btn-sm btn-danger btn-icon"
                             title="削除（あとから元に戻せます）"
-                            aria-label="削除"
+                            aria-label={`「${titleOf(ref)}」を削除`}
+                            data-delete-for={ref.id}
                           >
                             <Trash2 size={16} className="icon-alone" />
                           </button>
@@ -464,7 +485,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
             : '参考文献がまだありません。上の「新しい参考文献を追加」フォームから登録してください。'}
         </div>
       )}
-    </div>
+    </section>
   );
 };
 

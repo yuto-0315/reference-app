@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useRef } from 'react';
+import useDialog from '../hooks/useDialog';
 import { X } from 'lucide-react';
 import ReferenceForm from './ReferenceForm';
 
@@ -16,23 +17,14 @@ const EditReferenceModal = ({ reference, onSubmit, onClose }) => {
     onClose();
   }, [onClose]);
 
-  useEffect(() => {
-    // 読み上げでも編集画面が開いたことが分かるよう、見出しにフォーカスを移す
-    headingRef.current?.focus();
-
-    const handleKeyDown = (event) => {
-      if (event.key !== 'Escape') return;
-      // 検索結果や入力ガイドなど、編集画面の上に開いた画面の Esc では編集画面まで閉じない
-      if (document.querySelectorAll('[aria-modal="true"]').length > 1) return;
-      requestClose();
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [requestClose]);
+  // 読み上げでも編集画面が開いたことが分かるよう見出しにフォーカスを移し、閉じたら「編集」ボタンへ戻す。
+  // 検索結果や入力ガイドなど、編集画面の上に開いた画面の Esc では編集画面まで閉じない
+  const dialogRef = useDialog(true, requestClose);
 
   return (
     <div className="modal-overlay" onClick={requestClose}>
       <div
+        ref={dialogRef}
         className="modal-content edit-modal"
         role="dialog"
         aria-modal="true"
@@ -41,7 +33,7 @@ const EditReferenceModal = ({ reference, onSubmit, onClose }) => {
       >
         <div className="modal-header">
           <div className="edit-modal-heading">
-            <h2 id="edit-modal-title" ref={headingRef} tabIndex={-1}>参考文献を編集</h2>
+            <h2 id="edit-modal-title" ref={headingRef} tabIndex={-1} data-autofocus>参考文献を編集</h2>
             <p className="edit-modal-target">{reference.title || '（タイトルなし）'}</p>
           </div>
           <button type="button" className="modal-close" onClick={requestClose} aria-label="閉じる"><X size={20} /></button>

@@ -1,11 +1,21 @@
-import React, { useState } from 'react';
-import { formatReference, migrateReferenceData, addYearSuffixes, getSortReading, getPublicationYear, REFERENCE_TYPES } from '../utils/formatters';
-import { ArrowDown, ArrowUp, ArrowUpDown, Copy } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import {
+  formatReference, migrateReferenceData, addYearSuffixes, getSortReading, getPublicationYear, REFERENCE_TYPES,
+  buildSortReadingLookup, isSortReadingMissing, getYearSuffixGroupKey
+} from '../utils/formatters';
+import { ArrowDown, ArrowUp, ArrowUpDown, Copy, TriangleAlert } from 'lucide-react';
+
+// 年のない文献（Webサイトなど）は、昇順・降順どちらでも最後に置く
+const yearOf = (reference) => {
+  const year = Number(getPublicationYear(reference));
+  return Number.isFinite(year) && year > 0 ? year : null;
+};
 
 // 一覧でチェックした文献を、提出用の参考文献一覧の形式で並べて出力する
 // （選ぶのは一覧のチェック、本文中の引用は一覧の「引用」に任せ、ここは出力だけに絞る）
 const PreviewSection = ({ references, checkedReferences, onCopy, onToggleAll, onBulkCheck }) => {
-  const [sortBy, setSortBy] = useState('year'); // 'author', 'year', 'title'
+  // 参考文献一覧は著者名の五十音順に並べるのが基本なので、最初から著者名順にしておく
+  const [sortBy, setSortBy] = useState('author'); // 'author', 'year'
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc', 'desc'
   const [bulkSelectType, setBulkSelectType] = useState('');
 
@@ -17,7 +27,7 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleAll, on
       .map(ref => ref.id);
 
     if (onBulkCheck) {
-      onBulkCheck(idsToSelect);
+      onBulkCheck(idsToSelect, REFERENCE_TYPES[type]);
     }
   };
 
@@ -28,10 +38,21 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleAll, on
       .map(ref => migrateReferenceData(ref));
   };
 
-  const sortedReferences = [...getCheckedReferences()].sort((a, b) => {
+  // a,b,c は一覧の「引用」と同じく登録済みの全文献で付ける（本文中の引用と参考文献一覧の記号を食い違わせない）
+  const suffixById = useMemo(
+    () => new Map(addYearSuffixes(references).map(ref => [ref.id, ref.yearSuffix || ''])),
+    [references]
+  );
+  const readingLookup = useMemo(() => buildSortReadingLookup(references), [references]);
+  const checkedList = getCheckedReferences();
+
+  const sortedReferences = [...checkedList].sort((a, b) => {
     let compareValue = 0;
-    const compareYear = () => (Number(getPublicationYear(a)) || 0) - (Number(getPublicationYear(b)) || 0);
-    const compareReading = () => getSortReading(a).localeCompare(getSortReading(b), 'ja');
+    const yearA = yearOf(a);
+    const yearB = yearOf(b);
+    const compareYear = () => (yearA ?? 0) - (yearB ?? 0);
+    const compareReading = () => getSortReading(a, readingLookup).localeCompare(getSortReading(b, readingLookup), 'ja');
+    if (sortBy === 'year' && (yearA === null) !== (yearB === null)) return yearA === null ? 1 : -1;
 
     switch (sortBy) {
       case 'author':
@@ -49,13 +70,17 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleAll, on
     return sortOrder === 'asc' ? compareValue : -compareValue;
   });
 
-  const generateReferenceList = () => {
-    // チェックされた参考文献にアルファベットサフィックスを付与
-    const referencesWithSuffixes = addYearSuffixes(sortedReferences);
-    return referencesWithSuffixes
-      .map(ref => formatReference(ref))
-      .join('\n');
-  };
+  const generateReferenceList = () => sortedReferences
+    .map(ref => formatReference({ ...ref, yearSuffix: suffixById.get(ref.id) || '' }))
+    .join('\n');
+
+  // 提出前に気づきたいこと：読み仮名がなく五十音順に並ばない文献と、a・b の組の一部だけを選んでいる文献
+  const missingReadingCount = checkedList.filter(ref => isSortReadingMissing(ref, readingLookup)).length;
+  const checkedIds = new Set(checkedList.map(ref => ref.id));
+  const partialSuffixCount = references.filter(ref =>
+    suffixById.get(ref.id) && !checkedIds.has(ref.id)
+    && checkedList.some(checked => suffixById.get(checked.id) && getYearSuffixGroupKey(checked) === getYearSuffixGroupKey(ref))
+  ).length;
 
   // 削除・クリーンアップで消えた文献のIDがチェック状態に残っていても、件数に数えない
   const checkedCount = references.filter(ref => checkedReferences.has(ref.id)).length;
@@ -86,7 +111,7 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleAll, on
 
   return (
     <div>
-      <h2 className="section-title">参考文献一覧の出力</h2>
+      <h2 className="section-title" tabIndex={-1}>参考文献一覧の出力</h2>
       <p className="preview-lead">下の一覧の左端でチェックした文献を、提出用の形式で並べます。</p>
 
       {/* 参考文献一覧 */}
@@ -141,20 +166,19 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleAll, on
 
         {/* 並べ替えコントロール */}
         {checkedCount > 1 && (
-          <div className="sort-controls" style={{ marginBottom: '15px' }}>
-            <span className="sort-label">並べ替え:</span>
-            <button
-              className={`sort-btn ${sortBy === 'author' ? 'active' : ''}`}
-              onClick={() => handleSort('author')}
-            >
-              著者名{getSortIcon('author')}
-            </button>
-            <button
-              className={`sort-btn ${sortBy === 'year' ? 'active' : ''}`}
-              onClick={() => handleSort('year')}
-            >
-              発行年{getSortIcon('year')}
-            </button>
+          <div className="sort-controls" role="group" aria-label="参考文献一覧の並べ替え" style={{ marginBottom: '15px' }}>
+            <span className="sort-label" aria-hidden="true">並べ替え:</span>
+            {[['author', '著者名'], ['year', '発行年']].map(([field, label]) => (
+              <button
+                key={field}
+                type="button"
+                className={`sort-btn ${sortBy === field ? 'active' : ''}`}
+                aria-pressed={sortBy === field}
+                onClick={() => handleSort(field)}
+              >
+                {label}{getSortIcon(field)}
+              </button>
+            ))}
           </div>
         )}
 
@@ -167,6 +191,22 @@ const PreviewSection = ({ references, checkedReferences, onCopy, onToggleAll, on
             {/* プレビュー */}
             {checkedCount > 0 ? (
               <>
+                {(missingReadingCount > 0 || partialSuffixCount > 0) && (
+                  <ul className="preview-warnings">
+                    {missingReadingCount > 0 && sortBy === 'author' && (
+                      <li>
+                        <TriangleAlert size={16} />
+                        読み仮名のない文献が{missingReadingCount}件あり、五十音順の位置がずれることがあります。下の一覧の「読み仮名をまとめて登録」から登録できます。
+                      </li>
+                    )}
+                    {partialSuffixCount > 0 && (
+                      <li>
+                        <TriangleAlert size={16} />
+                        同じ著者・同じ年の文献のうち{partialSuffixCount}件を選んでいないため、a・b などの記号が飛んでいます。本文で使わない文献なら、一覧から削除すると記号が付け直されます。
+                      </li>
+                    )}
+                  </ul>
+                )}
                 <div className="preview-area">
                   {generateReferenceList()}
                 </div>

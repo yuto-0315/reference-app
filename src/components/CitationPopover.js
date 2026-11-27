@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Copy } from 'lucide-react';
 import { formatCitation } from '../utils/formatters';
 
@@ -22,10 +22,12 @@ const CitationPopover = ({ reference, onCopy, onClose }) => {
   const inputRef = useRef(null);
   const citation = formatCitation(reference, page.trim() || reference.pages || '');
 
-  useLayoutEffect(() => {
+  const updatePosition = useCallback(() => {
     const trigger = document.querySelector(`[data-citation-trigger="${reference.id}"]`);
     if (trigger && popoverRef.current) setPosition(placeNearTrigger(trigger, popoverRef.current));
   }, [reference.id]);
+
+  useLayoutEffect(updatePosition, [updatePosition]);
 
   // 位置が決まるまでは見えない状態で、見えない欄にはフォーカスできないため、置き場所が決まってから移す
   useEffect(() => {
@@ -33,8 +35,8 @@ const CitationPopover = ({ reference, onCopy, onClose }) => {
   }, [position]);
 
   useEffect(() => {
-    // 画面をスクロールするとボタンから離れてしまうため、そのときは閉じる
-    const handleScroll = () => onClose({ restoreFocus: false });
+    // 画面をスクロールしても、押したボタンの近くに付いていくようにする（入力中のページ番号を消さない）
+    const handleScroll = () => updatePosition();
     window.addEventListener('scroll', handleScroll, true);
     window.addEventListener('resize', handleScroll);
     // 外側を押したら閉じる（閉じても何も失われないので確認はしない）
@@ -50,7 +52,15 @@ const CitationPopover = ({ reference, onCopy, onClose }) => {
       window.removeEventListener('scroll', handleScroll, true);
       window.removeEventListener('resize', handleScroll);
     };
-  }, [onClose, reference.id]);
+  }, [onClose, reference.id, updatePosition]);
+
+  // Tab で外へ移ったら閉じる（見えないところに開いたまま残らないように）
+  const handleBlur = (event) => {
+    const next = event.relatedTarget;
+    if (!next || popoverRef.current?.contains(next)) return;
+    if (next.closest?.(`[data-citation-trigger="${reference.id}"]`)) return;
+    onClose({ restoreFocus: false });
+  };
 
   const copyAndClose = () => {
     onCopy(citation, `引用をコピーしました\n${citation}`);
@@ -65,7 +75,8 @@ const CitationPopover = ({ reference, onCopy, onClose }) => {
 
   // ページを入れて Enter でそのままコピーできるようにする
   const handleInputKeyDown = (event) => {
-    if (event.key !== 'Enter') return;
+    // 日本語入力の変換を確定する Enter ではコピーしない
+    if (event.key !== 'Enter' || event.nativeEvent.isComposing || event.keyCode === 229) return;
     event.preventDefault();
     copyAndClose();
   };
@@ -78,6 +89,7 @@ const CitationPopover = ({ reference, onCopy, onClose }) => {
       role="dialog"
       aria-label="引用をコピー"
       onKeyDown={handleKeyDown}
+      onBlur={handleBlur}
     >
       <label htmlFor={`citation-page-${reference.id}`} className="citation-popover-label">引用するページ</label>
       <input

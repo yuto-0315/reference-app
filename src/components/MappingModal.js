@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import useEscapeKey from '../hooks/useEscapeKey';
+import useDialog from '../hooks/useDialog';
 import '../styles/MappingModal.css';
 import { TriangleAlert, X } from 'lucide-react';
+import { stripCreatorRole } from '../utils/api';
+import { toDoiHref, toSafeHref } from '../utils/safeUrl';
 
 // Helpers: detect Japanese characters (kanji/kana)
 const isJapaneseText = (s) => /[\u3000-\u30FF\u4E00-\u9FFF\u3040-\u309F]/.test(s);
@@ -61,7 +63,7 @@ const splitFullName = (fullName) => {
 
 const createEmptyAuthor = () => ({ lastName: '', firstName: '', reading: '' });
 
-const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType, notice }) => {
+const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType, notice, currentValues = {} }) => {
     // helper: extract creators/authors from a variety of possible keys
     const getCreators = (data) => {
         if (!data) return [];
@@ -128,8 +130,6 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType, notice
     const [splitCounts, setSplitCounts] = useState({});
 
     useEffect(() => {
-        console.log('DEBUG MappingModal apiData:', apiData);
-        console.log('DEBUG MappingModal creatorsMeta:', creatorsMeta);
 
         if (apiData) {
             const initialMapping = {};
@@ -202,8 +202,16 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType, notice
                 return '';
             };
 
-            // build creatorsMeta with original indices
-            const meta = creatorsArr.map((creator, i) => ({ idx: i, creator, name: safeCreatorName(creator), reading: (creator && creator.reading) ? creator.reading : '' }));
+            // build creatorsMeta with original indices（「編」「[著]」などの役割の表示は名前から外す）
+            const meta = creatorsArr.map((creator, i) => ({ idx: i, creator, name: stripCreatorRole(safeCreatorName(creator)), reading: (creator && creator.reading) ? creator.reading : '' }));
+            // 団体出版本の「執筆団体」は出版社ではなく著者（「文部科学省 編」の文部科学省）なので、著者があればそちらを使う
+            if (referenceType === 'organization-book') {
+                const organizationCreator = meta.find(m => m.name);
+                if (organizationCreator) {
+                    initialMapping.organization = organizationCreator.name;
+                    initialMapping.organizationReading = initialMapping.organizationReading || toHiragana(organizationCreator.reading);
+                }
+            }
             // default: select all creators that have a non-empty name
             setSelectedCreators(new Set(meta.filter(m => m.name).map(m => m.idx)));
             setCreatorsMeta(meta);
@@ -228,12 +236,7 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType, notice
         }
     }, [apiData, referenceType]);
 
-    // debug: log creatorsMeta whenever it updates
-    useEffect(() => {
-        console.log('DEBUG MappingModal creatorsMeta (updated):', creatorsMeta);
-    }, [creatorsMeta]);
-
-    useEscapeKey(isOpen, onClose);
+    const dialogRef = useDialog(isOpen, onClose);
 
     if (!isOpen) return null;
 
@@ -319,24 +322,31 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType, notice
     };
 
     // 取得できなかった項目まで空欄で並べると、どれが入るのか分かりにくいため、値のある項目だけ出す
-    const renderField = (label, value) => ((value === null || value === undefined || String(value).trim() === '') ? null : (
-        <div className="mapping-row" key={label}>
-            <span className="mapping-label">{label}</span>
-            <span className="mapping-value">
-                {typeof value === 'string' && value.match(/^https?:\/\//) ? (
-                    <a href={value} target="_blank" rel="noopener noreferrer">{value}</a>
-                ) : (
-                    (value === null || value === undefined) ? '' : String(value)
-                )}
-            </span>
-        </div>
-    ));
+    // フォームにすでに別の値が入っている項目は、反映すると置き換わることを先に示す（黙って上書きしない）
+    const renderField = (label, value, formKey) => {
+        if (value === null || value === undefined || String(value).trim() === '') return null;
+        const currentValue = formKey ? currentValues[formKey] : undefined;
+        const willReplace = currentValue !== undefined && currentValue !== null && String(currentValue).trim() !== ''
+            && String(currentValue).trim() !== String(value).trim();
+        return (
+            <div className="mapping-row" key={label}>
+                <span className="mapping-label">{label}</span>
+                <span className="mapping-value">
+                    {toSafeHref(value) ? (
+                        <a href={toSafeHref(value)} target="_blank" rel="noopener noreferrer">{value}</a>
+                    ) : String(value)}
+                    {willReplace && <span className="mapping-replace-note">今の入力「{String(currentValue)}」を置き換えます</span>}
+                </span>
+            </div>
+        );
+    };
 
-    const creators = getCreators(apiData);
+    // 団体出版本は著者の代わりに執筆団体を入れるため、著者の選択は出さない
+    const isOrganizationBook = referenceType === 'organization-book';
 
     return (
         <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-content" role="dialog" aria-modal="true" aria-labelledby="mapping-modal-title" onClick={e => e.stopPropagation()}>
+            <div ref={dialogRef} className="modal-content" role="dialog" aria-modal="true" aria-labelledby="mapping-modal-title" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
                     <h2 id="mapping-modal-title">取得した書誌情報を確認</h2>
                     <button type="button" className="modal-close" onClick={onClose} aria-label="閉じる"><X size={20} /></button>
@@ -344,20 +354,22 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType, notice
                 <div className="modal-body">
                     {notice && <p className="mapping-notice" role="status"><TriangleAlert size={16} />{notice}</p>}
                     <p className="mapping-lead">取得できた項目です。「フォームに反映」で入力欄に入ります。ここにない項目は、反映後にフォームで入力してください。</p>
-                    {renderField('タイトル', mapping.title)}
-                    {renderField('出版社', mapping.publisher)}
-                    {renderField('出版年', mapping.year)}
-                    {renderField('雑誌名', mapping.journalName)}
-                    {renderField('巻', mapping.volume)}
-                    {renderField('号', mapping.issue)}
-                    {renderField('ページ', mapping.pages)}
+                    {isOrganizationBook && renderField('執筆団体', mapping.organization, 'organization')}
+                    {isOrganizationBook && renderField('執筆団体（読み仮名）', mapping.organizationReading, 'organizationReading')}
+                    {renderField('タイトル', mapping.title, 'title')}
+                    {!isOrganizationBook && renderField('出版社', mapping.publisher, 'publisher')}
+                    {renderField('出版年', mapping.year, 'year')}
+                    {renderField('雑誌名', mapping.journalName, 'journalName')}
+                    {renderField('巻', mapping.volume, 'volume')}
+                    {renderField('号', mapping.issue, 'issue')}
+                    {renderField('ページ', mapping.pages, 'pages')}
                     {renderField('リンク', mapping.link)}
                     {mapping.doi && (
                         <div className="mapping-row" key="doi">
                             <span className="mapping-label">DOI</span>
                             <span className="mapping-value">
-                                {typeof mapping.doi === 'string' && mapping.doi.match(/^10\./) ? (
-                                    <a href={`https://doi.org/${mapping.doi}`} target="_blank" rel="noopener noreferrer">{mapping.doi}</a>
+                                {toDoiHref(mapping.doi) ? (
+                                    <a href={toDoiHref(mapping.doi)} target="_blank" rel="noopener noreferrer">{mapping.doi}</a>
                                 ) : (
                                     String(mapping.doi)
                                 )}
@@ -365,7 +377,7 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType, notice
                         </div>
                     )}
 
-                    {creatorsMeta && creatorsMeta.length > 0 && (
+                    {!isOrganizationBook && creatorsMeta && creatorsMeta.length > 0 && (
                         <div className="mapping-creators">
                             <h4>著者を選択</h4>
                             {creatorsMeta.filter(m => m.name).map((m) => (

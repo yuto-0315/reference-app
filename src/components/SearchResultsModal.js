@@ -1,15 +1,15 @@
 import React from 'react';
 import { Loader2, X } from 'lucide-react';
-import useEscapeKey from '../hooks/useEscapeKey';
+import useDialog from '../hooks/useDialog';
 
 const SearchResultsModal = ({ isOpen, onClose, results, onSelect, selectingResult }) => {
-  useEscapeKey(isOpen, onClose);
+  const dialogRef = useDialog(isOpen, onClose);
 
   if (!isOpen) return null;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" role="dialog" aria-modal="true" aria-labelledby="search-results-title" onClick={e => e.stopPropagation()}>
+      <div ref={dialogRef} className="modal-content" role="dialog" aria-modal="true" aria-labelledby="search-results-title" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h2 id="search-results-title">論文の検索結果{results.length > 0 ? `（${results.length}件）` : ''}</h2>
           <button type="button" className="modal-close" onClick={onClose} aria-label="閉じる"><X size={20} /></button>

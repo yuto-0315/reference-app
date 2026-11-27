@@ -8,6 +8,8 @@
 .section-title {
   font-size: 1.25rem;
   font-weight: 600;
+  /* カードの上の余白は padding で取っているので、見出しの既定の上余白は付けない */
+  margin-top: 0;
   margin-bottom: 20px;
   color: var(--color-text-onSurface);
 }
@@ -99,15 +101,24 @@
   font-size: 14px;
 }
 
-/* 姓・名・読み仮名を横に並べ、著者が何人いても一人分が一目で分かるようにする */
+/* 姓・名・読み仮名を横に並べ、著者が何人いても一人分が一目で分かるようにする。
+   読み上げ用に fieldset でまとめているが、見た目は枠なしのまま */
 .author-input-group {
-  margin-bottom: 12px;
+  margin: 0 0 12px;
+  padding: 0;
+  border: 0;
+  min-width: 0;
 }
 
+/* どれかの欄の下にエラーが出ても、ほかの欄の高さがずれないよう上端でそろえる */
 .author-fields {
   display: flex;
   gap: 8px 12px;
-  align-items: flex-end;
+  align-items: flex-start;
+}
+
+.author-field label {
+  line-height: 20px;
 }
 
 .author-field {
@@ -122,7 +133,8 @@
 
 .author-field input {
   width: 100%;
-  padding: 8px 12px;
+  /* ほかの入力欄と同じ高さにそろえる */
+  padding: 12px;
   border: 1px solid var(--color-border-secondary);
   border-radius: 4px;
   font-size: 14px;
@@ -151,6 +163,39 @@
 
 .author-fields > .btn {
   flex: none;
+  /* 上端でそろえているため、ラベル1行分（20px）と間隔（8px）だけ下げて入力欄の横に置く */
+  margin-top: 28px;
+  min-height: 42px;
+}
+
+/* 著者欄のまとまりの見出し（label 要素ではないので、ラベルと同じ見た目にする） */
+.group-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--color-text-onSurface);
+}
+
+.form-required-note {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+/* 追加・更新ボタンのすぐ上に、直す必要のある項目の数を出す */
+.form-error-summary {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-text-danger);
+  border-left-width: 4px;
+  border-radius: 4px;
+  background: var(--color-surface);
+  color: var(--color-text-danger);
+  font-size: 14px;
+}
+
+.button-group.form-actions-end {
+  justify-content: flex-end;
 }
 
 /* --- 読み仮名を典拠データから調べる --- */

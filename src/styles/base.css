@@ -54,6 +54,19 @@ input[type="checkbox"] {
   border: 0;
 }
 
+/* リンクはブラウザ標準の青だと暗いテーマで読めないため、テーマの見出しの色にし、下線で文字と区別する */
+a {
+  color: var(--color-text-primary);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+/* 入力例（プレースホルダー）も、どのテーマでも読める濃さにする */
+::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.85;
+}
+
 /* 必須項目の印。色だけでなく「*」の記号でも示す */
 .required-mark {
   color: var(--color-text-danger);
@@ -103,7 +116,7 @@ body {
 .modal-close .lucide,
 .alert-close .lucide,
 .toast-close .lucide,
-.info-modal-close .lucide,
+.info-icon .lucide,
 .lucide.icon-alone {
   margin-right: 0;
   vertical-align: middle;

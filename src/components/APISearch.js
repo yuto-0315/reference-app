@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { BrowserMultiFormatReader, NotFoundException, ChecksumException, FormatException } from '@zxing/library';
-import useEscapeKey from '../hooks/useEscapeKey';
+import useDialog from '../hooks/useDialog';
 import { describeApiError } from '../utils/apiErrors';
 
 // 日本の書籍のバーコードは2段あり、下段（192 で始まる分類・価格コード）を読んでも検索できないため、
@@ -20,10 +19,30 @@ const findIsbnInputProblem = (rawIsbn) => {
   return '';
 };
 
+// カメラまわりの英語のエラーを、次にすることが分かる日本語にする
+const describeScanError = (error) => {
+  switch (error?.name) {
+    case 'NotAllowedError':
+    case 'SecurityError':
+      return 'カメラの使用が許可されていません。ブラウザのアドレスバーの左にある設定からカメラを許可するか、ISBNを直接入力してください。';
+    case 'NotFoundError':
+    case 'OverconstrainedError':
+      return '使えるカメラが見つかりませんでした。ISBNを直接入力してください。';
+    case 'NotReadableError':
+    case 'AbortError':
+      return 'カメラを起動できませんでした。ほかのアプリがカメラを使っていないか確かめるか、ISBNを直接入力してください。';
+    default:
+      return 'バーコードを読み取れませんでした。もう一度試すか、ISBNを直接入力してください。';
+  }
+};
+
 // バーコードがまだ映っていない・読み取りかけのときに毎フレーム返る例外。利用者に見せるエラーではない
 // （本番ビルドではクラス名が短縮されるため、err.name ではなく instanceof で判定する）
-const isScanInProgressError = (err) =>
-  err instanceof NotFoundException || err instanceof ChecksumException || err instanceof FormatException;
+const isScanInProgressError = (err, zxing) =>
+  err instanceof zxing.NotFoundException || err instanceof zxing.ChecksumException || err instanceof zxing.FormatException;
+
+// バーコードの読み取り部品は大きく、使う人も限られるため、「バーコードスキャン」を押したときに初めて読み込む
+const loadBarcodeLibrary = () => import(/* webpackChunkName: "barcode" */ '@zxing/library');
 
 const APISearch = ({ type, onSearchResult, onCiniiResult, idPrefix = '' }) => {
   const [isbn, setIsbn] = useState('');
@@ -77,7 +96,7 @@ const APISearch = ({ type, onSearchResult, onCiniiResult, idPrefix = '' }) => {
     }
   };
 
-  useEscapeKey(isScannerOpen, closeScanner);
+  const scannerDialogRef = useDialog(isScannerOpen, closeScanner);
 
   // 文献の種類を変えると検索欄ごと消えるため、カメラを使ったままにしない
   useEffect(() => {
@@ -86,14 +105,18 @@ const APISearch = ({ type, onSearchResult, onCiniiResult, idPrefix = '' }) => {
   }, [type]);
 
   useEffect(() => {
-    if (!isScannerOpen) return;
-    const codeReader = new BrowserMultiFormatReader();
-    codeReaderRef.current = codeReader;
+    if (!isScannerOpen) return undefined;
     // カメラを止めるまでの間も同じバーコードを読み続けるため、最初の1回だけ使う
     let hasReadIsbn = false;
+    let isClosed = false;
 
     const start = async () => {
       try {
+        const zxing = await loadBarcodeLibrary();
+        // 読み込んでいる間に閉じられたら、カメラを起動しない
+        if (isClosed) return;
+        const codeReader = new zxing.BrowserMultiFormatReader();
+        codeReaderRef.current = codeReader;
         const videoInputDevices = await codeReader.listVideoInputDevices();
         const deviceId = videoInputDevices.length > 0 ? videoInputDevices[0].deviceId : null;
         await codeReader.decodeFromVideoDevice(deviceId, videoRef.current, (result, err) => {
@@ -108,34 +131,37 @@ const APISearch = ({ type, onSearchResult, onCiniiResult, idPrefix = '' }) => {
               handleIsbnSearch(code);
             }
           }
-          if (err && !isScanInProgressError(err)) {
-            // other errors
-            setScanError(err.message || String(err));
+          if (err && !isScanInProgressError(err, zxing)) {
+            setScanError(describeScanError(err));
           }
         });
       } catch (e) {
-        setScanError(e.message || String(e));
+        setScanError(describeScanError(e));
       }
     };
 
     start();
 
     return () => {
+      isClosed = true;
       if (codeReaderRef.current) {
         codeReaderRef.current.reset();
+        codeReaderRef.current = null;
       }
     };
   }, [isScannerOpen]);
 
   const handleCiniiSearch = async () => {
-    if (!ciniiQuery) return;
+    if (!ciniiQuery.trim() || isSearchingRef.current) return;
+    isSearchingRef.current = true;
     setIsLoading(true);
     setSearchError('');
     try {
-      await onCiniiResult(ciniiQuery);
+      await onCiniiResult(ciniiQuery.trim());
     } catch (error) {
       setSearchError(describeApiError(error));
     } finally {
+      isSearchingRef.current = false;
       setIsLoading(false);
     }
   };
@@ -167,14 +193,16 @@ const APISearch = ({ type, onSearchResult, onCiniiResult, idPrefix = '' }) => {
             onChange={(e) => { setIsbn(e.target.value); setSearchError(''); }}
             onKeyDown={searchOnEnter(() => handleIsbnSearch())}
             placeholder="ISBN (10桁または13桁)"
-            disabled={isLoading}
+            readOnly={isLoading}
+            aria-busy={isLoading || undefined}
             aria-describedby={searchError ? `${idPrefix}api-search-error` : undefined}
           />
           <button
             type="button"
             className="btn btn-primary"
             onClick={() => handleIsbnSearch()}
-            disabled={isLoading || !isbn}
+            disabled={!isbn}
+            aria-disabled={isLoading || undefined}
           >
             {isLoading ? '検索中...' : '検索'}
           </button>
@@ -191,11 +219,18 @@ const APISearch = ({ type, onSearchResult, onCiniiResult, idPrefix = '' }) => {
 
         {isScannerOpen && (
           <div className="scanner-modal" onClick={closeScanner}>
-            <div className="scanner-content" onClick={(e) => e.stopPropagation()}>
+            <div
+              ref={scannerDialogRef}
+              className="scanner-content"
+              role="dialog"
+              aria-modal="true"
+              aria-label="バーコードを読み取る"
+              onClick={(e) => e.stopPropagation()}
+            >
               <video ref={videoRef} style={{ width: '100%', maxHeight: '400px' }} autoPlay muted playsInline />
               <div style={{ marginTop: 8 }}>
                 <button type="button" className="btn btn-secondary" onClick={closeScanner}>閉じる</button>
-                {scanError && <div className="error-message" role="alert">スキャンエラー: {scanError}</div>}
+                {scanError && <div className="error-message" role="alert">{scanError}</div>}
                 <div style={{ marginTop: 6, fontSize: 'smaller' }}>本の裏表紙にある上段のバーコード（978 で始まる ISBN）をカメラにかざしてください</div>
               </div>
             </div>
@@ -217,14 +252,16 @@ const APISearch = ({ type, onSearchResult, onCiniiResult, idPrefix = '' }) => {
             onChange={(e) => { setCiniiQuery(e.target.value); setSearchError(''); }}
             onKeyDown={searchOnEnter(handleCiniiSearch)}
             placeholder="論文タイトルを入力..."
-            disabled={isLoading}
+            readOnly={isLoading}
+            aria-busy={isLoading || undefined}
             aria-describedby={searchError ? `${idPrefix}api-search-error` : undefined}
           />
           <button
             type="button"
             className="btn btn-primary"
             onClick={handleCiniiSearch}
-            disabled={isLoading || !ciniiQuery}
+            disabled={!ciniiQuery.trim()}
+            aria-disabled={isLoading || undefined}
           >
             {isLoading ? '検索中...' : 'CiNii検索'}
           </button>

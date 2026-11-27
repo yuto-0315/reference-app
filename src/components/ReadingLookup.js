@@ -61,8 +61,9 @@ const ReadingLookup = ({ target, onPick, className = '' }) => {
       <button
         type="button"
         className="btn btn-small btn-secondary"
-        onClick={lookup}
-        disabled={isLoading || !canLookupReading(target)}
+        onClick={() => { if (!isLoading) lookup(); }}
+        disabled={!canLookupReading(target)}
+        aria-disabled={isLoading || undefined}
         title={canLookupReading(target) ? '国立国会図書館の典拠データから読み仮名を調べる' : (target.kind === 'person' ? '先に姓を入力してください' : '先に名前を入力してください')}
       >
         {isLoading ? <Loader2 size={14} className="spin" /> : <Search size={14} />}
