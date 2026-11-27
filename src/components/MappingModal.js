@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import useEscapeKey from '../hooks/useEscapeKey';
+import useDialog from '../hooks/useDialog';
 import '../styles/MappingModal.css';
 import { TriangleAlert, X } from 'lucide-react';
 import { stripCreatorRole } from '../utils/api';
@@ -235,7 +235,7 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType, notice
         }
     }, [apiData, referenceType]);
 
-    useEscapeKey(isOpen, onClose);
+    const dialogRef = useDialog(isOpen, onClose);
 
     if (!isOpen) return null;
 
@@ -345,7 +345,7 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType, notice
 
     return (
         <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-content" role="dialog" aria-modal="true" aria-labelledby="mapping-modal-title" onClick={e => e.stopPropagation()}>
+            <div ref={dialogRef} className="modal-content" role="dialog" aria-modal="true" aria-labelledby="mapping-modal-title" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
                     <h2 id="mapping-modal-title">取得した書誌情報を確認</h2>
                     <button type="button" className="modal-close" onClick={onClose} aria-label="閉じる"><X size={20} /></button>

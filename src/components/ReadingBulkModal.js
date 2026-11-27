@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { X } from 'lucide-react';
-import useEscapeKey from '../hooks/useEscapeKey';
+import useDialog from '../hooks/useDialog';
 import { collectReadingGroups } from '../utils/bulkEdit';
 import ReadingLookup from './ReadingLookup';
 
@@ -26,7 +26,7 @@ const describeStatus = (group) => {
 
 // 同じ団体名・著者名の読み仮名を、名前ごとに1回の入力でまとめて登録する
 const ReadingBulkModal = ({ references, onSave, onClose }) => {
-  useEscapeKey(true, onClose);
+  const dialogRef = useDialog(true, onClose);
   const groups = useMemo(() => sortGroups(collectReadingGroups(references)), [references]);
   // 登録済みの読み方があれば、いちばん多いものを初期値にして、入力の手間を減らす
   const [readingByKey, setReadingByKey] = useState(() => Object.fromEntries(groups.map(group => [group.key, group.readings[0] || ''])));
@@ -55,6 +55,7 @@ const ReadingBulkModal = ({ references, onSave, onClose }) => {
     <div className="modal-overlay" onClick={onClose}>
       <div
         className="modal-content bulk-modal"
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="reading-bulk-title"

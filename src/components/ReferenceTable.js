@@ -5,6 +5,8 @@ import { collectReadingGroups } from '../utils/bulkEdit';
 import { ArrowDown, ArrowUp, ArrowUpDown, ArrowUpToLine, BookText, CopyPlus, ExternalLink, Languages, ListChecks, Pencil, Quote, TriangleAlert, Trash2 } from 'lucide-react';
 
 // 著者・団体・作曲者の名前と読み、書誌情報をまとめた検索対象テキスト
+const titleOf = (ref) => ref.title || '（タイトルなし）';
+
 const getSearchableText = (migratedRef) => {
   const people = [
     ...(migratedRef.authors || []),
@@ -134,6 +136,17 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
     if (restoreFocus) document.querySelector(`[data-citation-trigger="${triggerId}"]`)?.focus();
   }, [citationTargetId]);
 
+  // 削除したボタンと一緒にフォーカスが消えないよう、次の行（最後なら前の行）の削除ボタンへ移す
+  const deleteAndKeepFocus = (id) => {
+    const index = filteredAndSortedReferences.findIndex(ref => ref.id === id);
+    const neighbor = filteredAndSortedReferences[index + 1] || filteredAndSortedReferences[index - 1];
+    onDelete(id);
+    requestAnimationFrame(() => {
+      const target = neighbor && document.querySelector(`[data-delete-for="${neighbor.id}"]`);
+      (target || document.querySelector('.search-input'))?.focus();
+    });
+  };
+
   const copyFormatted = (ref, type) => {
     // 同一著者・同一年の文献に対してアルファベットサフィックスを付与
     const refWithSuffix = suffixedReferenceById.get(ref.id) || ref;
@@ -161,7 +174,8 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
   };
 
   return (
-    <div className="reference-table-container">
+    <section className="reference-table-container" aria-labelledby="reference-table-title">
+      <h2 className="section-title" id="reference-table-title">登録した参考文献</h2>
       <div className="table-controls">
         <div className="search-container">
           <input
@@ -415,7 +429,8 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                             onClick={() => copyFormatted(migratedRef, 'citation')}
                             className="btn btn-sm btn-accent"
                             title="引用形式でコピー(割注)"
-                            aria-label="引用形式でコピー(割注)"
+                            aria-label={`「${titleOf(ref)}」の引用（割注）をコピー`}
+                            aria-haspopup={migratedRef.type === 'website' ? undefined : 'dialog'}
                             aria-expanded={migratedRef.type === 'website' ? undefined : citationTargetId === ref.id}
                             data-citation-trigger={ref.id}
                           >
@@ -425,7 +440,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                             onClick={() => copyFormatted(migratedRef, 'reference')}
                             className="btn btn-sm btn-accent"
                             title="参考文献形式でコピー"
-                            aria-label="参考文献形式でコピー"
+                            aria-label={`「${titleOf(ref)}」の参考文献の形式をコピー`}
                           >
                             <BookText size={14} />文献
                           </button>
@@ -435,7 +450,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                             onClick={() => onEdit(migratedRef)}
                             className="btn btn-sm btn-secondary btn-icon"
                             title="編集"
-                            aria-label="編集"
+                            aria-label={`「${titleOf(ref)}」を編集`}
                           >
                             <Pencil size={16} className="icon-alone" />
                           </button>
@@ -443,15 +458,16 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
                             onClick={() => onDuplicate(migratedRef)}
                             className="btn btn-sm btn-secondary btn-icon"
                             title="複製（この文献の内容を追加フォームに入れて、似た文献を追加する）"
-                            aria-label="複製して追加フォームに入れる"
+                            aria-label={`「${titleOf(ref)}」を複製して追加フォームに入れる`}
                           >
                             <CopyPlus size={16} className="icon-alone" />
                           </button>
                           <button
-                            onClick={() => onDelete(ref.id)}
+                            onClick={() => deleteAndKeepFocus(ref.id)}
                             className="btn btn-sm btn-danger btn-icon"
                             title="削除（あとから元に戻せます）"
-                            aria-label="削除"
+                            aria-label={`「${titleOf(ref)}」を削除`}
+                            data-delete-for={ref.id}
                           >
                             <Trash2 size={16} className="icon-alone" />
                           </button>
@@ -475,7 +491,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
             : '参考文献がまだありません。上の「新しい参考文献を追加」フォームから登録してください。'}
         </div>
       )}
-    </div>
+    </section>
   );
 };
 

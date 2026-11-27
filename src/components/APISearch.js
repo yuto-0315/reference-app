@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { BrowserMultiFormatReader, NotFoundException, ChecksumException, FormatException } from '@zxing/library';
-import useEscapeKey from '../hooks/useEscapeKey';
+import useDialog from '../hooks/useDialog';
 import { describeApiError } from '../utils/apiErrors';
 
 // 日本の書籍のバーコードは2段あり、下段（192 で始まる分類・価格コード）を読んでも検索できないため、
@@ -94,7 +94,7 @@ const APISearch = ({ type, onSearchResult, onCiniiResult, idPrefix = '' }) => {
     }
   };
 
-  useEscapeKey(isScannerOpen, closeScanner);
+  const scannerDialogRef = useDialog(isScannerOpen, closeScanner);
 
   // 文献の種類を変えると検索欄ごと消えるため、カメラを使ったままにしない
   useEffect(() => {
@@ -144,14 +144,16 @@ const APISearch = ({ type, onSearchResult, onCiniiResult, idPrefix = '' }) => {
   }, [isScannerOpen]);
 
   const handleCiniiSearch = async () => {
-    if (!ciniiQuery) return;
+    if (!ciniiQuery.trim() || isSearchingRef.current) return;
+    isSearchingRef.current = true;
     setIsLoading(true);
     setSearchError('');
     try {
-      await onCiniiResult(ciniiQuery);
+      await onCiniiResult(ciniiQuery.trim());
     } catch (error) {
       setSearchError(describeApiError(error));
     } finally {
+      isSearchingRef.current = false;
       setIsLoading(false);
     }
   };
@@ -183,14 +185,16 @@ const APISearch = ({ type, onSearchResult, onCiniiResult, idPrefix = '' }) => {
             onChange={(e) => { setIsbn(e.target.value); setSearchError(''); }}
             onKeyDown={searchOnEnter(() => handleIsbnSearch())}
             placeholder="ISBN (10桁または13桁)"
-            disabled={isLoading}
+            readOnly={isLoading}
+            aria-busy={isLoading || undefined}
             aria-describedby={searchError ? `${idPrefix}api-search-error` : undefined}
           />
           <button
             type="button"
             className="btn btn-primary"
             onClick={() => handleIsbnSearch()}
-            disabled={isLoading || !isbn}
+            disabled={!isbn}
+            aria-disabled={isLoading || undefined}
           >
             {isLoading ? '検索中...' : '検索'}
           </button>
@@ -207,7 +211,14 @@ const APISearch = ({ type, onSearchResult, onCiniiResult, idPrefix = '' }) => {
 
         {isScannerOpen && (
           <div className="scanner-modal" onClick={closeScanner}>
-            <div className="scanner-content" onClick={(e) => e.stopPropagation()}>
+            <div
+              ref={scannerDialogRef}
+              className="scanner-content"
+              role="dialog"
+              aria-modal="true"
+              aria-label="バーコードを読み取る"
+              onClick={(e) => e.stopPropagation()}
+            >
               <video ref={videoRef} style={{ width: '100%', maxHeight: '400px' }} autoPlay muted playsInline />
               <div style={{ marginTop: 8 }}>
                 <button type="button" className="btn btn-secondary" onClick={closeScanner}>閉じる</button>
@@ -233,14 +244,16 @@ const APISearch = ({ type, onSearchResult, onCiniiResult, idPrefix = '' }) => {
             onChange={(e) => { setCiniiQuery(e.target.value); setSearchError(''); }}
             onKeyDown={searchOnEnter(handleCiniiSearch)}
             placeholder="論文タイトルを入力..."
-            disabled={isLoading}
+            readOnly={isLoading}
+            aria-busy={isLoading || undefined}
             aria-describedby={searchError ? `${idPrefix}api-search-error` : undefined}
           />
           <button
             type="button"
             className="btn btn-primary"
             onClick={handleCiniiSearch}
-            disabled={isLoading || !ciniiQuery}
+            disabled={!ciniiQuery.trim()}
+            aria-disabled={isLoading || undefined}
           >
             {isLoading ? '検索中...' : 'CiNii検索'}
           </button>

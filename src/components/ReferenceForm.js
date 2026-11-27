@@ -217,6 +217,13 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
     });
   };
 
+  // 削除したボタンと一緒にフォーカスが消えないよう、ひとつ前（先頭なら次）の著者の姓の欄へ移す
+  const focusAuthorAfterRemoval = (fieldName, removedIndex) => {
+    requestAnimationFrame(() => {
+      document.getElementById(`${idPrefix}${fieldName}-${Math.max(0, removedIndex - 1)}-lastName`)?.focus();
+    });
+  };
+
   const validateForm = () => {
     const newErrors = {};
 
@@ -432,7 +439,7 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
         <div className="label-row">
           <label htmlFor={inputId}>
             {label}
-            {required && <span className="required-mark"> *</span>}
+            {required && <span className="required-mark" aria-hidden="true"> *</span>}
           </label>
           <InfoTooltip description={description} example={example} fieldLabel={label} />
         </div>
@@ -469,13 +476,15 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
 
   const renderAuthorsField = (label, showReading = true) => {
     return (
-      <div key="authors" className="form-group">
-        <label>
-          {label} <span className="required-mark">*</span>
-        </label>
+      <div key="authors" className="form-group" role="group" aria-labelledby={`${idPrefix}authors-label`}>
+        <span className="group-label" id={`${idPrefix}authors-label`}>
+          {label} <span className="required-mark" aria-hidden="true">*</span>
+        </span>
         {errors.authors && <div className="error-message" role="alert">{errors.authors}</div>}
         {(formData.authors || []).map((author, index) => (
-          <div key={index} className="author-input-group">
+          // 姓・名の欄が著者の数だけ並ぶので、読み上げでも何人目の欄かが分かるようにする
+          <fieldset key={index} className="author-input-group">
+            <legend className="visually-hidden">{label}{index + 1}人目</legend>
             <div className="author-fields">
               <div className="author-field">
                 <label htmlFor={`${idPrefix}authors-${index}-lastName`}>姓 *</label>
@@ -487,10 +496,11 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
                   className={errors[`authors.${index}.lastName`] ? 'error' : ''}
                   aria-required="true"
                   aria-invalid={errors[`authors.${index}.lastName`] ? true : undefined}
+                  aria-describedby={errors[`authors.${index}.lastName`] ? `${idPrefix}authors-${index}-lastName-error` : undefined}
                   placeholder="山田"
                 />
                 {errors[`authors.${index}.lastName`] && (
-                  <div className="error-message">{errors[`authors.${index}.lastName`]}</div>
+                  <div id={`${idPrefix}authors-${index}-lastName-error`} className="error-message">{errors[`authors.${index}.lastName`]}</div>
                 )}
               </div>
               <div className="author-field">
@@ -503,10 +513,11 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
                   className={errors[`authors.${index}.firstName`] ? 'error' : ''}
                   aria-required="true"
                   aria-invalid={errors[`authors.${index}.firstName`] ? true : undefined}
+                  aria-describedby={errors[`authors.${index}.firstName`] ? `${idPrefix}authors-${index}-firstName-error` : undefined}
                   placeholder="太郎"
                 />
                 {errors[`authors.${index}.firstName`] && (
-                  <div className="error-message">{errors[`authors.${index}.firstName`]}</div>
+                  <div id={`${idPrefix}authors-${index}-firstName-error`} className="error-message">{errors[`authors.${index}.firstName`]}</div>
                 )}
               </div>
               {showReading && (
@@ -525,7 +536,11 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
                 <button
                   type="button"
                   className="btn btn-danger btn-small"
-                  onClick={() => removeAuthor(index)}
+                  onClick={() => {
+                    removeAuthor(index);
+                    focusAuthorAfterRemoval('authors', index);
+                  }}
+                  aria-label={`${label}${index + 1}人目を削除`}
                 >
                   削除
                 </button>
@@ -537,7 +552,7 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
                 onPick={(reading) => handleAuthorChange(index, 'reading', reading)}
               />
             )}
-          </div>
+          </fieldset>
         ))}
         <button
           type="button"
@@ -554,13 +569,14 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
   const renderTranslationAuthorsField = (fieldName, label, showReading = true) => {
     const authors = formData[fieldName] || [];
     return (
-      <div key={fieldName} className="form-group">
-        <label>
-          {label} <span className="required-mark">*</span>
-        </label>
+      <div key={fieldName} className="form-group" role="group" aria-labelledby={`${idPrefix}${fieldName}-label`}>
+        <span className="group-label" id={`${idPrefix}${fieldName}-label`}>
+          {label} <span className="required-mark" aria-hidden="true">*</span>
+        </span>
         {errors[fieldName] && <div className="error-message" role="alert">{errors[fieldName]}</div>}
         {authors.map((author, index) => (
-          <div key={index} className="author-input-group">
+          <fieldset key={index} className="author-input-group">
+            <legend className="visually-hidden">{label}{index + 1}人目</legend>
             <div className="author-fields">
               <div className="author-field">
                 <label htmlFor={`${idPrefix}${fieldName}-${index}-lastName`}>姓 *</label>
@@ -572,10 +588,11 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
                   className={errors[`${fieldName}.${index}.lastName`] ? 'error' : ''}
                   aria-required="true"
                   aria-invalid={errors[`${fieldName}.${index}.lastName`] ? true : undefined}
+                  aria-describedby={errors[`${fieldName}.${index}.lastName`] ? `${idPrefix}${fieldName}-${index}-lastName-error` : undefined}
                   placeholder="山田"
                 />
                 {errors[`${fieldName}.${index}.lastName`] && (
-                  <div className="error-message">{errors[`${fieldName}.${index}.lastName`]}</div>
+                  <div id={`${idPrefix}${fieldName}-${index}-lastName-error`} className="error-message">{errors[`${fieldName}.${index}.lastName`]}</div>
                 )}
               </div>
               <div className="author-field">
@@ -588,10 +605,11 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
                   className={errors[`${fieldName}.${index}.firstName`] ? 'error' : ''}
                   aria-required="true"
                   aria-invalid={errors[`${fieldName}.${index}.firstName`] ? true : undefined}
+                  aria-describedby={errors[`${fieldName}.${index}.firstName`] ? `${idPrefix}${fieldName}-${index}-firstName-error` : undefined}
                   placeholder="太郎"
                 />
                 {errors[`${fieldName}.${index}.firstName`] && (
-                  <div className="error-message">{errors[`${fieldName}.${index}.firstName`]}</div>
+                  <div id={`${idPrefix}${fieldName}-${index}-firstName-error`} className="error-message">{errors[`${fieldName}.${index}.firstName`]}</div>
                 )}
               </div>
               {showReading && (
@@ -610,13 +628,17 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
                 <button
                   type="button"
                   className="btn btn-danger btn-small"
-                  onClick={() => removeAuthorField(fieldName, index)}
+                  onClick={() => {
+                    removeAuthorField(fieldName, index);
+                    focusAuthorAfterRemoval(fieldName, index);
+                  }}
+                  aria-label={`${label}${index + 1}人目を削除`}
                 >
                   削除
                 </button>
               )}
             </div>
-          </div>
+          </fieldset>
         ))}
         <button
           type="button"
@@ -632,8 +654,9 @@ const ReferenceForm = ({ onSubmit, initialData, isEditing = false, onCancel, onD
   return (
     <>
       <form onSubmit={handleSubmit} ref={formRef} noValidate>
+        <p className="form-required-note"><span className="required-mark" aria-hidden="true">*</span> は必ず入力する項目です</p>
         <div className="form-group">
-          <label htmlFor={`${idPrefix}reference-type`}>文献の種類 <span className="required-mark">*</span></label>
+          <label htmlFor={`${idPrefix}reference-type`}>文献の種類 <span className="required-mark" aria-hidden="true">*</span></label>
           <select
             id={`${idPrefix}reference-type`}
             value={formData.type}

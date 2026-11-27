@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { X } from 'lucide-react';
-import useEscapeKey from '../hooks/useEscapeKey';
+import useDialog from '../hooks/useDialog';
 import { getBulkEditableFields } from '../utils/bulkEdit';
 import { REFERENCE_TYPES } from '../utils/formatters';
 
@@ -33,7 +33,7 @@ const pickDefaultField = (references, fields) => {
 
 // 一覧でチェックした文献の、同じ項目をまとめて同じ値にする
 const BulkEditModal = ({ references, onSave, onClose }) => {
-  useEscapeKey(true, onClose);
+  const dialogRef = useDialog(true, onClose);
   const fields = useMemo(() => getBulkEditableFields(references), [references]);
   const [fieldKey, setFieldKey] = useState(() => pickDefaultField(references, fields)?.key || '');
   const field = fields.find(item => item.key === fieldKey);
@@ -62,6 +62,7 @@ const BulkEditModal = ({ references, onSave, onClose }) => {
     <div className="modal-overlay" onClick={onClose}>
       <div
         className="modal-content bulk-modal"
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="bulk-edit-title"

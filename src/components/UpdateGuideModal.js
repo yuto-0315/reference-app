@@ -1,10 +1,10 @@
 import React from 'react';
 import { CHANGELOG, CHANGE_TYPE_LABELS } from '../utils/changelog';
-import useEscapeKey from '../hooks/useEscapeKey';
+import useDialog from '../hooks/useDialog';
 import { X } from 'lucide-react';
 
 const UpdateGuideModal = ({ isOpen, onClose }) => {
-    useEscapeKey(isOpen, onClose);
+    const dialogRef = useDialog(isOpen, onClose);
 
     if (!isOpen) return null;
 
@@ -13,7 +13,7 @@ const UpdateGuideModal = ({ isOpen, onClose }) => {
 
     return (
         <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-content update-guide-modal" role="dialog" aria-modal="true" aria-labelledby="update-guide-title" onClick={(e) => e.stopPropagation()}>
+            <div ref={dialogRef} className="modal-content update-guide-modal" role="dialog" aria-modal="true" aria-labelledby="update-guide-title" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                     <h2 id="update-guide-title">アップデートのお知らせと使い方</h2>
                     <button type="button" className="modal-close" onClick={onClose} aria-label="閉じる"><X size={20} /></button>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { themes } from '../utils/themes';
-import useEscapeKey from '../hooks/useEscapeKey';
+import useDialog from '../hooks/useDialog';
 import { Check, Palette, X } from 'lucide-react';
 
 // 画面のどこにどの色が使われるかを、カードの色見本で左から順に示す
@@ -25,7 +25,7 @@ const ThemeSwatches = ({ colors }) => (
 const ThemePickerModal = ({ onClose }) => {
   const { currentTheme, themeGroups, switchTheme } = useTheme();
   const bodyRef = useRef(null);
-  useEscapeKey(true, onClose);
+  const dialogRef = useDialog(true, onClose);
 
   // 開いたら選択中のカードまでスクロールし、矢印キーですぐ選び直せるようにする
   useEffect(() => {
@@ -42,6 +42,7 @@ const ThemePickerModal = ({ onClose }) => {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
+        ref={dialogRef}
         className="modal-content theme-picker-modal"
         role="dialog"
         aria-modal="true"
@@ -106,19 +107,14 @@ const ThemePickerModal = ({ onClose }) => {
 const ThemeToggle = () => {
   const { theme } = useTheme();
   const [isPickerOpen, setIsPickerOpen] = useState(false);
-  const toggleButtonRef = useRef(null);
 
-  // 閉じたら開いたボタンへフォーカスを戻し、キーボード操作の位置を見失わないようにする
-  const closePicker = () => {
-    setIsPickerOpen(false);
-    toggleButtonRef.current?.focus();
-  };
+  // 閉じたら開いたボタンへフォーカスが戻る（useDialog）ので、キーボード操作の位置を見失わない
+  const closePicker = () => setIsPickerOpen(false);
 
   return (
     <>
       <button
         type="button"
-        ref={toggleButtonRef}
         className="theme-toggle"
         onClick={() => setIsPickerOpen(true)}
         aria-haspopup="dialog"

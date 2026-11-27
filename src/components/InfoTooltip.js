@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import useEscapeKey from '../hooks/useEscapeKey';
+import useDialog from '../hooks/useDialog';
 import { X } from 'lucide-react';
 
 const InfoTooltip = ({ description, example, fieldLabel = '', className = '' }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const closeModal = () => setIsModalOpen(false);
-  useEscapeKey(isModalOpen, closeModal);
+  const dialogRef = useDialog(isModalOpen, closeModal);
 
   // 説明文も例もない場合は何も表示しない
   if (!description && !example) {
@@ -35,7 +35,7 @@ const InfoTooltip = ({ description, example, fieldLabel = '', className = '' }) 
 
       {isModalOpen && (
         <div className="info-modal-overlay" onClick={handleOverlayClick}>
-          <div className="info-modal" role="dialog" aria-modal="true" aria-labelledby="info-modal-title" onClick={(e) => e.stopPropagation()}>
+          <div ref={dialogRef} className="info-modal" role="dialog" aria-modal="true" aria-labelledby="info-modal-title" onClick={(e) => e.stopPropagation()}>
             <div className="info-modal-header">
               <h3 id="info-modal-title" className="info-modal-title">
                 {fieldLabel ? `入力ガイド：${fieldLabel}` : '入力ガイド'}

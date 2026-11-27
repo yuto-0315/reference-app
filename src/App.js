@@ -462,10 +462,17 @@ function App() {
         </div>
       </header>
 
+      {/* 読み上げ用の通知の場所は常に置いておく（表示と同時に作ると、読み上げられないことがあるため） */}
+      <div className="visually-hidden" role="status" aria-live="polite">
+        {alert && alert.type !== 'error' ? alert.message : (toast?.message || '')}
+      </div>
+      <div className="visually-hidden" role="alert" aria-live="assertive">
+        {alert && alert.type === 'error' ? alert.message : ''}
+      </div>
+
       {alert && (
         <div
           className={`alert alert-${alert.type}`}
-          role={alert.type === 'error' ? 'alert' : 'status'}
           onMouseEnter={pauseAlertTimer}
           onMouseLeave={resumeAlertTimer}
           onFocus={pauseAlertTimer}
@@ -481,6 +488,7 @@ function App() {
         </div>
       )}
 
+      <main>
       <FileControls
         onExport={exportToJSON}
         onImport={importFromJSON}
@@ -524,6 +532,8 @@ function App() {
         onOpenBulkEdit={() => setBulkDialog('fields')}
         onShowOutput={showOutput}
       />
+
+      </main>
 
       {selectedReference && (
         <EditReferenceModal
