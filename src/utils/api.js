@@ -8,6 +8,21 @@ import { fetchFromApi, invalidResponseError } from './apiErrors';
 const isbnResultCache = new Map();
 const ciniiSearchCache = new Map();
 
+// 書誌データの著者名に付いている役割の表示（「編」「[著]」「監修」など）を取り除く。
+// 残したままだと、姓名に分けたときに名の後ろに「編」が付いてしまう
+const CREATOR_ROLES = '(?:著|編|編著|共著|共編|編集|監修|監訳|訳|翻訳|作|作曲|作詞|撰|校訂|校注|解説|ほか|他|author|editors?|eds?\\.?)';
+// 「山田耕作」の「作」を消さないよう、役割の語は空白の後か括弧の中にあるときだけ取り除く
+const CREATOR_ROLE_PATTERN = new RegExp(`(?:\\s*[[［(（]\\s*${CREATOR_ROLES}\\s*[\\]］)）]|\\s+${CREATOR_ROLES})\\s*$`, 'i');
+export const stripCreatorRole = (name) => {
+  let result = String(name || '').trim();
+  for (let i = 0; i < 3 && CREATOR_ROLE_PATTERN.test(result); i += 1) {
+    const stripped = result.replace(CREATOR_ROLE_PATTERN, '').trim();
+    if (!stripped) break;
+    result = stripped;
+  }
+  return result;
+};
+
 // NDLの典拠形の人名は「夏目, 漱石, 1867-1916」のように生没年が付くため、姓名の分割前に取り除く
 const stripLifeDates = (name) => name.replace(/,?\s*\d{3,4}-(\d{3,4})?\s*$/, '').trim();
 
@@ -71,6 +86,12 @@ const parseNdlResponse = (xmlText, isbn) => {
     const dcndlNS = 'http://ndl.go.jp/dcndl/terms/';
 
     const creators = [];
+    // dcterms:creator の「橋本 毅彦」と dc:creator の「橋本毅彦」は同一人物なので、空白・読点を無視して比べる
+    const comparableName = (name) => name.replace(/[\s,，、]/g, '');
+    const addCreator = (creator) => {
+      if (!creator.name || creators.some(c => comparableName(c.name) === comparableName(creator.name))) return;
+      creators.push(creator);
+    };
 
     // Process each dcterms:creator element. If it contains a foaf:Agent, extract from that Agent;
     // otherwise use plain text inside the creator element.
@@ -81,12 +102,12 @@ const parseNdlResponse = (xmlText, isbn) => {
         const nameEl = agent.getElementsByTagNameNS(foafNS, 'name')[0];
         const transcriptionEl = agent.getElementsByTagNameNS(dcndlNS, 'transcription')[0];
         const rawName = stripLifeDates(nameEl ? nameEl.textContent.trim() : agent.textContent.trim());
-        const normalized = rawName.replace(/,\s*/g, ' ').replace(/\s+/g, ' ').trim();
+        const normalized = stripCreatorRole(rawName.replace(/,\s*/g, ' ').replace(/\s+/g, ' ').trim());
         const reading = transcriptionEl ? stripLifeDates(transcriptionEl.textContent.trim()) : '';
-        creators.push({ name: normalized, reading });
+        addCreator({ name: normalized, reading });
       } else {
         const txt = el.textContent.trim();
-        if (txt) creators.push({ name: txt.replace(/\s+/g, ' ').trim(), reading: '' });
+        if (txt) addCreator({ name: stripCreatorRole(txt.replace(/\s+/g, ' ').trim()), reading: '' });
       }
     });
 
@@ -95,14 +116,11 @@ const parseNdlResponse = (xmlText, isbn) => {
     dcCreators.forEach(el => {
       const txt = el.textContent.trim();
       if (!txt) return;
-      const parts = txt.split(/、|,| and | 著| 編著/).map(s => s.trim()).filter(Boolean);
-      parts.forEach(part => {
-        const normalized = part.replace(/\s+/g, ' ').trim();
-        // dcterms:creator の「橋本 毅彦」と dc:creator の「橋本毅彦」は同一人物なので、空白を無視して比べる
-        const withoutSpaces = (s) => s.replace(/\s/g, '');
-        if (!creators.some(c => withoutSpaces(c.name) === withoutSpaces(normalized))) {
-          creators.push({ name: normalized, reading: '' });
-        }
+      // 「山田太郎 編 ; 鈴木花子 著」のように複数人が1つに入っていることがある。
+      // 英語の「Smith, John」を姓と名で別人に分けないよう、「,」で区切るのは日本語の名前のときだけにする
+      const separator = /[\u3040-\u30FF\u4E00-\u9FFF]/.test(txt) ? /\s*(?:[;；、,，／]| and )\s*/ : /\s*(?:[;；／]| and )\s*/;
+      txt.split(separator).forEach(part => {
+        addCreator({ name: stripCreatorRole(part.replace(/\s+/g, ' ').trim()), reading: '' });
       });
     });
 

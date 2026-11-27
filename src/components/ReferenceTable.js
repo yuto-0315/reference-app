@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import CitationPopover from './CitationPopover';
-import { formatCitation, formatReference, migrateReferenceData, addYearSuffixes, getSortReading, getPublicationYear } from '../utils/formatters';
+import { formatCitation, formatReference, migrateReferenceData, addYearSuffixes, getSortReading, getPublicationYear, buildSortReadingLookup } from '../utils/formatters';
 import { collectReadingGroups } from '../utils/bulkEdit';
 import { ArrowDown, ArrowUp, ArrowUpDown, BookText, CopyPlus, ExternalLink, Languages, ListChecks, Pencil, Quote, TriangleAlert, Trash2 } from 'lucide-react';
 
@@ -52,14 +52,19 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
     [references]
   );
 
+  const readingLookup = useMemo(() => buildSortReadingLookup(references), [references]);
+
   // 検索とソート機能
   const filteredAndSortedReferences = useMemo(() => {
-    const searchLower = searchTerm.toLowerCase();
+    // 「山田 1996」のように空白で区切った語は、すべてを含む文献を探す（全角の空白も区切りとして扱う）
+    const searchWords = searchTerm.toLowerCase().split(/[\s　]+/).filter(Boolean);
     let filtered = references.filter(ref => {
       const migratedRef = migrateReferenceData(ref);
       if (showOnlyMissingReading && !isReadingMissing(migratedRef)) return false;
-      return getSearchableText(migratedRef).includes(searchLower);
+      const searchableText = getSearchableText(migratedRef);
+      return searchWords.every(word => searchableText.includes(word));
     });
+    const compareReading = (refA, refB) => getSortReading(refA, readingLookup).localeCompare(getSortReading(refB, readingLookup), 'ja');
 
     // ソート処理
     filtered.sort((a, b) => {
@@ -68,21 +73,18 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
       let compareValue = 0;
 
       switch (sortBy) {
-        case 'year':
-          // use migrated values and coerce to Number to avoid string subtraction
-          // website type might not have year, treating as 0 or handling appropriately
+        case 'year': {
+          // 年のない文献（Webサイトなど）は、昇順・降順どちらでも最後に置く
           const yearA = Number(getPublicationYear(migratedA)) || 0;
           const yearB = Number(getPublicationYear(migratedB)) || 0;
-          compareValue = yearA - yearB;
-
+          if ((yearA === 0) !== (yearB === 0)) return yearA === 0 ? 1 : -1;
           // 年が同じ場合は読み仮名で比較（第二ソートキー）
-          if (compareValue === 0) {
-            compareValue = getSortReading(migratedA).localeCompare(getSortReading(migratedB), 'ja');
-          }
+          compareValue = yearA - yearB || compareReading(migratedA, migratedB);
           break;
+        }
         case 'reading':
           // 筆頭著者の読み仮名または姓で比較、団体出版本・Webサイトの場合は団体名
-          compareValue = getSortReading(migratedA).localeCompare(getSortReading(migratedB), 'ja');
+          compareValue = compareReading(migratedA, migratedB);
           break;
         case 'title':
           // 手で編集したJSONで数値が入っていても落ちないよう、文字列にして比べる
@@ -98,7 +100,7 @@ const ReferenceTable = ({ references, onEdit, onDelete, onCopy, onToggleCheck, c
     });
 
     return filtered;
-  }, [references, searchTerm, showOnlyMissingReading, sortBy, sortOrder]);
+  }, [references, readingLookup, searchTerm, showOnlyMissingReading, sortBy, sortOrder]);
 
   const handleSort = (field) => {
     if (sortBy === field) {

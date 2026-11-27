@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import useEscapeKey from '../hooks/useEscapeKey';
 import '../styles/MappingModal.css';
 import { TriangleAlert, X } from 'lucide-react';
+import { stripCreatorRole } from '../utils/api';
 
 // Helpers: detect Japanese characters (kanji/kana)
 const isJapaneseText = (s) => /[\u3000-\u30FF\u4E00-\u9FFF\u3040-\u309F]/.test(s);
@@ -128,8 +129,6 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType, notice
     const [splitCounts, setSplitCounts] = useState({});
 
     useEffect(() => {
-        console.log('DEBUG MappingModal apiData:', apiData);
-        console.log('DEBUG MappingModal creatorsMeta:', creatorsMeta);
 
         if (apiData) {
             const initialMapping = {};
@@ -202,8 +201,16 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType, notice
                 return '';
             };
 
-            // build creatorsMeta with original indices
-            const meta = creatorsArr.map((creator, i) => ({ idx: i, creator, name: safeCreatorName(creator), reading: (creator && creator.reading) ? creator.reading : '' }));
+            // build creatorsMeta with original indices（「編」「[著]」などの役割の表示は名前から外す）
+            const meta = creatorsArr.map((creator, i) => ({ idx: i, creator, name: stripCreatorRole(safeCreatorName(creator)), reading: (creator && creator.reading) ? creator.reading : '' }));
+            // 団体出版本の「執筆団体」は出版社ではなく著者（「文部科学省 編」の文部科学省）なので、著者があればそちらを使う
+            if (referenceType === 'organization-book') {
+                const organizationCreator = meta.find(m => m.name);
+                if (organizationCreator) {
+                    initialMapping.organization = organizationCreator.name;
+                    initialMapping.organizationReading = initialMapping.organizationReading || toHiragana(organizationCreator.reading);
+                }
+            }
             // default: select all creators that have a non-empty name
             setSelectedCreators(new Set(meta.filter(m => m.name).map(m => m.idx)));
             setCreatorsMeta(meta);
@@ -227,11 +234,6 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType, notice
             setMapping(initialMapping);
         }
     }, [apiData, referenceType]);
-
-    // debug: log creatorsMeta whenever it updates
-    useEffect(() => {
-        console.log('DEBUG MappingModal creatorsMeta (updated):', creatorsMeta);
-    }, [creatorsMeta]);
 
     useEscapeKey(isOpen, onClose);
 
@@ -332,7 +334,8 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType, notice
         </div>
     ));
 
-    const creators = getCreators(apiData);
+    // 団体出版本は著者の代わりに執筆団体を入れるため、著者の選択は出さない
+    const isOrganizationBook = referenceType === 'organization-book';
 
     return (
         <div className="modal-overlay" onClick={onClose}>
@@ -344,8 +347,10 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType, notice
                 <div className="modal-body">
                     {notice && <p className="mapping-notice" role="status"><TriangleAlert size={16} />{notice}</p>}
                     <p className="mapping-lead">取得できた項目です。「フォームに反映」で入力欄に入ります。ここにない項目は、反映後にフォームで入力してください。</p>
+                    {isOrganizationBook && renderField('執筆団体', mapping.organization)}
+                    {isOrganizationBook && renderField('執筆団体（読み仮名）', mapping.organizationReading)}
                     {renderField('タイトル', mapping.title)}
-                    {renderField('出版社', mapping.publisher)}
+                    {!isOrganizationBook && renderField('出版社', mapping.publisher)}
                     {renderField('出版年', mapping.year)}
                     {renderField('雑誌名', mapping.journalName)}
                     {renderField('巻', mapping.volume)}
@@ -365,7 +370,7 @@ const MappingModal = ({ isOpen, onClose, apiData, onApply, referenceType, notice
                         </div>
                     )}
 
-                    {creatorsMeta && creatorsMeta.length > 0 && (
+                    {!isOrganizationBook && creatorsMeta && creatorsMeta.length > 0 && (
                         <div className="mapping-creators">
                             <h4>著者を選択</h4>
                             {creatorsMeta.filter(m => m.name).map((m) => (
